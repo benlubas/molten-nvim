@@ -75,7 +75,6 @@ class OutputBuffer:
         elif self.options.enter_output_behavior != "no_open":
             self.nvim.funcs.nvim_set_current_win(self.display_window)
 
-
     def clear_interface(self) -> None:
         if self.display_window is not None:
             self.nvim.funcs.nvim_win_close(self.display_window, True)
@@ -85,10 +84,12 @@ class OutputBuffer:
         # FIXME use `anchor.buffer`, Not `self.nvim.current.window`
 
         # Get width&height, etc
-        win_col = self.nvim.current.window.col
+        win = self.nvim.current.window
+        win_col = win.col
         win_row = self._buffer_to_window_lineno(anchor.lineno + 1)
-        win_width = self.nvim.current.window.width
-        win_height = self.nvim.current.window.height
+        win_width = win.width
+        win_height = win.height
+
         if self.options.output_window_borders:
             win_height -= 2
 
@@ -97,50 +98,56 @@ class OutputBuffer:
         # Add output chunks to buffer
         lines_str = ""
         lineno = 0
-        shape = (win_col, win_row, win_width, win_height)
+        # images are rendered with virtual lines by image.nvim
+        virtual_lines = 0
+        sign_col_width = self.nvim.funcs.getwininfo(win.handle)[0]["textoff"]
+        shape = (
+            win_col + sign_col_width,
+            win_row,
+            win_width - sign_col_width,
+            win_height,
+        )
         if len(self.output.chunks) > 0:
             for chunk in self.output.chunks:
-                chunktext = chunk.place(
-                    self.options, lineno, shape, self.canvas
+                chunktext, virt_lines = chunk.place(
+                    self.display_buffer.number,
+                    self.options,
+                    lineno,
+                    shape,
+                    self.canvas,
                 )
                 lines_str += chunktext
                 lineno += chunktext.count("\n")
-            lines = lines_str.rstrip().split("\n")
-            actualLines = []
-            for line in lines:
-                parts = line.split('\r')
-                last = parts[-1]
-                if last != "":
-                    actualLines.append(last)
-            lines = actualLines
+                virtual_lines += virt_lines
+            lines = lines_str.split("\n")
             lineno = len(lines)
         else:
             lines = [lines_str]
-        self.display_buffer[0] = self._get_header_text(self.output)  # TODO
+
+        self.display_buffer[0] = self._get_header_text(self.output)
         self.display_buffer.append(lines)
 
         # Open output window
         assert self.display_window is None
         if win_row < win_height:
-            self.display_window = self.nvim.funcs.nvim_open_win(
+            self.display_window = self.nvim.api.open_win(
                 self.display_buffer.number,
                 False,
                 {
                     "relative": "win",
-                    "col": 0,
                     "row": win_row,
-                    "width": win_width,
-                    "height": min(win_height - win_row, lineno + 1),
-                    "anchor": "NW",
-                    "style": None
-                    if self.options.output_window_borders
-                    else "minimal",
-                    "border": "rounded"
-                    if self.options.output_window_borders
-                    else "none",
+                    "col": sign_col_width,
+                    "width": win_width - sign_col_width,
+                    "height": min(
+                        win_height - win_row, lineno + virtual_lines + 1
+                    ),
+                    "style": "minimal",
+                    "border": (
+                        "rounded"
+                        if self.options.output_window_borders
+                        else "none"
+                    ),
                     "focusable": False,
                 },
             )
-            # self.nvim.funcs.nvim_win_set_option(
-            #     self.display_window, "wrap", True
-            # )
+            self.canvas.present()
