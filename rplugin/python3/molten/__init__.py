@@ -234,7 +234,7 @@ class Molten:
         )
         molten.run_code(expr, span)
 
-    @pynvim.command("MoltenUpdateOption", nargs=2 sync=True)  # type: ignore
+    @pynvim.command("MoltenUpdateOption", nargs=2, sync=True)  # type: ignore
     @nvimui  # type: ignore
     def command_update_option(self, option, value) -> None:
         molten = self._get_molten(True)
