@@ -2,24 +2,22 @@
 
 Magma is a NeoVim plugin for running code interactively with Jupyter.
 
-![](https://user-images.githubusercontent.com/15617291/128964224-f157022c-25cd-4a60-a0da-7d1462564ae4.gif)
+![Feature Showcase (gif)](https://user-images.githubusercontent.com/15617291/128964224-f157022c-25cd-4a60-a0da-7d1462564ae4.gif)
 
 ## Requirements
 
-- NeoVim 0.5+
-- Python 3.8+
+- NeoVim 9.0+
+- Python 3.10+
 - Required Python packages:
-    - [`pynvim`](https://github.com/neovim/pynvim) (for the Remote Plugin API)
-    - [`jupyter_client`](https://github.com/jupyter/jupyter_client) (for interacting with Jupyter)
-    - [`ueberzug`](https://github.com/seebye/ueberzug) (for displaying images. Not available on MacOS, but see [#15](https://github.com/dccsillag/magma-nvim/issues/15) for alternatives)
-    - [`Pillow`](https://github.com/python-pillow/Pillow) (also for displaying images, should be installed with `ueberzug`)
-    - [`cairosvg`](https://cairosvg.org/) (for displaying SVG images)
-    - [`pnglatex`](https://pypi.org/project/pnglatex/) (for displaying TeX formulas)
-    - `plotly` and `kaleido` (for displaying Plotly figures)
-    - `pyperclip` if you want to use `magma_copy_output`
+  - [`pynvim`](https://github.com/neovim/pynvim) (for the Remote Plugin API)
+  - [`jupyter_client`](https://github.com/jupyter/jupyter_client) (for interacting with Jupyter)
+  - [`cairosvg`](https://cairosvg.org/) (for displaying SVG images)
+  - [`pnglatex`](https://pypi.org/project/pnglatex/) (for displaying TeX formulas)
+  - `plotly` and `kaleido` (for displaying Plotly figures)
+  - `pyperclip` if you want to use `magma_copy_output`
 - For .NET (C#, F#)
-    - `dotnet tool install -g Microsoft.dotnet-interactive`
-    - `dotnet interactive jupyter install`
+  - `dotnet tool install -g Microsoft.dotnet-interactive`
+  - `dotnet interactive jupyter install`
 
 You can do a `:checkhealth` to see if you are ready to go.
 
@@ -27,296 +25,115 @@ You can do a `:checkhealth` to see if you are ready to go.
 
 ## Installation
 
-Use your favourite package/plugin manager.
+Use your favorite package/plugin manager.
 
-If you use `packer.nvim`,
+<details>
+<summary>Lazy</summary>
 
 ```lua
-use { 'dccsillag/magma-nvim', run = ':UpdateRemotePlugins' }
+{ "dccsillag/magma-nvim", build = ":UpdateRemotePlugins" }
+```
+</details>
+
+<details>
+<summary>Packer</summary>
+
+```lua
+use { "dccsillag/magma-nvim", run = ":UpdateRemotePlugins" }
 ```
 
-If you use `vim-plug`,
+</details>
+
+<details>
+<summary>Plug</summary>
 
 ```vim
 Plug 'dccsillag/magma-nvim', { 'do': ':UpdateRemotePlugins' }
 ```
 
-Note that you will still need to configure keymappings -- see [Keybindings](#keybindings).
+</details>
 
-## Suggested settings
+**Note**: Keybindings are not set by default -- see [Keybindings](#keybindings).
 
-If you want a quickstart, these are the author's suggestions of mappings and options (beware of potential conflicts of these mappings with your own!):
+## Quick-start
 
-```vim
-nnoremap <silent><expr> <LocalLeader>r  :MagmaEvaluateOperator<CR>
-nnoremap <silent>       <LocalLeader>rr :MagmaEvaluateLine<CR>
-xnoremap <silent>       <LocalLeader>r  :<C-u>MagmaEvaluateVisual<CR>
-nnoremap <silent>       <LocalLeader>rc :MagmaReevaluateCell<CR>
-nnoremap <silent>       <LocalLeader>rd :MagmaDelete<CR>
-nnoremap <silent>       <LocalLeader>ro :MagmaShowOutput<CR>
-
-let g:magma_automatically_open_output = v:false
-let g:magma_image_provider = "ueberzug"
-```
-
-**Note:** Key mappings are not defined by default because of potential conflicts -- the user should decide which keys they want to use (if at all).
-
-**Note:** The options that are altered here don't have these as their default values in order to provide a simpler (albeit perhaps a bit more inconvenient) UI for someone who just added the plugin without properly reading the README.
-
-To make initialisation of kernels easier, you can add these commands:
-
-```lua
-function MagmaInitPython()
-    vim.cmd[[
-    :MagmaInit python3
-    :MagmaEvaluateArgument a=5
-    ]]
-end
-
-function MagmaInitCSharp()
-    vim.cmd[[
-    :MagmaInit .net-csharp
-    :MagmaEvaluateArgument Microsoft.DotNet.Interactive.Formatting.Formatter.SetPreferredMimeTypesFor(typeof(System.Object),"text/plain");
-    ]]
-end
-
-function MagmaInitFSharp()
-    vim.cmd[[
-    :MagmaInit .net-fsharp
-    :MagmaEvaluateArgument Microsoft.DotNet.Interactive.Formatting.Formatter.SetPreferredMimeTypesFor(typeof<System.Object>,"text/plain")
-    ]]
-end
-
-vim.cmd[[
-:command MagmaInitPython lua MagmaInitPython()
-:command MagmaInitCSharp lua MagmaInitCSharp()
-:command MagmaInitFSharp lua MagmaInitFSharp()
-]]
-```
+TODO: wiki link
+See the [Wiki Quick-start Guide](https://www.github.com/benlubas/magma-nvim/wiki)
 
 ## Usage
 
 The plugin provides a bunch of commands to enable interaction. It is recommended to map most of them to keys, as explained in [Keybindings](#keybindings). However, this section will refer to the commands by their names (so as to not depend on some specific mappings).
 
+TODO wiki link
+In-depth setup information can be found in the wiki
+
 ### Interface
 
-When you execute some code, it will create a *cell*. You can recognize a cell because it will be highlighted when your cursor is in it.
+When you execute some code, it will create a _cell_. You can recognize a cell because it will be highlighted when your cursor is in it.
 
 A cell is delimited using two extmarks (see `:help api-extended-marks`), so it will adjust to you editing the text within it.
 
-When your cursor is in a cell (i.e., you have an *active cell*), a floating window may be shown below the cell, reporting output. This is the *display window*, or *output window*. (To see more about whether a window is shown or not, see `:MagmaShowOutput` and `g:magma_automatically_open_output`). When you cursor is not in any cell, no cell is active.
+When your cursor is in a cell (i.e., you have an _active cell_), a floating window may be shown below the cell, reporting output. This is the _display window_, or _output window_. (To see more about whether a window is shown or not, see `:MagmaShowOutput` and `g:magma_automatically_open_output`). When you cursor is not in any cell, no cell is active.
 
-Also, the active cell is searched for from newest to oldest. That means that you can have a cell within another cell, and if the one within is newer, then that one will be selected. (Same goes for merely overlapping cells).
+The active cell is chosen from newest to oldest. That means that you can have a cell within another cell, and if the one within is newer, then that one will be selected. (Same goes for merely overlapping cells).
 
 The output window has a header, containing the execution count and execution state (i.e., whether the cell is waiting to be run, running, has finished successfully or has finished with an error). Below the header are shown the outputs.
 
 Jupyter provides a rich set of outputs. To see what we can currently handle, see [Output Chunks](#output-chunks).
 
-### Commands
-
-#### MagmaInit
-
-This command initializes a runtime for the current buffer.
-
-It can take a single argument, the Jupyter kernel's name. For example,
-
-```vim
-:MagmaInit python3
-```
-
-will initialize the current buffer with a `python3` kernel.
-
-It can also be called with no arguments, as such:
-
-```vim
-:MagmaInit
-```
-
-This will prompt you for which kernel you want to launch (from the list of available kernels).
-
-#### MagmaDeinit
-
-This command deinitializes the current buffer's runtime and magma instance.
-
-```vim
-:MagmaDeinit
-```
-
-**Note** You don't need to run this, as deinitialization will happen automatically upon closing Vim or the buffer being unloaded. This command exists in case you just want to make Magma stop running.
-
-#### MagmaEvaluateLine
-
-Evaluate the current line.
-
-Example usage:
-
-```vim
-:MagmaEvaluateLine
-```
-
-#### MagmaEvaluateVisual
-
-Evaluate the selected text.
-
-Example usage (after having selected some text):
-
-```vim
-:MagmaEvaluateVisual
-```
-
-#### MagmaEvaluateOperator
-
-Evaluate the text given by some operator.
-
-This won't do much outside of an `<expr>` mapping. Example usage:
-
-```vim
-nnoremap <expr> <LocalLeader>r nvim_exec('MagmaEvaluateOperator', v:true)
-```
-
-Upon using this mapping, you will enter operator mode, with which you will be able to select text you want to execute. You can, of course, hit ESC to cancel, as usual with operator mode.
-
-#### MagmaEvaluateArgument
-
-Evaluate the text following this command. Could be used for some automation (e. g. run something on initialization of a kernel).
-
-```vim
-:MagmaEvaluateArgument a=5;
-```
-
-#### MagmaReevaluateCell
-
-Reevaluate the currently selected cell.
-
-```vim
-:MagmaReevaluateCell
-```
-
-#### MagmaDelete
-
-Delete the currently selected cell. (If there is no selected cell, do nothing.)
-
-Example usage:
-
-```vim
-:MagmaDelete
-```
-
-#### MagmaShowOutput
-
-This only makes sense when you have `g:magma_automatically_open_output = v:false`. See [Customization](#customization).
-
-Running this command with some active cell will open the output window.
-
-Example usage:
-
-```vim
-:MagmaShowOutput
-```
-
-#### MagmaHideOutput
-
-This closes all currently open output windows
-
-Example usage:
-
-```vim
-:MagmaHideOutput
-```
-
-#### MagmaInterrupt
-
-Send a keyboard interrupt to the kernel. Interrupts the currently running cell and does nothing if not
-cell is running.
-
-Example usage:
-
-```vim
-:MagmaInterrupt
-```
-
-#### MagmaRestart
-
-Shuts down and restarts the current kernel.
-
-Optionally deletes all output if used with a bang.
-
-Example usage:
-
-```vim
-:MagmaRestart
-```
-
-Example usage (also deleting outputs):
-
-```vim
-:MagmaRestart!
-```
-
-#### MagmaSave
-
-Save the current cells and evaluated outputs into a JSON file, which can then be loaded back with [`:MagmaLoad`](#magmaload).
-
-It has two forms; first, receiving a parameter, specifying where to save to:
-
-```vim
-:MagmaSave file_to_save.json
-```
-
-If that parameter is omitted, then one will be automatically generated using the `g:magma_save_path` option.
-
-```vim
-:MagmaSave
-```
-
-#### MagmaLoad
-
-Load the cells and evaluated outputs stored in a given JSON file, which should have been generated with [`:MagmaSave`](#magmasave).
-
-Like `MagmaSave`, It has two forms; first, receiving a parameter, specifying where to save to:
-
-```vim
-:MagmaLoad file_to_load.json
-```
-
-If that parameter is omitted, then one will be automatically generated using the `g:magma_save_path` option.
-
-#### MagmaEnterOutput
-
-Configured with [magma_enter_output_behavior](#gmagma_enter_output_behavior)
-
-Enter/open the output window. You must call this as follows:
-
-```vim
-:noautocmd MagmaEnterOutput
-```
-
-This is especially useful when you have a long output (or errors) and wish to inspect it.
+### Commands Reference
+
+A list of the commands and their arguments. Args in `[]` are optional
+
+| Command                  | Arguments             | Description                        |
+|--------------------------|-----------------------|------------------------------------|
+| `MagmaInit`              | `[kernel]`            | Initialize a kernel for the current buffer. If no kernel is given, prompts the user |
+| `MagmaDeinit`            | none                  | De-initialize the current buffer's runtime and magma instance. (called automatically on vim close/buffer unload) |
+| `MagmaEvaluateLine`      | none                  | Evaluate the current line |
+| `MagmaEvaluateVisual`    | none                  | Evaluate the visual selection (**cannot be called with a range!**) |
+| `MagmaEvaluateOperator`  | none                  | Evaluate text selected by the following operator. see [keymaps](#keymaps) for useage |
+| `MagmaReevaluateCell`    | none                  | Re-evaluate the active cell (including new code) |
+| `MagmaDelete`            | none                  | Delete the active cell (does nothing if there is no active cell) |
+| `MagmaShowOutput`        | none                  | Shows the output window for the active cell |
+| `MagmaHideOutput`        | none                  | Hide currently open output window |
+| `MagmaEnterOutput`       | none                  | Move into the active cell's output window. **must be called with `noautocmd`** (see [keymaps](#keymaps) for example) |
+| `MagmaInterrupt`         | none                  | Sends a keyboard interrupt to the kernel which stops any currently running code. (does nothing if there's no current output) |
+| `MagmaRestart`           | `[!]`                 | Shuts down a restarts the current kernel. Deletes all outputs if used with a bang |
+| `MagmaSave`              | `[path]`              | Save the current cells and evaluated outputs into a JSON file. When path is specified, save the file to `path`, otherwise save to `g:magma_save_path` |
+| `MagmaLoad`              | `[path]`              | Loads cell locations and output from a JSON file generated by `MagmaSave`. path functions the same as `MagmaSave` |
 
 ## Keybindings
 
-It is recommended to map all the evaluate commands to the same mapping (in different modes). For example, if we wanted to bind evaluation to `<LocalLeader>r`:
+TODO: wiki link
+The commands above should be mapped to keys for the best experience. There are more detailed setups
+in the Wiki, but here are some example bindings. Pay attention to `MagmaEvaluateVisual` and
+`MagmaEnterOutput`, as they require a little special attention
 
-```vim
-nnoremap <expr><silent> <LocalLeader>r  nvim_exec('MagmaEvaluateOperator', v:true)
-nnoremap <silent>       <LocalLeader>rr :MagmaEvaluateLine<CR>
-xnoremap <silent>       <LocalLeader>r  :<C-u>MagmaEvaluateVisual<CR>
-nnoremap <silent>       <LocalLeader>rc :MagmaReevaluateCell<CR>
+```lua
+vim.keymap.set("n", "<localleader>R", ":MagmaEvaluateOperator<CR>",
+    { silent = true, desc = "run operator selection" })
+vim.keymap.set("n", "<localleader>rl", ":MagmaEvaluateLine<CR>",
+    { silent = true, desc = "evaluate line" })
+vim.keymap.set("n", "<localleader>rc", ":MagmaReevaluateCell<CR>",
+    { silent = true, desc = "re-evaluate cell" })
+vim.keymap.set("v", "<localleader>r", ":<C-u>MagmaEvaluateVisual<CR>gv",
+    { silent = true, desc = "evaluate visual selection" })
 ```
-
-This way, `<LocalLeader>r` will behave just like standard keys such as `y` and `d`.
 
 You can, of course, also map other commands:
 
-```vim
-nnoremap <silent> <LocalLeader>rd :MagmaDelete<CR>
-nnoremap <silent> <LocalLeader>ro :MagmaShowOutput<CR>
-nnoremap <silent> <LocalLeader>rq :noautocmd MagmaEnterOutput<CR>
+```lua
+vim.keymap.set("n", "<localleader>rd", ":MagmaDelete<CR>",
+    { silent = true, desc = "magma delete cell" })
+vim.keymap.set("n", "<localleader>ro", ":MagmaShowOutput<CR>",
+    { silent = true, desc = "show output" })
+vim.keymap.set("n", "<localleader>rq", ":noautocmd MagmaEnterOutput<CR>",
+    { silent = true, desc = "enter output" })
 ```
 
-## Customization
+## Configuration
 
-Customization is done via variables.
+Configuration is done with variables.
 
 ### `g:magma_enter_output_behavior`
 
@@ -328,61 +145,51 @@ Configures the behavior of [MagmaEnterOutput](#magmaenteroutput)
 
 ### `g:magma_image_provider`
 
-Defaults to `"none"`.
-
 This configures how to display images. The following options are available:
 
-- `"none"` -- don't show images.
-- `"ueberzug"` -- use [Ueberzug](https://github.com/seebye/ueberzug) to display images.
-- `"kitty"` -- use the Kitty protocol to display images.
+- `"none"` (default) -- don't show images.
+- `"image_nvim"` -- use the image nvim plugin
 
 ### `g:magma_automatically_open_output`
 
-Defaults to `v:true`.
-
 If this is true, then whenever you have an active cell its output window will be automatically shown.
-
-If this is false, then the output window will only be automatically shown when you've just evaluated the code. So, if you take your cursor out of the cell, and then come back, the output window won't be opened (but the cell will be highlighted). This means that there will be nothing covering your code. You can then open the output window at will using [`:MagmaShowOutput`](#magma-show-output).
+- `true` (default) -- when you have an active cell, its output window is automatically shown
+- `false` -- Output only opens right after running the code, or after running `:MagmaShowOutput`
 
 ### `g:magma_wrap_output`
 
-Defaults to `v:true`.
+- `true` -- wrap text in output windows
+- `false` (default) -- don't wrap text in output windows. This option allows for progress bars to
+work properly
 
-If this is true, then text output in the output window will be wrapped (akin to `set wrap`).
+### `g:magma_output_window_border`
 
-### `g:magma_output_window_borders`
-
-Defaults to `v:true`.
-
-If this is true, then the output window will have rounded borders. If it is false, it will have no borders.
+- `true` (default) -- output windows have a rounded border
+- `false` -- output windows have no border
 
 ### `g:magma_cell_highlight_group`
 
-Defaults to `"CursorLine"`.
-
 The highlight group to be used for highlighting cells.
+
+- `"CursorLine"` (default)
 
 ### `g:magma_save_path`
 
-Defaults to `stdpath("data") .. "/magma"`.
-
-Where to save/load with [`:MagmaSave`](#magmasave) and [`:MagmaLoad`](#magmaload) (with no parameters).
-
+Where to save/load with `:MagmaSave` and `:MagmaLoad` (with no parameters).
 The generated file is placed in this directory, with the filename itself being the buffer's name, with `%` replaced by `%%` and `/` replaced by `%`, and postfixed with the extension `.json`.
+
+- `stdpath("data") .. "/magma"` (default)
+- any path to a directory
 
 ### `g:magma_copy_output`
 
-Defaults to `v:false`.
-
-To copy the evaluation output to clipboard automatically.
+- `true` -- copy evaluation output to the clipboard automatically (requires `pyperclip`, see [requirements](#requirements))
+- `false` (default) -- don't do that
 
 ### [DEBUG] `g:magma_show_mimetype_debug`
 
-Defaults to `v:false`.
-
-If this is true, then before any non-iostream output chunk, Magma shows the mimetypes it received for it.
-
-This is meant for debugging and adding new mimetypes.
+- `true` -- Before any non-iostream output chunk, the mime-type of that output chunk is shown. Meant for debugging/plugin development
+- `false` (default) don't do that
 
 ## Autocommands
 
@@ -390,8 +197,29 @@ We provide some `User` autocommands (see `:help User`) for further customization
 
 - `MagmaInitPre`: runs right before `MagmaInit` initialization happens for a buffer
 - `MagmaInitPost`: runs right after `MagmaInit` initialization happens for a buffer
-- `MagmaDeinitPre`: runs right before `MagmaDeinit` deinitialization happens for a buffer
-- `MagmaDeinitPost`: runs right after `MagmaDeinit` deinitialization happens for a buffer
+- `MagmaDeinitPre`: runs right before `MagmaDeinit` de-initialization happens for a buffer
+- `MagmaDeinitPost`: runs right after `MagmaDeinit` de-initialization happens for a buffer
+
+<details>
+  <summary>Usage</summary>
+
+There isn't very good documentation (at the time of writing) on using User Autocommands in lua, so
+here is an example of attaching magma specific mappings to the buffer after initialization
+
+```lua
+vim.api.nvim_create_autocmd("User", {
+  pattern = "MagmaInitPost",
+  callback = function()
+    vim.keymap.set("v", "<localleader>r", ":<C-u>MagmaEvaluateVisual<CR>gv",
+      { desc = "execute visual selection", buffer = true, silent = true })
+    -- more mappings here
+  end,
+})
+```
+
+Similarly, you could remove these mappings on `MagmaDeinitPost`
+
+</details>
 
 ## Functions
 
@@ -399,6 +227,7 @@ There is a provided function `MagmaEvaluateRange(start_line, end_line)` which ev
 between the given line numbers (inclusive). This is intended for use in scripts.
 
 ### Example Usage:
+
 ```lua
 vim.fn.MagmaEvaluateRange(1, 23)
 ```
@@ -413,21 +242,17 @@ MagmaEvaluateRange(1, 23)
 
 ### Output Chunks
 
-In the Jupyter protocol, most output-related messages provide a dictionary of mimetypes which can be used to display the data. Theoretically, a `text/plain` field (i.e., plain text) is always present, so we (theoretically) always have that fallback.
+In the Jupyter protocol, most output-related messages provide a dictionary of mime-types which can be used to display the data. Theoretically, a `text/plain` field (i.e., plain text) is always present, so we (theoretically) always have that fallback.
 
-Here is a list of the currently handled mimetypes:
+Here is a list of the currently handled mime-types:
 
 - `text/plain`: Plain text. Shown as text in the output window's buffer.
 - `image/png`: A PNG image. Shown according to `g:magma_image_provider`.
-- `image/svg+xml`: A SVG image. Rendered into a PNG with [CairoSVG](https://cairosvg.org/) and shown with [Ueberzug](https://github.com/seebye/ueberzug).
-- `application/vnd.plotly.v1+json`: A Plotly figure. Rendered into a PNG with [Plotly](https://plotly.com/python/) + [Kaleido](https://github.com/plotly/Kaleido) and shown with [Ueberzug](https://github.com/seebye/ueberzug).
-- `text/latex`: A LaTeX formula. Rendered into a PNG with [pnglatex](https://pypi.org/project/pnglatex/) and shown with [Ueberzug](https://github.com/seebye/ueberzug).
+- `image/svg+xml`: A SVG image. Rendered into a PNG with [CairoSVG](https://cairosvg.org/) and shown with [Image.nvim](https://github.com/3rd/image.nvim).
+- `application/vnd.plotly.v1+json`: A Plotly figure. Rendered into a PNG with [Plotly](https://plotly.com/python/) + [Kaleido](https://github.com/plotly/Kaleido) and shown with [Image.nvim](https://github.com/3rd/image.nvim).
+- `text/latex`: A LaTeX formula. Rendered into a PNG with [pnglatex](https://pypi.org/project/pnglatex/) and shown with [Image.nvim](https://github.com/3rd/image.nvim).
 
-This already provides quite a bit of basic functionality. As development continues, more mimetypes will be added.
-
-### Correct progress bars and alike stuff
-
-![](./caret.gif)
+This already provides quite a bit of basic functionality, but if you find a use case for a mime-type that isn't currently supported, feel free to open an issue and/or PR!
 
 ### Notifications
 
