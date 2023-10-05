@@ -3,10 +3,10 @@ from typing import List, Optional
 from pynvim import Nvim
 from pynvim.api import Buffer
 
-from magma.images import Canvas
-from magma.outputchunks import Output, OutputStatus
-from magma.options import MagmaOptions
-from magma.utils import Position
+from molten.images import Canvas
+from molten.outputchunks import Output, OutputStatus
+from molten.options import MoltenOptions
+from molten.utils import Position
 
 
 class OutputBuffer:
@@ -18,9 +18,9 @@ class OutputBuffer:
     display_buffer: Buffer
     display_window: Optional[int]
 
-    options: MagmaOptions
+    options: MoltenOptions
 
-    def __init__(self, nvim: Nvim, canvas: Canvas, options: MagmaOptions):
+    def __init__(self, nvim: Nvim, canvas: Canvas, options: MoltenOptions):
         self.nvim = nvim
         self.canvas = canvas
 

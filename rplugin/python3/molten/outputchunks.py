@@ -17,8 +17,8 @@ import os
 
 from pynvim import Nvim
 
-from magma.images import Canvas
-from magma.options import MagmaOptions
+from molten.images import Canvas
+from molten.options import MoltenOptions
 
 
 class OutputChunk(ABC):
@@ -29,7 +29,7 @@ class OutputChunk(ABC):
     def place(
         self,
         bufnr: int,
-        options: MagmaOptions,
+        options: MoltenOptions,
         lineno: int,
         shape: Tuple[int, int, int, int],
         canvas: Canvas,
@@ -55,7 +55,7 @@ class TextOutputChunk(OutputChunk):
     def place(
         self,
         bufnr: int,
-        options: MagmaOptions,
+        options: MoltenOptions,
         _: int,
         shape: Tuple[int, int, int, int],
         __: Canvas,
@@ -117,7 +117,7 @@ class ImageOutputChunk(OutputChunk):
     def place(
         self,
         bufnr: int,
-        _: MagmaOptions,
+        _: MoltenOptions,
         lineno: int,
         shape: Tuple[int, int, int, int],
         canvas: Canvas,

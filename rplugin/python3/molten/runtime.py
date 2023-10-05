@@ -8,8 +8,8 @@ import json
 
 import jupyter_client
 
-from magma.options import MagmaOptions
-from magma.outputchunks import (
+from molten.options import MoltenOptions
+from molten.outputchunks import (
     Output,
     MimetypesOutputChunk,
     ErrorOutputChunk,
@@ -35,9 +35,9 @@ class JupyterRuntime:
 
     allocated_files: List[str]
 
-    options: MagmaOptions
+    options: MoltenOptions
 
-    def __init__(self, kernel_name: str, options: MagmaOptions):
+    def __init__(self, kernel_name: str, options: MoltenOptions):
         self.state = RuntimeState.STARTING
         self.kernel_name = kernel_name
 
