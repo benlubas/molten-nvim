@@ -147,6 +147,7 @@ class Magma:
         )
 
         self.buffers[self.nvim.current.buffer.number] = magma
+        magma._doautocmd("MagmaInitPost")
 
         return magma
 
@@ -232,6 +233,13 @@ class Magma:
             DynamicPosition(self.nvim, self.extmark_namespace, bufno, 0, 0),
         )
         magma.run_code(expr, span)
+
+    @pynvim.command("MagmaUpdateOption", nargs=2 sync=True)  # type: ignore
+    @nvimui  # type: ignore
+    def command_update_option(self, option, value) -> None:
+        magma = self._get_magma(True)
+        assert magma is not None
+        magma.options.update_option(option, value)
 
     @pynvim.command("MagmaEnterOutput", sync=True)  # type: ignore
     @nvimui  # type: ignore

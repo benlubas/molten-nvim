@@ -31,3 +31,7 @@ class MagmaOptions:
 
         for name, default in CONFIG_VARS:
             setattr(self, name[6:], nvim.vars.get(name, default))
+
+
+    def update_option(self, option, value):
+        setattr(self, option, value)
