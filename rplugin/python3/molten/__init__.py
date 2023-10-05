@@ -41,21 +41,13 @@ class Molten:
 
         self.options = MoltenOptions(self.nvim)
 
-        self.canvas = get_canvas_given_provider(
-            self.options.image_provider, self.nvim
-        )
+        self.canvas = get_canvas_given_provider(self.options.image_provider, self.nvim)
         self.canvas.init()
 
-        self.highlight_namespace = self.nvim.funcs.nvim_create_namespace(
-            "molten-highlights"
-        )
-        self.extmark_namespace = self.nvim.funcs.nvim_create_namespace(
-            "molten-extmarks"
-        )
+        self.highlight_namespace = self.nvim.funcs.nvim_create_namespace("molten-highlights")
+        self.extmark_namespace = self.nvim.funcs.nvim_create_namespace("molten-extmarks")
 
-        self.timer = self.nvim.eval(
-            "timer_start(500, 'MoltenTick', {'repeat': -1})"
-        )
+        self.timer = self.nvim.eval("timer_start(500, 'MoltenTick', {'repeat': -1})")  # type: ignore
 
         self._set_autocommands()
 
@@ -122,12 +114,9 @@ class Molten:
 
         molten.on_cursor_moved(scrolled)
 
-    def _ask_for_choice(
-        self, preface: str, options: List[str]
-    ) -> Optional[str]:
+    def _ask_for_choice(self, preface: str, options: List[str]) -> Optional[str]:
         index = self.nvim.funcs.inputlist(
-            [preface]
-            + [f"{i+1}. {option}" for i, option in enumerate(options)]
+            [preface] + [f"{i+1}. {option}" for i, option in enumerate(options)]
         )
         if index == 0:
             return None
@@ -204,9 +193,7 @@ class Molten:
 
         self._deinit_buffer(molten)
 
-    def _do_evaluate(
-        self, pos: Tuple[Tuple[int, int], Tuple[int, int]]
-    ) -> None:
+    def _do_evaluate(self, pos: Tuple[Tuple[int, int], Tuple[int, int]]) -> None:
         self._initialize_if_necessary()
 
         molten = self._get_molten(True)
@@ -234,12 +221,21 @@ class Molten:
         )
         molten.run_code(expr, span)
 
-    @pynvim.command("MoltenUpdateOption", nargs=2, sync=True)  # type: ignore
+    @pynvim.command("MoltenUpdateOption", nargs="?", sync=True)  # type: ignore
     @nvimui  # type: ignore
-    def command_update_option(self, option, value) -> None:
+    def command_update_option(self, args: List[str]) -> None:
         molten = self._get_molten(True)
         assert molten is not None
-        molten.options.update_option(option, value)
+
+        if len(args) == 2:
+            option, value = args
+            molten.options.update_option(option, value)
+        else:
+            self.nvim.api.notify(
+                "Improper usage of :MoltenUpdateOption, expected 2 arguments, option and value",
+                pynvim.logging.INFO,
+                {"title": "Molten"},
+            )
 
     @pynvim.command("MoltenEnterOutput", sync=True)  # type: ignore
     @nvimui  # type: ignore
@@ -262,8 +258,7 @@ class Molten:
         span = (
             (
                 lineno_begin - 1,
-                min(colno_begin, len(self.nvim.funcs.getline(lineno_begin)))
-                - 1,
+                min(colno_begin, len(self.nvim.funcs.getline(lineno_begin))) - 1,
             ),
             (
                 lineno_end - 1,
@@ -366,9 +361,7 @@ class Molten:
         if args:
             path = args[0]
         else:
-            path = get_default_save_file(
-                self.options, self.nvim.current.buffer
-            )
+            path = get_default_save_file(self.options, self.nvim.current.buffer)
 
         dirname = os.path.dirname(path)
         if not os.path.exists(dirname):
@@ -388,14 +381,10 @@ class Molten:
         if args:
             path = args[0]
         else:
-            path = get_default_save_file(
-                self.options, self.nvim.current.buffer
-            )
+            path = get_default_save_file(self.options, self.nvim.current.buffer)
 
         if self.nvim.current.buffer.number in self.buffers:
-            raise MoltenException(
-                "Molten is already initialized; MoltenLoad initializes Molten."
-            )
+            raise MoltenException("Molten is already initialized; MoltenLoad initializes Molten.")
 
         with open(path) as file:
             data = json.load(file)
@@ -489,15 +478,12 @@ class Molten:
         elif kind == "char":
             pass
         else:
-            raise MoltenException(
-                f"this kind of selection is not supported: '{kind}'"
-            )
+            raise MoltenException(f"this kind of selection is not supported: '{kind}'")
 
         span = (
             (
                 lineno_begin - 1,
-                min(colno_begin, len(self.nvim.funcs.getline(lineno_begin)))
-                - 1,
+                min(colno_begin, len(self.nvim.funcs.getline(lineno_begin))) - 1,
             ),
             (
                 lineno_end - 1,
@@ -515,18 +501,13 @@ class Molten:
         self._initialize_if_necessary()
         molten = self._get_molten(True)
         assert molten is not None
+        assert self.canvas is not None
 
         start = args[0]
         end = args[1]
         bufno = self.nvim.current.buffer.number
         span = Span(
-            DynamicPosition(
-                self.nvim, self.extmark_namespace, bufno, start - 1, 0
-            ),
-            DynamicPosition(
-                self.nvim, self.extmark_namespace, bufno, end - 1, -1
-            ),
+            DynamicPosition(self.nvim, self.extmark_namespace, bufno, start - 1, 0),
+            DynamicPosition(self.nvim, self.extmark_namespace, bufno, end - 1, -1),
         )
-        molten.outputs[span] = OutputBuffer(
-            self.nvim, self.canvas, self.options
-        )
+        molten.outputs[span] = OutputBuffer(self.nvim, self.canvas, self.options)

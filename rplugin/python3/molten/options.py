@@ -30,7 +30,7 @@ class MoltenOptions:
         # fmt: on
 
         for name, default in CONFIG_VARS:
-            setattr(self, name[6:], nvim.vars.get(name, default))
+            setattr(self, name[7:], nvim.vars.get(name, default))
 
 
     def update_option(self, option, value):
