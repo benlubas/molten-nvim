@@ -23,53 +23,19 @@ Molten is a fork of [Magma](https://www.github.com/dccsillag/molten-nvim), a plu
   - `dotnet tool install -g Microsoft.dotnet-interactive`
   - `dotnet interactive jupyter install`
 
-You can do a `:checkhealth` to see if you are ready to go.
+You can run `:checkhealth` to see what you have installed.
 
 **Note:** Python packages which are used only for the display of some specific kind of output are only imported when that output actually appears.
 
-## Installation
-
-Use your favorite package/plugin manager.
-
-<details>
-<summary>Lazy</summary>
-
-```lua
-{ "benlubas/molten-nvim", build = ":UpdateRemotePlugins" }
-```
-</details>
-
-<details>
-<summary>Packer</summary>
-
-```lua
-use { "dccsillag/molten-nvim", run = ":UpdateRemotePlugins" }
-```
-
-</details>
-
-<details>
-<summary>Plug</summary>
-
-```vim
-Plug 'dccsillag/molten-nvim', { 'do': ':UpdateRemotePlugins' }
-```
-
-</details>
-
-**Note**: Keybindings are not set by default -- see [Keybindings](#keybindings).
-
 ## Quick-start
 
-TODO: wiki link
-See the [Wiki Quick-start Guide](https://www.github.com/benlubas/molten-nvim/wiki)
+See the [Wiki Quick-start Guide](https://www.github.com/benlubas/molten-nvim/wiki/Quick-Start-Guide)
 
 ## Usage
 
 The plugin provides a bunch of commands to enable interaction. It is recommended to map most of them to keys, as explained in [Keybindings](#keybindings). However, this section will refer to the commands by their names (so as to not depend on some specific mappings).
 
-TODO wiki link
-In-depth setup information can be found in the wiki
+In-depth setup information can be found in the [wiki](https://github.com/benlubas/molten-nvim/wiki)
 
 ### Interface
 
