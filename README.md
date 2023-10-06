@@ -237,7 +237,7 @@ between the given line numbers (inclusive). This is intended for use in scripts.
 
 ```lua
 vim.fn.MoltenEvaluateRange(1, 23)
-    ```
+```
 
 </details>
 
