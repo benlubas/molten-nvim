@@ -1,10 +1,11 @@
 import os
 
 from pynvim import Nvim
+import pynvim
 
 
 class MoltenOptions:
-    automatically_open_output: bool
+    auto_open_output: bool
     wrap_output: bool
     output_window_borders: bool
     show_mimetype_debug: bool
@@ -13,11 +14,13 @@ class MoltenOptions:
     image_provider: str
     copy_output: bool
     enter_output_behavior: str
+    nvim: Nvim
 
     def __init__(self, nvim: Nvim):
+        self.nvim = nvim
         # fmt: off
         CONFIG_VARS = [
-            ("molten_automatically_open_output", True),
+            ("molten_auto_open_output", True),
             ("molten_wrap_output", False),
             ("molten_output_window_borders", True),
             ("molten_show_mimetype_debug", False),
@@ -32,6 +35,12 @@ class MoltenOptions:
         for name, default in CONFIG_VARS:
             setattr(self, name[7:], nvim.vars.get(name, default))
 
-
-    def update_option(self, option, value):
-        setattr(self, option, value)
+    def update_option(self, option: str, value):
+        if option.startswith("molten_"):
+            option = option[7:]
+        if hasattr(self, option):
+            setattr(self, option, value)
+        else:
+            self.nvim.api.notify(
+                f"Invalid option: {option}", pynvim.logging.ERROR, {"title": "Molten"}
+            )

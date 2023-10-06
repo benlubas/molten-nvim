@@ -221,9 +221,9 @@ class Molten:
         )
         molten.run_code(expr, span)
 
-    @pynvim.command("MoltenUpdateOption", nargs="?", sync=True)  # type: ignore
+    @pynvim.function("MoltenUpdateOption", sync=True)  # type: ignore
     @nvimui  # type: ignore
-    def command_update_option(self, args: List[str]) -> None:
+    def function_update_option(self, args) -> None:
         molten = self._get_molten(True)
         assert molten is not None
 
@@ -232,8 +232,8 @@ class Molten:
             molten.options.update_option(option, value)
         else:
             self.nvim.api.notify(
-                "Improper usage of :MoltenUpdateOption, expected 2 arguments, option and value",
-                pynvim.logging.INFO,
+                f"MoltenUpdateOption: wrong number of arguments, expected 2, given {len(args)}",
+                pynvim.logging.ERROR,
                 {"title": "Molten"},
             )
 
@@ -271,7 +271,6 @@ class Molten:
     @pynvim.function("MoltenEvaluateRange", sync=True)  # type: ignore
     @nvimui  # type: ignore
     def evaulate_range(self, *args) -> None:
-        # self.nvim.current.line = f"args: {args}"
         start_line, end_line = args[0]
         span = (
             (start_line - 1, 0),
