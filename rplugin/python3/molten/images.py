@@ -4,8 +4,6 @@ from abc import ABC, abstractmethod
 
 from pynvim import Nvim, logging
 
-from magma.utils import MagmaException
-
 
 class Canvas(ABC):
     @abstractmethod
@@ -128,9 +126,7 @@ class ImageNvimCanvas(Canvas):
 
     def init(self) -> None:
         self.nvim.exec_lua("_image = require('load_image_nvim').image_api")
-        self.nvim.exec_lua(
-            "_image_utils = require('load_image_nvim').image_utils"
-        )
+        self.nvim.exec_lua("_image_utils = require('load_image_nvim').image_utils")
         self.image_api = self.nvim.lua._image
         self.image_utils = self.nvim.lua._image_utils
 
@@ -194,8 +190,8 @@ def get_canvas_given_provider(name: str, nvim: Nvim) -> Canvas:
         return ImageNvimCanvas(nvim)
     else:
         nvim.api.notify(
-            f"[Magma] unknown image provider: `{name}`",
+            f"[Molten] unknown image provider: `{name}`",
             logging.ERROR,
-            {"title": "Magma"},
+            {"title": "Molten"},
         )
         return NoCanvas()

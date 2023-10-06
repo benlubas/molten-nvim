@@ -3,14 +3,14 @@ import os
 
 from pynvim.api import Buffer
 
-from magma.utils import MagmaException, Span, DynamicPosition
-from magma.options import MagmaOptions
-from magma.outputchunks import OutputStatus, Output, to_outputchunk
-from magma.outputbuffer import OutputBuffer
-from magma.magmabuffer import MagmaBuffer
+from molten.utils import MoltenException, Span, DynamicPosition
+from molten.options import MoltenOptions
+from molten.outputchunks import OutputStatus, Output, to_outputchunk
+from molten.outputbuffer import OutputBuffer
+from molten.moltenbuffer import MoltenBuffer
 
 
-class MagmaIOError(Exception):
+class MoltenIOError(Exception):
     @classmethod
     def assert_has_key(
         cls, data: Dict[str, Any], key: str, type_: Optional[Type[Any]] = None
@@ -26,42 +26,42 @@ class MagmaIOError(Exception):
         return value
 
 
-def get_default_save_file(options: MagmaOptions, buffer: Buffer) -> str:
+def get_default_save_file(options: MoltenOptions, buffer: Buffer) -> str:
     # XXX: this is string containment checking. Beware.
     if "nofile" in buffer.options["buftype"]:
-        raise MagmaException("Buffer does not correspond to a file")
+        raise MoltenException("Buffer does not correspond to a file")
 
     mangled_name = buffer.name.replace("%", "%%").replace("/", "%")
 
     return os.path.join(options.save_path, mangled_name + ".json")
 
 
-def load(magmabuffer: MagmaBuffer, data: Dict[str, Any]) -> None:
-    MagmaIOError.assert_has_key(data, "content_checksum", str)
+def load(moltenbuffer: MoltenBuffer, data: Dict[str, Any]) -> None:
+    MoltenIOError.assert_has_key(data, "content_checksum", str)
 
-    if magmabuffer._get_content_checksum() != data["content_checksum"]:
-        raise MagmaIOError("Buffer contents' checksum does not match!")
+    if moltenbuffer._get_content_checksum() != data["content_checksum"]:
+        raise MoltenIOError("Buffer contents' checksum does not match!")
 
-    MagmaIOError.assert_has_key(data, "cells", list)
+    MoltenIOError.assert_has_key(data, "cells", list)
     for cell in data["cells"]:
-        MagmaIOError.assert_has_key(cell, "span", dict)
-        MagmaIOError.assert_has_key(cell["span"], "begin", dict)
-        MagmaIOError.assert_has_key(cell["span"]["begin"], "lineno", int)
-        MagmaIOError.assert_has_key(cell["span"]["begin"], "colno", int)
-        MagmaIOError.assert_has_key(cell["span"], "end", dict)
-        MagmaIOError.assert_has_key(cell["span"]["end"], "lineno", int)
-        MagmaIOError.assert_has_key(cell["span"]["end"], "colno", int)
+        MoltenIOError.assert_has_key(cell, "span", dict)
+        MoltenIOError.assert_has_key(cell["span"], "begin", dict)
+        MoltenIOError.assert_has_key(cell["span"]["begin"], "lineno", int)
+        MoltenIOError.assert_has_key(cell["span"]["begin"], "colno", int)
+        MoltenIOError.assert_has_key(cell["span"], "end", dict)
+        MoltenIOError.assert_has_key(cell["span"]["end"], "lineno", int)
+        MoltenIOError.assert_has_key(cell["span"]["end"], "colno", int)
         begin_position = DynamicPosition(
-            magmabuffer.nvim,
-            magmabuffer.extmark_namespace,
-            magmabuffer.buffer.number,
+            moltenbuffer.nvim,
+            moltenbuffer.extmark_namespace,
+            moltenbuffer.buffer.number,
             cell["span"]["begin"]["lineno"],
             cell["span"]["begin"]["colno"],
         )
         end_position = DynamicPosition(
-            magmabuffer.nvim,
-            magmabuffer.extmark_namespace,
-            magmabuffer.buffer.number,
+            moltenbuffer.nvim,
+            moltenbuffer.extmark_namespace,
+            moltenbuffer.buffer.number,
             cell["span"]["end"]["lineno"],
             cell["span"]["end"]["colno"],
         )
@@ -69,22 +69,22 @@ def load(magmabuffer: MagmaBuffer, data: Dict[str, Any]) -> None:
 
         # XXX: do we really want to have the execution count here?
         #      what happens when the counts start to overlap?
-        MagmaIOError.assert_has_key(cell, "execution_count", int)
+        MoltenIOError.assert_has_key(cell, "execution_count", int)
         output = Output(cell["execution_count"])
 
-        MagmaIOError.assert_has_key(cell, "status", int)
+        MoltenIOError.assert_has_key(cell, "status", int)
         output.status = OutputStatus(cell["status"])
 
-        MagmaIOError.assert_has_key(cell, "success", bool)
+        MoltenIOError.assert_has_key(cell, "success", bool)
         output.success = cell["success"]
 
-        MagmaIOError.assert_has_key(cell, "chunks", list)
+        MoltenIOError.assert_has_key(cell, "chunks", list)
         for chunk in cell["chunks"]:
-            MagmaIOError.assert_has_key(chunk, "data", dict)
-            MagmaIOError.assert_has_key(chunk, "metadata", dict)
+            MoltenIOError.assert_has_key(chunk, "data", dict)
+            MoltenIOError.assert_has_key(chunk, "metadata", dict)
             output.chunks.append(
                 to_outputchunk(
-                    magmabuffer.runtime._alloc_file,
+                    moltenbuffer.runtime._alloc_file,
                     chunk["data"],
                     chunk["metadata"],
                 )
@@ -92,16 +92,16 @@ def load(magmabuffer: MagmaBuffer, data: Dict[str, Any]) -> None:
 
         output.old = True
 
-        magmabuffer.outputs[span] = OutputBuffer(
-            magmabuffer.nvim, magmabuffer.canvas, magmabuffer.options
+        moltenbuffer.outputs[span] = OutputBuffer(
+            moltenbuffer.nvim, moltenbuffer.canvas, moltenbuffer.options
         )
 
 
-def save(magmabuffer: MagmaBuffer) -> Dict[str, Any]:
+def save(moltenbuffer: MoltenBuffer) -> Dict[str, Any]:
     return {
         "version": 1,
-        "kernel": magmabuffer.runtime.kernel_name,
-        "content_checksum": magmabuffer._get_content_checksum(),
+        "kernel": moltenbuffer.runtime.kernel_name,
+        "content_checksum": moltenbuffer._get_content_checksum(),
         "cells": [
             {
                 "span": {
@@ -127,6 +127,6 @@ def save(magmabuffer: MagmaBuffer) -> Dict[str, Any]:
                     and chunk.jupyter_metadata is not None
                 ],
             }
-            for span, output in magmabuffer.outputs.items()
+            for span, output in moltenbuffer.outputs.items()
         ],
     }

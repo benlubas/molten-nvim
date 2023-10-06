@@ -6,15 +6,15 @@ import pynvim
 from pynvim import Nvim
 from pynvim.api import Buffer
 
-from magma.options import MagmaOptions
-from magma.images import Canvas
-from magma.utils import MagmaException, Position, Span
-from magma.outputbuffer import OutputBuffer
-from magma.outputchunks import OutputStatus
-from magma.runtime import JupyterRuntime
+from molten.options import MoltenOptions
+from molten.images import Canvas
+from molten.utils import MoltenException, Position, Span
+from molten.outputbuffer import OutputBuffer
+from molten.outputchunks import OutputStatus
+from molten.runtime import JupyterRuntime
 
 
-class MagmaBuffer:
+class MoltenBuffer:
     nvim: Nvim
     canvas: Canvas
     highlight_namespace: int
@@ -31,7 +31,7 @@ class MagmaBuffer:
     should_open_display_window: bool
     updating_interface: bool
 
-    options: MagmaOptions
+    options: MoltenOptions
 
     def __init__(
         self,
@@ -40,7 +40,7 @@ class MagmaBuffer:
         highlight_namespace: int,
         extmark_namespace: int,
         buffer: Buffer,
-        options: MagmaOptions,
+        options: MoltenOptions,
         kernel_name: str,
     ):
         self.nvim = nvim
@@ -49,7 +49,7 @@ class MagmaBuffer:
         self.extmark_namespace = extmark_namespace
         self.buffer = buffer
 
-        self._doautocmd("MagmaInitPre")
+        self._doautocmd("MoltenInitPre")
 
         self.runtime = JupyterRuntime(kernel_name, options)
 
@@ -68,9 +68,9 @@ class MagmaBuffer:
         self.nvim.command(f"doautocmd User {autocmd}")
 
     def deinit(self) -> None:
-        self._doautocmd("MagmaDeinitPre")
+        self._doautocmd("MoltenDeinitPre")
         self.runtime.deinit()
-        self._doautocmd("MagmaDeinitPost")
+        self._doautocmd("MoltenDeinitPost")
 
     def interrupt(self) -> None:
         self.runtime.interrupt()
@@ -102,7 +102,7 @@ class MagmaBuffer:
     def reevaluate_cell(self) -> None:
         self.selected_cell = self._get_selected_span()
         if self.selected_cell is None:
-            raise MagmaException("Not in a cell")
+            raise MoltenException("Not in a cell")
 
         code = self.selected_cell.get_text(self.nvim)
 
@@ -136,7 +136,7 @@ class MagmaBuffer:
             self.nvim.api.notify(
                 "Kernel '%s' is ready." % self.runtime.kernel_name,
                 pynvim.logging.INFO,
-                {"title": "Magma"},
+                {"title": "Molten"},
             )
 
     def enter_output(self) -> None:

@@ -3,7 +3,7 @@ from typing import Union, List
 from pynvim import Nvim
 
 
-class MagmaException(Exception):
+class MoltenException(Exception):
     pass
 
 
@@ -11,8 +11,8 @@ def nvimui(func):  # type: ignore
     def inner(self, *args, **kwargs):  # type: ignore
         try:
             func(self, *args, **kwargs)
-        except MagmaException as err:
-            self.nvim.err_write("[Magma] " + str(err) + "\n")
+        except MoltenException as err:
+            self.nvim.err_write("[Molten] " + str(err) + "\n")
 
     return inner
 

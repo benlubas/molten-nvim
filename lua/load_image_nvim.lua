@@ -2,7 +2,7 @@
 local ok, image = pcall(require, "image")
 
 if not ok then
-  vim.api.nvim_err_writeln("[Magma] `image.nvim` not found")
+  vim.api.nvim_err_writeln("[Molten] `image.nvim` not found")
   return
 end
 
