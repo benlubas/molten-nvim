@@ -77,7 +77,7 @@ When you execute some code, it will create a _cell_. You can recognize a cell be
 
 A cell is delimited using two extmarks (see `:help api-extended-marks`), so it will adjust to you editing the text within it.
 
-When your cursor is in a cell (i.e., you have an _active cell_), a floating window may be shown below the cell, reporting output. This is the _display window_, or _output window_. (To see more about whether a window is shown or not, see `:MoltenShowOutput` and `g:molten_automatically_open_output`). When you cursor is not in any cell, no cell is active.
+When your cursor is in a cell (i.e., you have an _active cell_), a floating window may be shown below the cell, reporting output. This is the _display window_, or _output window_. (To see more about whether a window is shown or not, see `:MoltenShowOutput` and `g:molten_auto_open_output`). When you cursor is not in any cell, no cell is active.
 
 The active cell is chosen from newest to oldest. That means that you can have a cell within another cell, and if the one within is newer, then that one will be selected. (Same goes for merely overlapping cells).
 
@@ -154,7 +154,7 @@ This configures how to display images. The following options are available:
 - `"none"` (default) -- don't show images.
 - `"image_nvim"` -- use the image nvim plugin
 
-### `g:molten_automatically_open_output`
+### `g:molten_auto_open_output`
 
 If this is true, then whenever you have an active cell its output window will be automatically shown.
 - `true` (default) -- when you have an active cell, its output window is automatically shown
@@ -227,20 +227,40 @@ Similarly, you could remove these mappings on `MoltenDeinitPost`
 
 ## Functions
 
+### MoltenEvaluateRange
+
 There is a provided function `MoltenEvaluateRange(start_line, end_line)` which evaluates the code
 between the given line numbers (inclusive). This is intended for use in scripts.
 
-### Example Usage:
+<details>
+  <summary>Example Usage</summary>
 
 ```lua
 vim.fn.MoltenEvaluateRange(1, 23)
+    ```
+
+</details>
+
+### MoltenUpdateOption
+
+Because Molten is a remote plugin, options are loaded and cached at initialization. This avoids
+making an unnecessary number of RPC calls if we were to fetch configuration values every time we
+needed to use them. This comes with the trade-off of not being able to update config values on the
+fly... can you see where this is going
+
+This function lets you set a configuration value after initialization, and the new value will
+effect immediately.
+
+<details>
+  <summary>Example Usage</summary>
+
+```lua
+-- these are the same!
+vim.fn.MoltenUpdateOption("auto_open_output", true)
+vim.fn.MoltenUpdateOption("molten_auto_open_output", true)
 ```
 
-```vim
-MoltenEvaluateRange(1, 23)
-" from the command line
-:call MoltenEvaluateRange(1, 23)
-```
+</details>
 
 ## Extras
 

@@ -205,7 +205,7 @@ class MoltenBuffer:
 
         selected_cell = self._get_selected_span()
 
-        if self.options.automatically_open_output:
+        if self.options.auto_open_output:
             self.should_open_display_window = True
         elif self.selected_cell != selected_cell:
             self.should_open_display_window = False
