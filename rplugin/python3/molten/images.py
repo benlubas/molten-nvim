@@ -4,8 +4,6 @@ from abc import ABC, abstractmethod
 
 from pynvim import Nvim, logging
 
-from molten.utils import MoltenException
-
 
 class Canvas(ABC):
     @abstractmethod
@@ -128,9 +126,7 @@ class ImageNvimCanvas(Canvas):
 
     def init(self) -> None:
         self.nvim.exec_lua("_image = require('load_image_nvim').image_api")
-        self.nvim.exec_lua(
-            "_image_utils = require('load_image_nvim').image_utils"
-        )
+        self.nvim.exec_lua("_image_utils = require('load_image_nvim').image_utils")
         self.image_api = self.nvim.lua._image
         self.image_utils = self.nvim.lua._image_utils
 

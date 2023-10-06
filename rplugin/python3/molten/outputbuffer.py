@@ -26,9 +26,7 @@ class OutputBuffer:
 
         self.output = Output(None)
 
-        self.display_buffer = self.nvim.buffers[
-            self.nvim.funcs.nvim_create_buf(False, True)
-        ]
+        self.display_buffer = self.nvim.buffers[self.nvim.funcs.nvim_create_buf(False, True)]
         self.display_window = None
 
         self.options = options
@@ -36,7 +34,21 @@ class OutputBuffer:
     def _buffer_to_window_lineno(self, lineno: int) -> int:
         win_top = self.nvim.funcs.line("w0")
         assert isinstance(win_top, int)
-        return lineno - win_top + 1
+        # handle folds
+        # (code modified from image.nvim https://github.com/3rd/image.nvim/blob/16f54077ca91fa8c4d1239cc3c1b6663dd169092/lua/image/renderer.lua#L254)
+        offset = 0
+        if self.nvim.current.window.options["foldenable"]:
+            i = win_top
+            while i <= lineno:
+                fold_start = self.nvim.funcs.foldclosed(i)
+                fold_end = self.nvim.funcs.foldclosedend(i)
+                if fold_start != -1 and fold_end != -1:
+                    offset += fold_end - fold_start
+                    i = fold_end + 1
+                else:
+                    i += 1
+
+        return lineno - win_top + 1 - offset
 
     def _get_header_text(self, output: Output) -> str:
         if output.execution_count is None:
@@ -139,28 +151,23 @@ class OutputBuffer:
                     "row": win_row,
                     "col": sign_col_width,
                     "width": win_width - sign_col_width,
-                    "height": min(
-                        win_height - win_row, lineno + virtual_lines + 1
-                    ),
+                    "height": min(win_height - win_row, lineno + virtual_lines + 1),
                     "style": "minimal",
-                    "border": (
-                        "rounded"
-                        if self.options.output_window_borders
-                        else "none"
-                    ),
+                    "border": ("rounded" if self.options.output_window_borders else "none"),
                     "focusable": False,
                 },
             )
             self.canvas.present()
 
+
 def handle_progress_bars(line_str: str) -> List[str]:
-    """ Progress bars like tqdm use special chars (`\\r`) and some trick to work
+    """Progress bars like tqdm use special chars (`\\r`) and some trick to work
     This is fine for the terminal, but in a text editor we have so do some extra work
     """
     actual_lines = []
     lines = line_str.split("\n")
     for line in lines:
-        parts = line.split('\r')
+        parts = line.split("\r")
         last = parts[-1]
         if last != "":
             actual_lines.append(last)
