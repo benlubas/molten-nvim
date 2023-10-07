@@ -1,4 +1,4 @@
-from typing import Optional, Dict
+from typing import List, Optional, Dict
 from queue import Queue
 import hashlib
 
@@ -19,7 +19,7 @@ class MoltenBuffer:
     canvas: Canvas
     highlight_namespace: int
     extmark_namespace: int
-    buffer: Buffer
+    buffers: List[Buffer]
 
     runtime: JupyterRuntime
 
@@ -39,7 +39,7 @@ class MoltenBuffer:
         canvas: Canvas,
         highlight_namespace: int,
         extmark_namespace: int,
-        buffer: Buffer,
+        main_buffer: Buffer,
         options: MoltenOptions,
         kernel_name: str,
     ):
@@ -47,7 +47,7 @@ class MoltenBuffer:
         self.canvas = canvas
         self.highlight_namespace = highlight_namespace
         self.extmark_namespace = extmark_namespace
-        self.buffer = buffer
+        self.buffers = [main_buffer]
 
         self._doautocmd("MoltenInitPre")
 
@@ -66,6 +66,9 @@ class MoltenBuffer:
     def _doautocmd(self, autocmd: str) -> None:
         assert " " not in autocmd
         self.nvim.command(f"doautocmd User {autocmd}")
+
+    def add_nvim_buffer(self, buffer: Buffer) -> None:
+        self.buffers.append(buffer)
 
     def deinit(self) -> None:
         self._doautocmd("MoltenDeinitPre")
@@ -153,12 +156,14 @@ class MoltenBuffer:
         if self.updating_interface:
             return
 
-        self.nvim.funcs.nvim_buf_clear_namespace(
-            self.buffer.number,
-            self.highlight_namespace,
-            0,
-            -1,
-        )
+        for buffer in self.buffers:
+            self.nvim.funcs.nvim_buf_clear_namespace(
+                buffer.number,
+                self.highlight_namespace,
+                0,
+                -1,
+            )
+
         # and self.nvim.funcs.winbufnr(self.display_window) != -1:
         if self.selected_cell is not None and self.selected_cell in self.outputs:
             self.outputs[self.selected_cell].clear_interface()
@@ -194,9 +199,12 @@ class MoltenBuffer:
         del self.outputs[self.selected_cell]
 
     def update_interface(self) -> None:
-        if self.buffer.number != self.nvim.current.buffer.number:
+        buffer_numbers = [buf.number for buf in self.buffers]
+        if self.nvim.current.buffer.number not in buffer_numbers:
             return
-        if self.buffer.number != self.nvim.current.window.buffer.number:
+
+        # TODO: I think this is redundant
+        if self.nvim.current.window.buffer.number not in buffer_numbers:
             return
 
         self.clear_interface()
@@ -231,9 +239,14 @@ class MoltenBuffer:
         self.update_interface()
 
     def _show_selected(self, span: Span) -> None:
+        """ Show the selected cell. Can only have a selected cell in the current buffer """
+        buf = self.nvim.current.buffer
+        if buf.number not in [b.number for b in self.buffers]:
+            return
+
         if span.begin.lineno == span.end.lineno:
             self.nvim.funcs.nvim_buf_add_highlight(
-                self.buffer.number,
+                buf.number,
                 self.highlight_namespace,
                 self.options.cell_highlight_group,
                 span.begin.lineno,
@@ -242,7 +255,7 @@ class MoltenBuffer:
             )
         else:
             self.nvim.funcs.nvim_buf_add_highlight(
-                self.buffer.number,
+                buf.number,
                 self.highlight_namespace,
                 self.options.cell_highlight_group,
                 span.begin.lineno,
@@ -251,7 +264,7 @@ class MoltenBuffer:
             )
             for lineno in range(span.begin.lineno + 1, span.end.lineno):
                 self.nvim.funcs.nvim_buf_add_highlight(
-                    self.buffer.number,
+                    buf.number,
                     self.highlight_namespace,
                     self.options.cell_highlight_group,
                     lineno,
@@ -259,7 +272,7 @@ class MoltenBuffer:
                     -1,
                 )
             self.nvim.funcs.nvim_buf_add_highlight(
-                self.buffer.number,
+                buf.number,
                 self.highlight_namespace,
                 self.options.cell_highlight_group,
                 span.end.lineno,

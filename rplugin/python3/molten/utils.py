@@ -81,6 +81,7 @@ class DynamicPosition(Position):
 class Span:
     begin: Union[Position, DynamicPosition]
     end: Union[Position, DynamicPosition]
+    bufno: int
 
     def __init__(
         self,
@@ -89,9 +90,10 @@ class Span:
     ):
         self.begin = begin
         self.end = end
+        assert self.begin.bufno == self.end.bufno
 
     def __contains__(self, pos: Union[Position, DynamicPosition]) -> bool:
-        return self.begin <= pos and pos < self.end
+        return self.begin.bufno == pos.bufno and self.begin <= pos and pos < self.end
 
     def get_text(self, nvim: Nvim) -> str:
         assert self.begin.bufno == self.end.bufno

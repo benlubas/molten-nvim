@@ -36,7 +36,7 @@ def get_default_save_file(options: MoltenOptions, buffer: Buffer) -> str:
     return os.path.join(options.save_path, mangled_name + ".json")
 
 
-def load(moltenbuffer: MoltenBuffer, data: Dict[str, Any]) -> None:
+def load(moltenbuffer: MoltenBuffer, nvim_buffer: Buffer, data: Dict[str, Any]) -> None:
     MoltenIOError.assert_has_key(data, "content_checksum", str)
 
     if moltenbuffer._get_content_checksum() != data["content_checksum"]:
@@ -54,14 +54,14 @@ def load(moltenbuffer: MoltenBuffer, data: Dict[str, Any]) -> None:
         begin_position = DynamicPosition(
             moltenbuffer.nvim,
             moltenbuffer.extmark_namespace,
-            moltenbuffer.buffer.number,
+            nvim_buffer.number,
             cell["span"]["begin"]["lineno"],
             cell["span"]["begin"]["colno"],
         )
         end_position = DynamicPosition(
             moltenbuffer.nvim,
             moltenbuffer.extmark_namespace,
-            moltenbuffer.buffer.number,
+            nvim_buffer.number,
             cell["span"]["end"]["lineno"],
             cell["span"]["end"]["colno"],
         )
@@ -74,6 +74,7 @@ def load(moltenbuffer: MoltenBuffer, data: Dict[str, Any]) -> None:
 
         MoltenIOError.assert_has_key(cell, "status", int)
         output.status = OutputStatus(cell["status"])
+        moltenbuffer.nvim.out_write(f"status: {output.status}\n")
 
         MoltenIOError.assert_has_key(cell, "success", bool)
         output.success = cell["success"]
@@ -97,7 +98,8 @@ def load(moltenbuffer: MoltenBuffer, data: Dict[str, Any]) -> None:
         )
 
 
-def save(moltenbuffer: MoltenBuffer) -> Dict[str, Any]:
+def save(moltenbuffer: MoltenBuffer, nvim_buffer: int) -> Dict[str, Any]:
+    """ Save the current kernel state for the given buffer. """
     return {
         "version": 1,
         "kernel": moltenbuffer.runtime.kernel_name,
@@ -127,6 +129,6 @@ def save(moltenbuffer: MoltenBuffer) -> Dict[str, Any]:
                     and chunk.jupyter_metadata is not None
                 ],
             }
-            for span, output in moltenbuffer.outputs.items()
+            for span, output in moltenbuffer.outputs.items() if span.begin.bufno == nvim_buffer
         ],
     }

@@ -22,11 +22,14 @@ class Molten:
     highlight_namespace: int
     extmark_namespace: int
 
-    buffers: Dict[int, MoltenBuffer]
-
     timer: Optional[int]
 
     options: MoltenOptions
+
+    # list of nvim buf numbers to the MoltenBuffer object that handles that nvim buf
+    buffers: Dict[int, MoltenBuffer]
+    # list of kernel names to the MoltenBuffer object that handles that kernel
+    molten_buffers: Dict[str, MoltenBuffer]
 
     def __init__(self, nvim: Nvim):
         self.nvim = nvim
@@ -35,6 +38,7 @@ class Molten:
         self.canvas = None
         self.buffers = {}
         self.timer = None
+        self.molten_buffers = {}
 
     def _initialize(self) -> None:
         assert not self.initialized
@@ -80,8 +84,7 @@ class Molten:
         maybe_molten = self.buffers.get(self.nvim.current.buffer.number)
         if requires_instance and maybe_molten is None:
             raise MoltenException(
-                "Molten is not initialized; run `:MoltenInit <kernel_name>` to \
-                initialize."
+                "Molten is not initialized; run `:MoltenInit` to initialize."
             )
         return maybe_molten
 
@@ -123,8 +126,15 @@ class Molten:
         else:
             return options[index - 1]
 
-    def _initialize_buffer(self, kernel_name: str) -> MoltenBuffer:
+    def _initialize_buffer(self, kernel_name: str, shared=False) -> MoltenBuffer:
         assert self.canvas is not None
+        if shared:  # use an existing molten buffer, for a new neovim buffer
+            molten = self.molten_buffers.get(kernel_name)
+            if molten is not None:
+                molten.add_nvim_buffer(self.nvim.current.buffer)
+                self.buffers[self.nvim.current.buffer.number] = molten
+                return molten
+
         molten = MoltenBuffer(
             self.nvim,
             self.canvas,
@@ -135,19 +145,25 @@ class Molten:
             kernel_name,
         )
 
+        self.molten_buffers[kernel_name] = molten
         self.buffers[self.nvim.current.buffer.number] = molten
         molten._doautocmd("MoltenInitPost")
 
         return molten
 
-    @pynvim.command("MoltenInit", nargs="?", sync=True, complete="file")  # type: ignore
+    @pynvim.command("MoltenInit", nargs="*", sync=True, complete="file")  # type: ignore
     @nvimui  # type: ignore
     def command_init(self, args: List[str]) -> None:
         self._initialize_if_necessary()
 
+        shared = False
+        if args and args[0] == "shared":
+            shared = True
+            args = args[1:]
+
         if args:
             kernel_name = args[0]
-            self._initialize_buffer(kernel_name)
+            self._initialize_buffer(kernel_name, shared=shared)
         else:
             PROMPT = "Select the kernel to launch:"
             available_kernels = get_available_kernels()
@@ -175,11 +191,12 @@ class Molten:
                     available_kernels,  # type: ignore
                 )
                 if kernel_name is not None:
-                    self.command_init([kernel_name])
+                    self._initialize_buffer(kernel_name, shared=shared)
 
     def _deinit_buffer(self, molten: MoltenBuffer) -> None:
         molten.deinit()
-        del self.buffers[molten.buffer.number]
+        for buf in molten.buffers:
+            del self.buffers[buf.number]
 
     @pynvim.command("MoltenDeinit", nargs=0, sync=True)  # type: ignore
     @nvimui  # type: ignore
@@ -357,10 +374,11 @@ class Molten:
     def command_save(self, args: List[str]) -> None:
         self._initialize_if_necessary()
 
+        buf = self.nvim.current.buffer
         if args:
             path = args[0]
         else:
-            path = get_default_save_file(self.options, self.nvim.current.buffer)
+            path = get_default_save_file(self.options, buf)
 
         dirname = os.path.dirname(path)
         if not os.path.exists(dirname):
@@ -370,20 +388,30 @@ class Molten:
         assert molten is not None
 
         with open(path, "w") as file:
-            json.dump(save(molten), file)
+            json.dump(save(molten, buf.number), file)
 
-    @pynvim.command("MoltenLoad", nargs="?", sync=True)  # type: ignore
+    @pynvim.command("MoltenLoad", nargs="*", sync=True)  # type: ignore
     @nvimui  # type: ignore
     def command_load(self, args: List[str]) -> None:
         self._initialize_if_necessary()
 
-        if args:
+        self.nvim.out_write(f"Loading Molten with args: {args}\n")
+        shared = False
+        if args and args[0] == "shared":
+            shared = True
+            args = args[1:]
+
+        if len(args) == 1:
             path = args[0]
         else:
             path = get_default_save_file(self.options, self.nvim.current.buffer)
 
+        self.nvim.out_write(f"Loading Molten from path: {path}\n")
+
         if self.nvim.current.buffer.number in self.buffers:
-            raise MoltenException("Molten is already initialized; MoltenLoad initializes Molten.")
+            raise MoltenException(
+                "Molten is already initialized for this buffer; MoltenLoad initializes Molten."
+            )
 
         with open(path) as file:
             data = json.load(file)
@@ -398,9 +426,9 @@ class Molten:
             MoltenIOError.assert_has_key(data, "kernel", str)
             kernel_name = data["kernel"]
 
-            molten = self._initialize_buffer(kernel_name)
+            molten = self._initialize_buffer(kernel_name, shared=shared)
 
-            load(molten, data)
+            load(molten, self.nvim.current.buffer, data)
 
             self._update_interface()
         except MoltenIOError as err:
