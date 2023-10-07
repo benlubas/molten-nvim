@@ -3,6 +3,8 @@ import os
 from pynvim import Nvim
 import pynvim
 
+from molten.utils import notify_error
+
 
 class MoltenOptions:
     auto_open_output: bool
@@ -41,6 +43,4 @@ class MoltenOptions:
         if hasattr(self, option):
             setattr(self, option, value)
         else:
-            self.nvim.api.notify(
-                f"Invalid option: {option}", pynvim.logging.ERROR, {"title": "Molten"}
-            )
+            notify_error(self.nvim, f"Invalid option: {option}")

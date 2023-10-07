@@ -9,7 +9,7 @@ from molten.moltenbuffer import MoltenBuffer
 from molten.options import MoltenOptions
 from molten.outputbuffer import OutputBuffer
 from molten.runtime import get_available_kernels
-from molten.utils import DynamicPosition, MoltenException, Span, nvimui
+from molten.utils import DynamicPosition, MoltenException, Span, notify_error, nvimui
 from pynvim import Nvim
 
 
@@ -83,9 +83,7 @@ class Molten:
     def _get_molten(self, requires_instance: bool) -> Optional[MoltenBuffer]:
         maybe_molten = self.buffers.get(self.nvim.current.buffer.number)
         if requires_instance and maybe_molten is None:
-            raise MoltenException(
-                "Molten is not initialized; run `:MoltenInit` to initialize."
-            )
+            raise MoltenException("Molten is not initialized; run `:MoltenInit` to initialize.")
         return maybe_molten
 
     def _clear_interface(self) -> None:
@@ -167,31 +165,39 @@ class Molten:
         else:
             PROMPT = "Select the kernel to launch:"
             available_kernels = get_available_kernels()
-            if self.nvim.exec_lua("return vim.ui.select ~= nil"):
-                self.nvim.exec_lua(
-                    """
-                        vim.ui.select(
-                            {%s},
-                            {prompt = "%s"},
-                            function(choice)
-                                if choice ~= nil then
-                                    vim.cmd("MoltenInit " .. choice)
-                                end
+
+            if len(available_kernels) == 0:
+                notify_error(self.nvim, "Unable to find any kernels to launch.")
+                return
+
+            if shared:
+                # Only show kernels that are already tracked by Molten
+                available_kernels = list(
+                    filter(lambda x: x in self.molten_buffers.keys(), available_kernels)
+                )
+
+            if len(available_kernels) == 0:
+                notify_error(
+                    self.nvim,
+                    "Molten has no running kernels to share. Please use :MoltenInit without the shared option.",
+                )
+                return
+
+            lua = f"""
+                vim.schedule_wrap(function()
+                    vim.ui.select(
+                        {{{", ".join(repr(x) for x in available_kernels)}}},
+                        {{prompt = "{PROMPT}"}},
+                        function(choice)
+                            if choice ~= nil then
+                                print("\\n")
+                                vim.cmd("MoltenInit {'shared ' if shared else ''}" .. choice)
                             end
-                        )
-                    """
-                    % (
-                        ", ".join(repr(x) for x in available_kernels),
-                        PROMPT,
+                        end
                     )
-                )
-            else:
-                kernel_name = self._ask_for_choice(
-                    PROMPT,
-                    available_kernels,  # type: ignore
-                )
-                if kernel_name is not None:
-                    self._initialize_buffer(kernel_name, shared=shared)
+                end)()
+            """
+            self.nvim.exec_lua(lua, async_=False)
 
     def _deinit_buffer(self, molten: MoltenBuffer) -> None:
         molten.deinit()
@@ -248,10 +254,9 @@ class Molten:
             option, value = args
             molten.options.update_option(option, value)
         else:
-            self.nvim.api.notify(
+            notify_error(
+                self.nvim,
                 f"MoltenUpdateOption: wrong number of arguments, expected 2, given {len(args)}",
-                pynvim.logging.ERROR,
-                {"title": "Molten"},
             )
 
     @pynvim.command("MoltenEnterOutput", sync=True)  # type: ignore

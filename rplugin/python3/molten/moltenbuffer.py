@@ -2,13 +2,12 @@ from typing import List, Optional, Dict
 from queue import Queue
 import hashlib
 
-import pynvim
 from pynvim import Nvim
 from pynvim.api import Buffer
 
 from molten.options import MoltenOptions
 from molten.images import Canvas
-from molten.utils import MoltenException, Position, Span
+from molten.utils import MoltenException, Position, Span, notify_info
 from molten.outputbuffer import OutputBuffer
 from molten.outputchunks import OutputStatus
 from molten.runtime import JupyterRuntime
@@ -113,11 +112,9 @@ class MoltenBuffer:
 
     def _check_if_done_running(self) -> None:
         # TODO: refactor
-        is_idle = ( self.current_output is None
-            or not self.current_output in self.outputs
-        ) or ( self.current_output is not None
-            and self.outputs[self.current_output].output.status
-            == OutputStatus.DONE
+        is_idle = (self.current_output is None or not self.current_output in self.outputs) or (
+            self.current_output is not None
+            and self.outputs[self.current_output].output.status == OutputStatus.DONE
         )
         if is_idle and not self.queued_outputs.empty():
             key = self.queued_outputs.get_nowait()
@@ -130,17 +127,11 @@ class MoltenBuffer:
         if self.current_output is None or not self.current_output in self.outputs:
             did_stuff = self.runtime.tick(None)
         else:
-            did_stuff = self.runtime.tick(
-                self.outputs[self.current_output].output
-            )
+            did_stuff = self.runtime.tick(self.outputs[self.current_output].output)
         if did_stuff:
             self.update_interface()
         if not was_ready and self.runtime.is_ready():
-            self.nvim.api.notify(
-                "Kernel '%s' is ready." % self.runtime.kernel_name,
-                pynvim.logging.INFO,
-                {"title": "Molten"},
-            )
+            notify_info(self.nvim, f"Kernel '{self.runtime.kernel_name}' is ready.")
 
     def enter_output(self) -> None:
         if self.selected_cell is not None:
@@ -230,7 +221,11 @@ class MoltenBuffer:
         selected_cell = self._get_selected_span()
 
         if self.selected_cell == selected_cell and selected_cell is not None:
-            if selected_cell.end.lineno < self.nvim.funcs.line("w$") and self.should_open_display_window and scrolled:
+            if (
+                selected_cell.end.lineno < self.nvim.funcs.line("w$")
+                and self.should_open_display_window
+                and scrolled
+            ):
                 self.clear_interface()
                 self._show_selected(selected_cell)
                 self.canvas.present()
@@ -239,7 +234,7 @@ class MoltenBuffer:
         self.update_interface()
 
     def _show_selected(self, span: Span) -> None:
-        """ Show the selected cell. Can only have a selected cell in the current buffer """
+        """Show the selected cell. Can only have a selected cell in the current buffer"""
         buf = self.nvim.current.buffer
         if buf.number not in [b.number for b in self.buffers]:
             return
@@ -285,7 +280,5 @@ class MoltenBuffer:
 
     def _get_content_checksum(self) -> str:
         return hashlib.md5(
-            "\n".join(
-                self.nvim.current.buffer.api.get_lines(0, -1, True)
-            ).encode("utf-8")
+            "\n".join(self.nvim.current.buffer.api.get_lines(0, -1, True)).encode("utf-8")
         ).hexdigest()

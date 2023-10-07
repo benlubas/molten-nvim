@@ -1,6 +1,6 @@
 from typing import Union, List
 
-from pynvim import Nvim
+from pynvim import Nvim, logging
 
 
 class MoltenException(Exception):
@@ -15,6 +15,30 @@ def nvimui(func):  # type: ignore
             self.nvim.err_write("[Molten] " + str(err) + "\n")
 
     return inner
+
+
+def _notify(nvim: Nvim, msg: str, log_level: str) -> None:
+    lua = f"""
+        vim.schedule_wrap(function()
+            vim.notify("{msg}", vim.log.levels.{log_level}, {{title = "Molten"}})
+        end)()
+    """
+    nvim.exec_lua(lua)
+
+
+def notify_info(nvim: Nvim, msg: str) -> None:
+    """Use the vim.notify API to display an info message."""
+    _notify(nvim, msg, "INFO")
+
+
+def notify_warn(nvim: Nvim, msg: str) -> None:
+    """Use the vim.notify API to display a warning message."""
+    _notify(nvim, msg, "WARN")
+
+
+def notify_error(nvim: Nvim, msg: str) -> None:
+    """Use the vim.notify API to display an error message."""
+    _notify(nvim, msg, "ERROR")
 
 
 class Position:
@@ -58,9 +82,7 @@ class DynamicPosition(Position):
         )
 
     def __del__(self) -> None:
-        self.nvim.funcs.nvim_buf_del_extmark(
-            self.bufno, self.extmark_namespace, self.extmark_id
-        )
+        self.nvim.funcs.nvim_buf_del_extmark(self.bufno, self.extmark_namespace, self.extmark_id)
 
     def _get_pos(self) -> List[int]:
         out = self.nvim.funcs.nvim_buf_get_extmark_by_id(
@@ -107,7 +129,5 @@ class Span:
             return lines[0][self.begin.colno : self.end.colno]
         else:
             return "\n".join(
-                [lines[0][self.begin.colno :]]
-                + lines[1:-1]
-                + [lines[-1][: self.end.colno]]
+                [lines[0][self.begin.colno :]] + lines[1:-1] + [lines[-1][: self.end.colno]]
             )
