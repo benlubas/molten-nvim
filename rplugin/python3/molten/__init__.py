@@ -9,7 +9,7 @@ from molten.moltenbuffer import MoltenBuffer
 from molten.options import MoltenOptions
 from molten.outputbuffer import OutputBuffer
 from molten.runtime import get_available_kernels
-from molten.utils import DynamicPosition, MoltenException, Span, notify_error, nvimui
+from molten.utils import DynamicPosition, MoltenException, Span, notify_error, notify_info, nvimui
 from pynvim import Nvim
 
 
@@ -132,6 +132,10 @@ class Molten:
                 molten.add_nvim_buffer(self.nvim.current.buffer)
                 self.buffers[self.nvim.current.buffer.number] = molten
                 return molten
+
+            notify_info(
+                self.nvim, f"No running kernel {kernel_name} to share. Continuing with a new kernel."
+            )
 
         molten = MoltenBuffer(
             self.nvim,
