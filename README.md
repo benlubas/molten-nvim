@@ -55,9 +55,9 @@ Jupyter provides a rich set of outputs. To see what we can currently handle, see
 
 A list of the commands and their arguments. Args in `[]` are optional
 
-| Command                  | Arguments             | Description                        |
-|--------------------------|-----------------------|------------------------------------|
-| `MoltenInit`              | `[kernel]`            | Initialize a kernel for the current buffer. If no kernel is given, prompts the user |
+| Command                   | Arguments             | Description                        |
+|---------------------------|-----------------------|------------------------------------|
+| `MoltenInit`              | `[shared] [kernel]`   | Initialize a kernel for the current buffer. If `shared` is passed as the first value, this buffer will use an already running kernel. If no kernel is given, prompts the user. |
 | `MoltenDeinit`            | none                  | De-initialize the current buffer's runtime and molten instance. (called automatically on vim close/buffer unload) |
 | `MoltenEvaluateLine`      | none                  | Evaluate the current line |
 | `MoltenEvaluateVisual`    | none                  | Evaluate the visual selection (**cannot be called with a range!**) |

@@ -74,7 +74,6 @@ def load(moltenbuffer: MoltenBuffer, nvim_buffer: Buffer, data: Dict[str, Any]) 
 
         MoltenIOError.assert_has_key(cell, "status", int)
         output.status = OutputStatus(cell["status"])
-        moltenbuffer.nvim.out_write(f"status: {output.status}\n")
 
         MoltenIOError.assert_has_key(cell, "success", bool)
         output.success = cell["success"]

@@ -400,7 +400,6 @@ class Molten:
     def command_load(self, args: List[str]) -> None:
         self._initialize_if_necessary()
 
-        self.nvim.out_write(f"Loading Molten with args: {args}\n")
         shared = False
         if args and args[0] == "shared":
             shared = True
@@ -410,8 +409,6 @@ class Molten:
             path = args[0]
         else:
             path = get_default_save_file(self.options, self.nvim.current.buffer)
-
-        self.nvim.out_write(f"Loading Molten from path: {path}\n")
 
         if self.nvim.current.buffer.number in self.buffers:
             raise MoltenException(
