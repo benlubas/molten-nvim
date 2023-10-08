@@ -2,14 +2,16 @@ local M = {}
 
 local has_py_mod = function(mod)
   vim.cmd("python3 import importlib")
-  return vim.fn.py3eval("importlib.util.find_spec(vim.eval('" .. mod .. "')) is not None")
+  return vim.fn.py3eval("importlib.util.find_spec('" .. mod .. "') is not None")
 end
 
-local py_mod_check = function(mod, pip)
+local py_mod_check = function(mod, pip, required)
   if has_py_mod(mod) then
     vim.health.ok("Python package " .. pip .. " found")
-  else
+  elseif required then
     vim.health.error("Python package " .. pip .. " not found", "pip install " .. pip)
+  else
+    vim.health.warn("Python package " .. pip .. " not found", "pip install " .. pip)
   end
 end
 
@@ -28,19 +30,19 @@ M.check = function()
   end
 
   vim.cmd("python3 import sys")
-  if vim.fn.py3eval("sys.version_info.major == 3 and sys.version_info.minor >= 10") == 1 then
+  if vim.fn.py3eval("sys.version_info.major == 3 and sys.version_info.minor >= 10") then
     vim.health.ok("Python >=3.10")
   else
     vim.health.error("molten-nvim requires Python >=3.10")
   end
 
-  py_mod_check("pynvim", "pynvim")
-  py_mod_check("jupyter_client", "jupyter-client")
-  py_mod_check("cairosvg", "cairosvg")
-  py_mod_check("pnglatex", "pnglatex")
-  py_mod_check("plotly", "plotly")
-  py_mod_check("kaleido", "kaleido")
-  py_mod_check("pyperclip", "pyperclip")
+  py_mod_check("pynvim", "pynvim", true)
+  py_mod_check("jupyter_client", "jupyter-client", true)
+  py_mod_check("cairosvg", "cairosvg", false)
+  py_mod_check("pnglatex", "pnglatex", false)
+  py_mod_check("plotly", "plotly", false)
+  py_mod_check("kaleido", "kaleido", false)
+  py_mod_check("pyperclip", "pyperclip", false)
 end
 
 return M
