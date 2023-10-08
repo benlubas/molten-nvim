@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from pynvim import Nvim
 from pynvim.api import Buffer
@@ -102,8 +102,10 @@ class OutputBuffer:
         win_width = win.width
         win_height = win.height
 
-        if self.options.output_window_borders:
-            win_height -= 2
+        border_w, border_h = border_size(self.options.output_window_border)
+
+        win_height -= border_h
+        win_width -= border_w
 
         # Clear buffer:
         self.nvim.funcs.deletebufline(self.display_buffer.number, 1, "$")
@@ -143,19 +145,28 @@ class OutputBuffer:
         # Open output window
         assert self.display_window is None
         if win_row < win_height:
+            win_opts = {
+                "relative": "win",
+                "row": shape[1],
+                "col": shape[0],
+                "width": shape[2],
+                "height": min(win_height - win_row, lineno + virtual_lines + 1),
+                "border": self.options.output_window_border,
+                "focusable": False,
+            }
+            if self.options.output_window_style is not None:
+                win_opts["style"] = self.options.output_window_style
+
             self.display_window = self.nvim.api.open_win(
                 self.display_buffer.number,
                 False,
-                {
-                    "relative": "win",
-                    "row": win_row,
-                    "col": sign_col_width,
-                    "width": win_width - sign_col_width,
-                    "height": min(win_height - win_row, lineno + virtual_lines + 1),
-                    "style": "minimal",
-                    "border": ("rounded" if self.options.output_window_borders else "none"),
-                    "focusable": False,
-                },
+                win_opts,
+            )
+            hl = self.options.output_win_highlight
+            self.nvim.api.set_option_value(
+                "winhighlight",
+                f"Normal:{hl},NormalNC:{hl}",
+                {"scope": "local", "win": self.display_window.handle},
             )
             self.canvas.present()
 
@@ -174,3 +185,28 @@ def handle_progress_bars(line_str: str) -> List[str]:
             lines = actual_lines
 
     return actual_lines
+
+
+def border_size(border: Union[str, List[str], List[List[str]]]):
+    width, height = 0, 0
+    match border:
+        case list(b):
+            height += border_char_size(1, b)
+            height += border_char_size(5, b)
+            width += border_char_size(7, b)
+            width += border_char_size(3, b)
+        case "rounded" | "single" | "double" | "solid":
+            height += 2
+            width += 2
+        case "shadow":
+            height += 1
+            width += 1
+    return width, height
+
+
+def border_char_size(index: int, border: Union[List[str], List[List[str]]]):
+    match border[index % len(border)]:
+        case str(ch) | [str(ch), _]:
+            return len(ch)
+        case _:
+            return 0

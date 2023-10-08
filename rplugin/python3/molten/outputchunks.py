@@ -61,6 +61,7 @@ class TextOutputChunk(OutputChunk):
         __: Canvas,
     ) -> Tuple[str, int]:
         text = self._cleanup_text(self.text)
+        # TODO: can we just set wrap on the output window instead of hard wrapping text?
         if options.wrap_output:
             win_width = shape[2]
             text = "\n".join(

@@ -134,7 +134,8 @@ class Molten:
                 return molten
 
             notify_info(
-                self.nvim, f"No running kernel {kernel_name} to share. Continuing with a new kernel."
+                self.nvim,
+                f"No running kernel {kernel_name} to share. Continuing with a new kernel.",
             )
 
         molten = MoltenBuffer(
@@ -183,7 +184,7 @@ class Molten:
             if len(available_kernels) == 0:
                 notify_error(
                     self.nvim,
-                    "Molten has no running kernels to share. Please use :MoltenInit without the shared option.",
+                    "No running kernels to share. Please use :MoltenInit without the shared option.",
                 )
                 return
 
@@ -260,7 +261,7 @@ class Molten:
         else:
             notify_error(
                 self.nvim,
-                f"MoltenUpdateOption: wrong number of arguments, expected 2, given {len(args)}",
+                f"Wrong number of arguments passed to :MoltenUpdateOption, expected 2, given {len(args)}",
             )
 
     @pynvim.command("MoltenEnterOutput", sync=True)  # type: ignore

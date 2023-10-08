@@ -1,7 +1,7 @@
 import os
 
 from pynvim import Nvim
-import pynvim
+from typing import Optional, Union, List
 
 from molten.utils import notify_error
 
@@ -9,9 +9,11 @@ from molten.utils import notify_error
 class MoltenOptions:
     auto_open_output: bool
     wrap_output: bool
-    output_window_borders: bool
+    output_window_border: Union[str, List[str]]
+    output_window_style: Optional[str]
     show_mimetype_debug: bool
     cell_highlight_group: str
+    output_win_highlight: str
     save_path: str
     image_provider: str
     copy_output: bool
@@ -24,13 +26,15 @@ class MoltenOptions:
         CONFIG_VARS = [
             ("molten_auto_open_output", True),
             ("molten_wrap_output", False),
-            ("molten_output_window_borders", True),
+            ("molten_output_window_border", "none"),
+            ("molten_output_window_style", "minimal"),
             ("molten_show_mimetype_debug", False),
             ("molten_cell_highlight_group", "CursorLine"),
+            ("molten_output_win_highlight", "NormalFloat"),
             ("molten_save_path", os.path.join(nvim.funcs.stdpath("data"), "molten")),
             ("molten_image_provider", "none"),
             ("molten_copy_output", False),
-            ("molten_enter_output_behavior", "open_then_enter") # "open_then_enter", "open_and_enter", or "no_open"
+            ("molten_enter_output_behavior", "open_then_enter")
         ]
         # fmt: on
 
@@ -43,4 +47,4 @@ class MoltenOptions:
         if hasattr(self, option):
             setattr(self, option, value)
         else:
-            notify_error(self.nvim, f"Invalid option: {option}")
+            notify_error(self.nvim, f"Invalid option passed to MoltenUpdateOption: {option}")
