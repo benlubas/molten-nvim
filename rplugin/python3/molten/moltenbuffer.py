@@ -1,14 +1,13 @@
-from typing import Optional, Dict
+from typing import List, Optional, Dict
 from queue import Queue
 import hashlib
 
-import pynvim
 from pynvim import Nvim
 from pynvim.api import Buffer
 
 from molten.options import MoltenOptions
 from molten.images import Canvas
-from molten.utils import MoltenException, Position, Span
+from molten.utils import MoltenException, Position, Span, notify_info
 from molten.outputbuffer import OutputBuffer
 from molten.outputchunks import OutputStatus
 from molten.runtime import JupyterRuntime
@@ -19,7 +18,7 @@ class MoltenBuffer:
     canvas: Canvas
     highlight_namespace: int
     extmark_namespace: int
-    buffer: Buffer
+    buffers: List[Buffer]
 
     runtime: JupyterRuntime
 
@@ -39,7 +38,7 @@ class MoltenBuffer:
         canvas: Canvas,
         highlight_namespace: int,
         extmark_namespace: int,
-        buffer: Buffer,
+        main_buffer: Buffer,
         options: MoltenOptions,
         kernel_name: str,
     ):
@@ -47,7 +46,7 @@ class MoltenBuffer:
         self.canvas = canvas
         self.highlight_namespace = highlight_namespace
         self.extmark_namespace = extmark_namespace
-        self.buffer = buffer
+        self.buffers = [main_buffer]
 
         self._doautocmd("MoltenInitPre")
 
@@ -66,6 +65,9 @@ class MoltenBuffer:
     def _doautocmd(self, autocmd: str) -> None:
         assert " " not in autocmd
         self.nvim.command(f"doautocmd User {autocmd}")
+
+    def add_nvim_buffer(self, buffer: Buffer) -> None:
+        self.buffers.append(buffer)
 
     def deinit(self) -> None:
         self._doautocmd("MoltenDeinitPre")
@@ -110,11 +112,9 @@ class MoltenBuffer:
 
     def _check_if_done_running(self) -> None:
         # TODO: refactor
-        is_idle = ( self.current_output is None
-            or not self.current_output in self.outputs
-        ) or ( self.current_output is not None
-            and self.outputs[self.current_output].output.status
-            == OutputStatus.DONE
+        is_idle = (self.current_output is None or not self.current_output in self.outputs) or (
+            self.current_output is not None
+            and self.outputs[self.current_output].output.status == OutputStatus.DONE
         )
         if is_idle and not self.queued_outputs.empty():
             key = self.queued_outputs.get_nowait()
@@ -127,17 +127,11 @@ class MoltenBuffer:
         if self.current_output is None or not self.current_output in self.outputs:
             did_stuff = self.runtime.tick(None)
         else:
-            did_stuff = self.runtime.tick(
-                self.outputs[self.current_output].output
-            )
+            did_stuff = self.runtime.tick(self.outputs[self.current_output].output)
         if did_stuff:
             self.update_interface()
         if not was_ready and self.runtime.is_ready():
-            self.nvim.api.notify(
-                "Kernel '%s' is ready." % self.runtime.kernel_name,
-                pynvim.logging.INFO,
-                {"title": "Molten"},
-            )
+            notify_info(self.nvim, f"Kernel '{self.runtime.kernel_name}' is ready.")
 
     def enter_output(self) -> None:
         if self.selected_cell is not None:
@@ -153,12 +147,14 @@ class MoltenBuffer:
         if self.updating_interface:
             return
 
-        self.nvim.funcs.nvim_buf_clear_namespace(
-            self.buffer.number,
-            self.highlight_namespace,
-            0,
-            -1,
-        )
+        for buffer in self.buffers:
+            self.nvim.funcs.nvim_buf_clear_namespace(
+                buffer.number,
+                self.highlight_namespace,
+                0,
+                -1,
+            )
+
         # and self.nvim.funcs.winbufnr(self.display_window) != -1:
         if self.selected_cell is not None and self.selected_cell in self.outputs:
             self.outputs[self.selected_cell].clear_interface()
@@ -194,9 +190,12 @@ class MoltenBuffer:
         del self.outputs[self.selected_cell]
 
     def update_interface(self) -> None:
-        if self.buffer.number != self.nvim.current.buffer.number:
+        buffer_numbers = [buf.number for buf in self.buffers]
+        if self.nvim.current.buffer.number not in buffer_numbers:
             return
-        if self.buffer.number != self.nvim.current.window.buffer.number:
+
+        # TODO: I think this is redundant
+        if self.nvim.current.window.buffer.number not in buffer_numbers:
             return
 
         self.clear_interface()
@@ -222,7 +221,11 @@ class MoltenBuffer:
         selected_cell = self._get_selected_span()
 
         if self.selected_cell == selected_cell and selected_cell is not None:
-            if selected_cell.end.lineno < self.nvim.funcs.line("w$") and self.should_open_display_window and scrolled:
+            if (
+                selected_cell.end.lineno < self.nvim.funcs.line("w$")
+                and self.should_open_display_window
+                and scrolled
+            ):
                 self.clear_interface()
                 self._show_selected(selected_cell)
                 self.canvas.present()
@@ -231,9 +234,14 @@ class MoltenBuffer:
         self.update_interface()
 
     def _show_selected(self, span: Span) -> None:
+        """Show the selected cell. Can only have a selected cell in the current buffer"""
+        buf = self.nvim.current.buffer
+        if buf.number not in [b.number for b in self.buffers]:
+            return
+
         if span.begin.lineno == span.end.lineno:
             self.nvim.funcs.nvim_buf_add_highlight(
-                self.buffer.number,
+                buf.number,
                 self.highlight_namespace,
                 self.options.cell_highlight_group,
                 span.begin.lineno,
@@ -242,7 +250,7 @@ class MoltenBuffer:
             )
         else:
             self.nvim.funcs.nvim_buf_add_highlight(
-                self.buffer.number,
+                buf.number,
                 self.highlight_namespace,
                 self.options.cell_highlight_group,
                 span.begin.lineno,
@@ -251,7 +259,7 @@ class MoltenBuffer:
             )
             for lineno in range(span.begin.lineno + 1, span.end.lineno):
                 self.nvim.funcs.nvim_buf_add_highlight(
-                    self.buffer.number,
+                    buf.number,
                     self.highlight_namespace,
                     self.options.cell_highlight_group,
                     lineno,
@@ -259,7 +267,7 @@ class MoltenBuffer:
                     -1,
                 )
             self.nvim.funcs.nvim_buf_add_highlight(
-                self.buffer.number,
+                buf.number,
                 self.highlight_namespace,
                 self.options.cell_highlight_group,
                 span.end.lineno,
@@ -272,7 +280,5 @@ class MoltenBuffer:
 
     def _get_content_checksum(self) -> str:
         return hashlib.md5(
-            "\n".join(
-                self.nvim.current.buffer.api.get_lines(0, -1, True)
-            ).encode("utf-8")
+            "\n".join(self.nvim.current.buffer.api.get_lines(0, -1, True)).encode("utf-8")
         ).hexdigest()
