@@ -27,7 +27,7 @@ class MoltenBuffer:
     queued_outputs: "Queue[Span]"
 
     selected_cell: Optional[Span]
-    should_open_display_window: bool
+    should_show_display_window: bool
     updating_interface: bool
 
     options: MoltenOptions
@@ -57,7 +57,7 @@ class MoltenBuffer:
         self.queued_outputs = Queue()
 
         self.selected_cell = None
-        self.should_open_display_window = False
+        self.should_show_display_window = False
         self.updating_interface = False
 
         self.options = options
@@ -96,7 +96,7 @@ class MoltenBuffer:
         self.queued_outputs.put(span)
 
         self.selected_cell = span
-        self.should_open_display_window = True
+        self.should_show_display_window = True
         self.update_interface()
 
         self._check_if_done_running()
@@ -136,7 +136,7 @@ class MoltenBuffer:
     def enter_output(self) -> None:
         if self.selected_cell is not None:
             if self.options.enter_output_behavior != "no_open":
-                self.should_open_display_window = True
+                self.should_show_display_window = True
             self.outputs[self.selected_cell].enter(self.selected_cell.end)
 
     def _get_cursor_position(self) -> Position:
@@ -154,11 +154,6 @@ class MoltenBuffer:
                 0,
                 -1,
             )
-
-        # and self.nvim.funcs.winbufnr(self.display_window) != -1:
-        if self.selected_cell is not None and self.selected_cell in self.outputs:
-            self.outputs[self.selected_cell].clear_interface()
-        self.canvas.clear()
 
     def _get_selected_span(self) -> Optional[Span]:
         current_position = self._get_cursor_position()
@@ -204,10 +199,12 @@ class MoltenBuffer:
 
         selected_cell = self._get_selected_span()
 
-        if self.options.auto_open_output:
-            self.should_open_display_window = True
-        elif self.selected_cell != selected_cell:
-            self.should_open_display_window = False
+        # Clear the cell we just left
+        if self.selected_cell != selected_cell and self.selected_cell is not None:
+            self.outputs[self.selected_cell].clear_interface()
+
+        if selected_cell is None:
+            self.should_show_display_window = False
 
         self.selected_cell = selected_cell
 
@@ -220,15 +217,20 @@ class MoltenBuffer:
     def on_cursor_moved(self, scrolled=False) -> None:
         selected_cell = self._get_selected_span()
 
+        if (
+            self.selected_cell is None
+            and selected_cell is not None
+            and self.options.auto_open_output
+        ):
+            self.should_show_display_window = True
+
         if self.selected_cell == selected_cell and selected_cell is not None:
             if (
-                selected_cell.end.lineno < self.nvim.funcs.line("w$")
-                and self.should_open_display_window
-                and scrolled
+                scrolled
+                and selected_cell.end.lineno < self.nvim.funcs.line("w$")
+                and self.should_show_display_window
             ):
-                self.clear_interface()
-                self._show_selected(selected_cell)
-                self.canvas.present()
+                self.update_interface()
             return
 
         self.update_interface()
@@ -275,8 +277,10 @@ class MoltenBuffer:
                 span.end.colno,
             )
 
-        if self.should_open_display_window:
+        if self.should_show_display_window:
             self.outputs[span].show(span.end)
+        else:
+            self.outputs[span].clear_interface()
 
     def _get_content_checksum(self) -> str:
         return hashlib.md5(

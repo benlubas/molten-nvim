@@ -1,7 +1,7 @@
 from typing import List, Optional, Union
 
 from pynvim import Nvim
-from pynvim.api import Buffer
+from pynvim.api import Buffer, Window
 
 from molten.images import Canvas
 from molten.outputchunks import Output, OutputStatus
@@ -15,8 +15,8 @@ class OutputBuffer:
 
     output: Output
 
-    display_buffer: Buffer
-    display_window: Optional[int]
+    display_buf: Buffer
+    display_win: Optional[Window]
 
     options: MoltenOptions
 
@@ -26,8 +26,8 @@ class OutputBuffer:
 
         self.output = Output(None)
 
-        self.display_buffer = self.nvim.buffers[self.nvim.funcs.nvim_create_buf(False, True)]
-        self.display_window = None
+        self.display_buf = self.nvim.buffers[self.nvim.funcs.nvim_create_buf(False, True)]
+        self.display_win = None
 
         self.options = options
 
@@ -76,26 +76,24 @@ class OutputBuffer:
         return f"{old}Out[{execution_count}]: {status}"
 
     def enter(self, anchor: Position) -> None:
-        if self.display_window is None:
+        if self.display_win is None:
             if self.options.enter_output_behavior == "open_then_enter":
                 self.show(anchor)
                 return
             elif self.options.enter_output_behavior == "open_and_enter":
                 self.show(anchor)
-                self.nvim.funcs.nvim_set_current_win(self.display_window)
+                self.nvim.funcs.nvim_set_current_win(self.display_win)
                 return
         elif self.options.enter_output_behavior != "no_open":
-            self.nvim.funcs.nvim_set_current_win(self.display_window)
+            self.nvim.funcs.nvim_set_current_win(self.display_win)
 
     def clear_interface(self) -> None:
-        if self.display_window is not None:
-            self.nvim.funcs.nvim_win_close(self.display_window, True)
-            self.display_window = None
+        if self.display_win is not None:
+            self.nvim.funcs.nvim_win_close(self.display_win, True)
+            self.canvas.clear()
+            self.display_win = None
 
-    def show(self, anchor: Position) -> None:  # XXX .show_outputs(_, anchor)
-        # FIXME use `anchor.buffer`, Not `self.nvim.current.window`
-
-        # Get width&height, etc
+    def show(self, anchor: Position) -> None:
         win = self.nvim.current.window
         win_col = win.col
         win_row = self._buffer_to_window_lineno(anchor.lineno + 1)
@@ -108,7 +106,7 @@ class OutputBuffer:
         win_width -= border_w
 
         # Clear buffer:
-        self.nvim.funcs.deletebufline(self.display_buffer.number, 1, "$")
+        self.nvim.funcs.deletebufline(self.display_buf.number, 1, "$")
         # Add output chunks to buffer
         lines_str = ""
         lineno = 0
@@ -124,7 +122,7 @@ class OutputBuffer:
         if len(self.output.chunks) > 0:
             for chunk in self.output.chunks:
                 chunktext, virt_lines = chunk.place(
-                    self.display_buffer.number,
+                    self.display_buf.number,
                     self.options,
                     lineno,
                     shape,
@@ -139,11 +137,11 @@ class OutputBuffer:
         else:
             lines = [lines_str]
 
-        self.display_buffer[0] = self._get_header_text(self.output)
-        self.display_buffer.append(lines)
+        self.display_buf[0] = self._get_header_text(self.output)
+        self.display_buf.append(lines)
 
         # Open output window
-        assert self.display_window is None
+        # assert self.display_window is None
         if win_row < win_height:
             win_opts = {
                 "relative": "win",
@@ -157,18 +155,22 @@ class OutputBuffer:
             if self.options.output_window_style is not None:
                 win_opts["style"] = self.options.output_window_style
 
-            self.display_window = self.nvim.api.open_win(
-                self.display_buffer.number,
-                False,
-                win_opts,
-            )
-            hl = self.options.output_win_highlight
-            self.nvim.api.set_option_value(
-                "winhighlight",
-                f"Normal:{hl},NormalNC:{hl}",
-                {"scope": "local", "win": self.display_window.handle},
-            )
-            self.canvas.present()
+            if self.display_win is None or not self.display_win.valid:  # open a new window
+                self.display_win = self.nvim.api.open_win(
+                    self.display_buf.number,
+                    False,
+                    win_opts,
+                )
+                hl = self.options.output_win_highlight
+                self.nvim.api.set_option_value(
+                    "winhighlight",
+                    f"Normal:{hl},NormalNC:{hl}",
+                    {"scope": "local", "win": self.display_win.handle},
+                )
+                self.canvas.present()
+            else:  # move the current window
+                self.display_win.api.set_config(win_opts)
+
 
 
 def handle_progress_bars(line_str: str) -> List[str]:

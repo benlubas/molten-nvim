@@ -367,7 +367,7 @@ class Molten:
         molten = self._get_molten(True)
         assert molten is not None
 
-        molten.should_open_display_window = True
+        molten.should_show_display_window = True
         self._update_interface()
 
     @pynvim.command("MoltenHideOutput", nargs=0, sync=True)  # type: ignore
@@ -376,8 +376,8 @@ class Molten:
         molten = self._get_molten(True)
         assert molten is not None
 
-        molten.should_open_display_window = False
-        self._clear_interface()
+        molten.should_show_display_window = False
+        self._update_interface()
 
     @pynvim.command("MoltenSave", nargs="?", sync=True)  # type: ignore
     @nvimui  # type: ignore
