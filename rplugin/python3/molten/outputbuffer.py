@@ -93,6 +93,14 @@ class OutputBuffer:
             self.canvas.clear()
             self.display_win = None
 
+    def set_win_option(self, option: str, value) -> None:
+        if self.display_win:
+            self.nvim.api.set_option_value(
+                option,
+                value,
+                {"scope": "local", "win": self.display_win.handle},
+            )
+
     def show(self, anchor: Position) -> None:
         win = self.nvim.current.window
         win_col = win.col
@@ -100,7 +108,7 @@ class OutputBuffer:
         win_width = win.width
         win_height = win.height
 
-        border_w, border_h = border_size(self.options.output_window_border)
+        border_w, border_h = border_size(self.options.output_win_border)
 
         win_height -= border_h
         win_width -= border_w
@@ -112,7 +120,12 @@ class OutputBuffer:
         lineno = 0
         # images are rendered with virtual lines by image.nvim
         virtual_lines = 0
-        sign_col_width = self.nvim.funcs.getwininfo(win.handle)[0]["textoff"]
+
+        if self.options.output_win_cover_gutter:
+            sign_col_width = 0
+        else:
+            sign_col_width = self.nvim.funcs.getwininfo(win.handle)[0]["textoff"]
+
         shape = (
             win_col + sign_col_width,
             win_row,
@@ -149,11 +162,11 @@ class OutputBuffer:
                 "col": shape[0],
                 "width": shape[2],
                 "height": min(win_height - win_row, lineno + virtual_lines + 1),
-                "border": self.options.output_window_border,
+                "border": self.options.output_win_border,
                 "focusable": False,
             }
-            if self.options.output_window_style is not None:
-                win_opts["style"] = self.options.output_window_style
+            if self.options.output_win_style:
+                win_opts["style"] = self.options.output_win_style
 
             if self.display_win is None or not self.display_win.valid:  # open a new window
                 self.display_win = self.nvim.api.open_win(
@@ -162,15 +175,11 @@ class OutputBuffer:
                     win_opts,
                 )
                 hl = self.options.output_win_highlight
-                self.nvim.api.set_option_value(
-                    "winhighlight",
-                    f"Normal:{hl},NormalNC:{hl}",
-                    {"scope": "local", "win": self.display_win.handle},
-                )
+                self.set_win_option("winhighlight", f"Normal:{hl},NormalNC:{hl}")
+                self.set_win_option("wrap", self.options.wrap_output)
                 self.canvas.present()
             else:  # move the current window
                 self.display_win.api.set_config(win_opts)
-
 
 
 def handle_progress_bars(line_str: str) -> List[str]:

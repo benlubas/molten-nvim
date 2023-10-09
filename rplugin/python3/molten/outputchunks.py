@@ -10,12 +10,8 @@ from typing import (
 from contextlib import AbstractContextManager
 from enum import Enum
 from abc import ABC, abstractmethod
-from math import floor
 import re
-import textwrap
-import os
 
-from pynvim import Nvim
 
 from molten.images import Canvas
 from molten.options import MoltenOptions
@@ -54,21 +50,20 @@ class TextOutputChunk(OutputChunk):
 
     def place(
         self,
-        bufnr: int,
+        _bufnr: int,
         options: MoltenOptions,
         _: int,
         shape: Tuple[int, int, int, int],
-        __: Canvas,
+        _canvas: Canvas,
     ) -> Tuple[str, int]:
         text = self._cleanup_text(self.text)
-        # TODO: can we just set wrap on the output window instead of hard wrapping text?
-        if options.wrap_output:
+        extra_lines = 0
+        if options.wrap_output:  # count the number of extra lines this will need when wrapped
             win_width = shape[2]
-            text = "\n".join(
-                "\n".join(textwrap.wrap(line, width=win_width))
-                for line in text.split("\n")
-            )
-        return text, 0
+            for line in text.split("\n"):
+                if len(line) > win_width:
+                    extra_lines += len(line) // win_width
+        return text, extra_lines
 
 
 class TextLnOutputChunk(TextOutputChunk):
@@ -120,7 +115,7 @@ class ImageOutputChunk(OutputChunk):
         bufnr: int,
         _: MoltenOptions,
         lineno: int,
-        shape: Tuple[int, int, int, int],
+        _shape: Tuple[int, int, int, int],
         canvas: Canvas,
     ) -> Tuple[str, int]:
         # _x, _y, win_w, win_h = shape
