@@ -4,7 +4,7 @@ Molten is a fork of [Magma](https://www.github.com/dccsillag/magma-nvim), a plug
 
 > [!WARNING]
 > I'm still in the process of renaming, and porting over changes. This plugin is not stable at this
-> point in time
+> point in time. If you're ignoring this warning, at least use the dev branch: `output_win_overhaul`
 
 ![Feature Showcase (gif)](https://user-images.githubusercontent.com/15617291/128964224-f157022c-25cd-4a60-a0da-7d1462564ae4.gif)
 
