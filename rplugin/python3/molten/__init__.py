@@ -195,8 +195,9 @@ class Molten:
                         {{prompt = "{PROMPT}"}},
                         function(choice)
                             if choice ~= nil then
-                                print("\\n")
-                                vim.cmd("MoltenInit {'shared ' if shared else ''}" .. choice)
+                                vim.schedule_wrap(function()
+                                    vim.cmd("MoltenInit {'shared ' if shared else ''}" .. choice)
+                                end)()
                             end
                         end
                     )

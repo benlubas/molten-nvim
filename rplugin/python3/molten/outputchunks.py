@@ -32,12 +32,16 @@ class OutputChunk(ABC):
     ) -> Tuple[str, int]:
         pass
 
+
 # Adapted from [https://stackoverflow.com/a/14693789/4803382]:
 ANSI_CODE_REGEX = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+
+
 def clean_up_text(text: str) -> str:
     text = ANSI_CODE_REGEX.sub("", text)
     text = text.replace("\r\n", "\n")
     return text
+
 
 class TextOutputChunk(OutputChunk):
     text: str
@@ -73,9 +77,7 @@ class TextLnOutputChunk(TextOutputChunk):
 
 class BadOutputChunk(TextLnOutputChunk):
     def __init__(self, mimetypes: List[str]):
-        super().__init__(
-            "<No usable MIMEtype! Received mimetypes %r>" % mimetypes
-        )
+        super().__init__("<No usable MIMEtype! Received mimetypes %r>" % mimetypes)
 
 
 class MimetypesOutputChunk(TextLnOutputChunk):
@@ -103,12 +105,12 @@ class AbortedOutputChunk(TextLnOutputChunk):
 
 class ImageOutputChunk(OutputChunk):
     def __init__(
-        self, img_path: str, img_checksum: str, img_shape: Tuple[int, int]
+        self,
+        img_path: str,
+        img_checksum: str,
     ):
         self.img_path = img_path
         self.img_checksum = img_checksum
-        self.img_width, self.img_height = img_shape
-
 
     def place(
         self,
@@ -126,7 +128,7 @@ class ImageOutputChunk(OutputChunk):
             y=lineno + 1,
             bufnr=bufnr,
         )
-        return "", canvas.img_height(img)
+        return "", canvas.img_size(img)["height"]
 
 
 class OutputStatus(Enum):
@@ -167,11 +169,7 @@ def to_outputchunk(
         from PIL import Image
 
         pil_image = Image.open(path)
-        return ImageOutputChunk(
-            path,
-            hashlib.md5(pil_image.tobytes()).hexdigest(),
-            pil_image.size,
-        )
+        return ImageOutputChunk(path, hashlib.md5(pil_image.tobytes()).hexdigest())
 
     # Output chunk functions:
     def _from_image_png(imgdata: bytes) -> OutputChunk:
