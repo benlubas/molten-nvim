@@ -18,6 +18,7 @@ https://github.com/benlubas/molten-nvim/assets/56943754/3113917e-3719-4ef3-8095-
 
 - NeoVim 9.0+
 - Python 3.10+
+- [image.nvim](https://github.com/3rd/image.nvim)
 - Required Python packages:
   - [`pynvim`](https://github.com/neovim/pynvim) (for the Remote Plugin API)
   - [`jupyter_client`](https://github.com/jupyter/jupyter_client) (for interacting with Jupyter)
