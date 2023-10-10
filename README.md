@@ -7,6 +7,7 @@ https://github.com/benlubas/molten-nvim/assets/56943754/9d2dbdff-8f73-4055-978a-
 ## Features
 
 - Send code to run asynchronously in the jupyter kernel
+- Supports any language with a Jupyter Kernel (in theory, they haven't all been tested)
 - See output in a floating window right below the code
 - Send code from multiple buffers to the same kernel
 - See output in real time, without flicker
@@ -42,7 +43,7 @@ The Wiki also contains more in depth setup information/guides.
 
 When you execute some code, it will create a _cell_. You can recognize a cell because it will be highlighted when your cursor is in it.
 
-A cell is delimited using two extmarks (see `:h api-extended-marks`), so a cell will adjust when editing
+A cell is delimited using two extmarks (see `:h api-extended-marks`), so each cell will adjust when editing
 text within it's boundaries.
 
 When your cursor is in a cell (i.e., you have an _active cell_), a floating window may be shown below the cell, reporting output. This is the _display window_, or _output window_. (To see more about whether a window is shown or not, see `:MoltenShowOutput` and `g:molten_auto_open_output`). When you cursor is not in any cell, no cell is active.
@@ -57,7 +58,8 @@ Jupyter provides a rich set of outputs. To see what we can currently handle, see
 
  Molten provides a bunch of user commands as an interface to the user. It is recommended to map most of them to keys, as explained in [Keybindings](#keybindings).
 
-Here is a list of the commands and their arguments. Args in `[]` are optional
+Here is a list of the commands and their arguments. Args in `[]` are optional, args in `""` are
+literal.
 
 | Command                   | Arguments             | Description                        |
 |---------------------------|-----------------------|------------------------------------|
@@ -70,7 +72,7 @@ Here is a list of the commands and their arguments. Args in `[]` are optional
 | `MoltenDelete`            | none                  | Delete the active cell (does nothing if there is no active cell) |
 | `MoltenShowOutput`        | none                  | Shows the output window for the active cell |
 | `MoltenHideOutput`        | none                  | Hide currently open output window |
-| `MoltenEnterOutput`       | none                  | Move into the active cell's output window. **must be called with `noautocmd`** (see [keymaps](#keymaps) for example) |
+| `MoltenEnterOutput`       | none                  | Move into the active cell's output window. Opens but does not enter the output if it's not open. **must be called with `noautocmd`** (see [keymaps](#keymaps) for example) |
 | `MoltenInterrupt`         | none                  | Sends a keyboard interrupt to the kernel which stops any currently running code. (does nothing if there's no current output) |
 | `MoltenRestart`           | `[!]`                 | Shuts down a restarts the current kernel. Deletes all outputs if used with a bang |
 | `MoltenSave`              | `[path]`              | Save the current cells and evaluated outputs into a JSON file. When path is specified, save the file to `path`, otherwise save to `g:molten_save_path` |
@@ -83,26 +85,28 @@ in the [Wiki](https://github.com/benlubas/molten-nvim/wiki), but here are some e
 Pay attention to `MoltenEvaluateVisual` and `MoltenEnterOutput`, as they need to be run in...odd
 ways.
 
+### Example Run Binds
+
 ```lua
 vim.keymap.set("n", "<localleader>R", ":MoltenEvaluateOperator<CR>",
-    { silent = true, desc = "run operator selection" })
+    { silent = true, noremap = true, desc = "run operator selection" })
 vim.keymap.set("n", "<localleader>rl", ":MoltenEvaluateLine<CR>",
-    { silent = true, desc = "evaluate line" })
+    { silent = true, noremap = true, desc = "evaluate line" })
 vim.keymap.set("n", "<localleader>rc", ":MoltenReevaluateCell<CR>",
-    { silent = true, desc = "re-evaluate cell" })
+    { silent = true, noremap = true, desc = "re-evaluate cell" })
 vim.keymap.set("v", "<localleader>r", ":<C-u>MoltenEvaluateVisual<CR>gv",
-    { silent = true, desc = "evaluate visual selection" })
+    { silent = true, noremap = true, desc = "evaluate visual selection" })
 ```
 
-You can, of course, also map other commands:
+### Other example mappings
 
 ```lua
 vim.keymap.set("n", "<localleader>rd", ":MoltenDelete<CR>",
-    { silent = true, desc = "molten delete cell" })
-vim.keymap.set("n", "<localleader>ro", ":MoltenShowOutput<CR>",
-    { silent = true, desc = "show output" })
-vim.keymap.set("n", "<localleader>rq", ":noautocmd MoltenEnterOutput<CR>",
-    { silent = true, desc = "enter output" })
+    { silent = true, noremap = true, desc = "molten delete cell" })
+vim.keymap.set("n", "<localleader>os", ":MoltenHideOutput<CR>",
+    { silent = true, noremap = true, desc = "hide output" })
+vim.keymap.set("n", "<localleader>os", ":noautocmd MoltenEnterOutput<CR>",
+    { silent = true, noremap = true, desc = "show/enter output" })
 ```
 
 ## Configuration

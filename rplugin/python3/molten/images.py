@@ -144,7 +144,6 @@ class ImageNvimCanvas(Canvas):
 
         for identifier in to_work_on:
             size = self.img_size(identifier)
-            self.nvim.out_write(f"size: {size}\n")
             self.image_api.render(identifier, size)
 
         self.visible.update(self.to_make_visible)
