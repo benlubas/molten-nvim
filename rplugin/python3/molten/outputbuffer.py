@@ -191,7 +191,7 @@ class OutputBuffer:
             ):
                 # the entire window size is shown, but the buffer still has more lines to render
                 hidden_lines = len(self.display_buf) - height
-                win_opts["footer"] = f" 󰁅 {hidden_lines} More Lines "
+                win_opts["footer"] = [(f" 󰁅 {hidden_lines} More Lines ", self.options.hl.foot)]
                 win_opts["footer_pos"] = "left"
 
             if self.display_win is None or not self.display_win.valid:  # open a new window
@@ -200,9 +200,11 @@ class OutputBuffer:
                     False,
                     win_opts,
                 )
-                hl = self.options.output_win_highlight
+                hl = self.options.hl
+                self.set_win_option("winhighlight", f"Normal:{hl.win},NormalNC:{hl.win_nc}")
                 # TODO: Refactor once MoltenOutputWindowOpen autocommand is a thing.
-                self.set_win_option("winhighlight", f"Normal:{hl},NormalNC:{hl}")
+                # note, the above setting will probably stay there, just so users can set highlights
+                # with their other highlights
                 self.set_win_option("wrap", self.options.wrap_output)
                 self.set_win_option("cursorline", False)
                 self.canvas.present()

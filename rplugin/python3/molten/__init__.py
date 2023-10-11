@@ -53,6 +53,7 @@ class Molten:
 
         self.timer = self.nvim.eval("timer_start(500, 'MoltenTick', {'repeat': -1})")  # type: ignore
 
+        self._setup_highlights()
         self._set_autocommands()
 
         self.initialized = True
@@ -67,6 +68,15 @@ class Molten:
         self.nvim.command("autocmd BufUnload    * call MoltenOnBufferUnload()")
         self.nvim.command("autocmd ExitPre      * call MoltenOnExitPre()")
         self.nvim.command("augroup END")
+
+    def _setup_highlights(self) -> None:
+        hl = self.options.hl
+        self.nvim.api.set_hl(0, hl.win, { "default": True, "link": "NormalFloat" })
+        self.nvim.api.set_hl(0, hl.win_nc, { "default": True, "link": hl.win })
+        self.nvim.api.set_hl(0, hl.border_norm, { "default": True, "link": "FloatBorder" })
+        self.nvim.api.set_hl(0, hl.border_fail, { "default": True, "link": "FloatBorder" })
+        self.nvim.api.set_hl(0, hl.border_succ, { "default": True, "link": "FloatBorder" })
+        self.nvim.api.set_hl(0, hl.foot, { "default": True, "link": "FloatFooter" })
 
     def _deinitialize(self) -> None:
         for molten in self.buffers.values():

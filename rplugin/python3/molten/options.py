@@ -2,14 +2,24 @@ import os
 
 from pynvim import Nvim
 from typing import Optional, Union, List
+from dataclasses import dataclass
 
 from molten.utils import notify_error
 
+@dataclass
+class HL:
+    border_norm = "MoltenOutputBorder"
+    border_fail = "MoltenOutputBorderFailed"
+    border_succ = "MoltenOutputBorderSuccess"
+    win = "MoltenOutputWin"
+    win_nc = "MoltenOutputWinNC"
+    foot = "MoltenOutputFooter"
 
 class MoltenOptions:
     auto_open_output: bool
     wrap_output: bool
     output_win_border: Union[str, List[str]]
+    use_border_highlights: bool
     output_win_style: Optional[str]
     output_win_cover_gutter: bool
     output_win_highlight: str
@@ -24,14 +34,17 @@ class MoltenOptions:
     copy_output: bool
     enter_output_behavior: str
     nvim: Nvim
+    hl: HL
 
     def __init__(self, nvim: Nvim):
         self.nvim = nvim
+        self.hl = HL()
         # fmt: off
         CONFIG_VARS = [
             ("molten_auto_open_output", True),
             ("molten_wrap_output", False),
             ("molten_output_win_border", "none"),
+            ("molten_use_border_highlights", False),
             ("molten_output_win_style", "minimal"),
             ("molten_output_win_cover_gutter", False),
             ("molten_output_win_highlight", "NormalFloat"),
