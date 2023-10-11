@@ -10,15 +10,14 @@ from typing import (
 from contextlib import AbstractContextManager
 from enum import Enum
 from abc import ABC, abstractmethod
-from math import floor
 import re
-import textwrap
-import os
 
 from pynvim import Nvim
 
+
 from molten.images import Canvas
 from molten.options import MoltenOptions
+from molten.utils import notify_error
 
 
 class OutputChunk(ABC):
@@ -36,12 +35,16 @@ class OutputChunk(ABC):
     ) -> Tuple[str, int]:
         pass
 
+
 # Adapted from [https://stackoverflow.com/a/14693789/4803382]:
 ANSI_CODE_REGEX = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+
+
 def clean_up_text(text: str) -> str:
     text = ANSI_CODE_REGEX.sub("", text)
     text = text.replace("\r\n", "\n")
     return text
+
 
 class TextOutputChunk(OutputChunk):
     text: str
@@ -54,20 +57,20 @@ class TextOutputChunk(OutputChunk):
 
     def place(
         self,
-        bufnr: int,
+        _bufnr: int,
         options: MoltenOptions,
         _: int,
         shape: Tuple[int, int, int, int],
-        __: Canvas,
+        _canvas: Canvas,
     ) -> Tuple[str, int]:
         text = self._cleanup_text(self.text)
-        if options.wrap_output:
+        extra_lines = 0
+        if options.wrap_output:  # count the number of extra lines this will need when wrapped
             win_width = shape[2]
-            text = "\n".join(
-                "\n".join(textwrap.wrap(line, width=win_width))
-                for line in text.split("\n")
-            )
-        return text, 0
+            for line in text.split("\n"):
+                if len(line) > win_width:
+                    extra_lines += len(line) // win_width
+        return text, extra_lines
 
 
 class TextLnOutputChunk(TextOutputChunk):
@@ -77,9 +80,7 @@ class TextLnOutputChunk(TextOutputChunk):
 
 class BadOutputChunk(TextLnOutputChunk):
     def __init__(self, mimetypes: List[str]):
-        super().__init__(
-            "<No usable MIMEtype! Received mimetypes %r>" % mimetypes
-        )
+        super().__init__("<No usable MIMEtype! Received mimetypes %r>" % mimetypes)
 
 
 class MimetypesOutputChunk(TextLnOutputChunk):
@@ -106,31 +107,25 @@ class AbortedOutputChunk(TextLnOutputChunk):
 
 
 class ImageOutputChunk(OutputChunk):
-    def __init__(
-        self, img_path: str, img_checksum: str, img_shape: Tuple[int, int]
-    ):
+    def __init__(self, img_path: str):
         self.img_path = img_path
-        self.img_checksum = img_checksum
-        self.img_width, self.img_height = img_shape
-
 
     def place(
         self,
         bufnr: int,
         _: MoltenOptions,
         lineno: int,
-        shape: Tuple[int, int, int, int],
+        _shape: Tuple[int, int, int, int],
         canvas: Canvas,
     ) -> Tuple[str, int]:
         # _x, _y, win_w, win_h = shape
         img = canvas.add_image(
             self.img_path,
-            self.img_checksum,
             x=0,
             y=lineno + 1,
             bufnr=bufnr,
         )
-        return "", canvas.img_height(img)
+        return "", canvas.img_size(img)["height"]
 
 
 class OutputStatus(Enum):
@@ -159,6 +154,7 @@ class Output:
 
 
 def to_outputchunk(
+    nvim: Nvim,
     alloc_file: Callable[
         [str, str],
         "AbstractContextManager[Tuple[str, IO[bytes]]]",
@@ -167,15 +163,7 @@ def to_outputchunk(
     metadata: Dict[str, Any],
 ) -> OutputChunk:
     def _to_image_chunk(path: str) -> OutputChunk:
-        import hashlib
-        from PIL import Image
-
-        pil_image = Image.open(path)
-        return ImageOutputChunk(
-            path,
-            hashlib.md5(pil_image.tobytes()).hexdigest(),
-            pil_image.size,
-        )
+        return ImageOutputChunk(path)
 
     # Output chunk functions:
     def _from_image_png(imgdata: bytes) -> OutputChunk:

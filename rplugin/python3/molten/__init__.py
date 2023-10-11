@@ -134,7 +134,8 @@ class Molten:
                 return molten
 
             notify_info(
-                self.nvim, f"No running kernel {kernel_name} to share. Continuing with a new kernel."
+                self.nvim,
+                f"No running kernel {kernel_name} to share. Continuing with a new kernel.",
             )
 
         molten = MoltenBuffer(
@@ -183,7 +184,7 @@ class Molten:
             if len(available_kernels) == 0:
                 notify_error(
                     self.nvim,
-                    "Molten has no running kernels to share. Please use :MoltenInit without the shared option.",
+                    "No running kernels to share. Please use :MoltenInit without the shared option.",
                 )
                 return
 
@@ -194,8 +195,9 @@ class Molten:
                         {{prompt = "{PROMPT}"}},
                         function(choice)
                             if choice ~= nil then
-                                print("\\n")
-                                vim.cmd("MoltenInit {'shared ' if shared else ''}" .. choice)
+                                vim.schedule_wrap(function()
+                                    vim.cmd("MoltenInit {'shared ' if shared else ''}" .. choice)
+                                end)()
                             end
                         end
                     )
@@ -260,7 +262,7 @@ class Molten:
         else:
             notify_error(
                 self.nvim,
-                f"MoltenUpdateOption: wrong number of arguments, expected 2, given {len(args)}",
+                f"Wrong number of arguments passed to :MoltenUpdateOption, expected 2, given {len(args)}",
             )
 
     @pynvim.command("MoltenEnterOutput", sync=True)  # type: ignore
@@ -366,7 +368,7 @@ class Molten:
         molten = self._get_molten(True)
         assert molten is not None
 
-        molten.should_open_display_window = True
+        molten.should_show_display_window = True
         self._update_interface()
 
     @pynvim.command("MoltenHideOutput", nargs=0, sync=True)  # type: ignore
@@ -375,8 +377,8 @@ class Molten:
         molten = self._get_molten(True)
         assert molten is not None
 
-        molten.should_open_display_window = False
-        self._clear_interface()
+        molten.should_show_display_window = False
+        self._update_interface()
 
     @pynvim.command("MoltenSave", nargs="?", sync=True)  # type: ignore
     @nvimui  # type: ignore
@@ -434,7 +436,7 @@ class Molten:
 
             molten = self._initialize_buffer(kernel_name, shared=shared)
 
-            load(molten, self.nvim.current.buffer, data)
+            load(self.nvim, molten, self.nvim.current.buffer, data)
 
             self._update_interface()
         except MoltenIOError as err:

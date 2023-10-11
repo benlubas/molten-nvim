@@ -6,9 +6,10 @@ if not ok then
   return
 end
 
+local utils = require("image.utils")
+
 local image_api = {}
 local images = {}
-local utils = {}
 
 image_api.from_file = function(path, opts)
   images[path] = image.from_file(path, opts or {})
@@ -22,11 +23,17 @@ image_api.render = function(identifier, geometry)
   -- a way to render images in windows when only their buffer is set
   if img.buffer and not img.window then
     local buf_win = vim.fn.getbufinfo(img.buffer)[1].windows
-    if #buf_win > 0 then img.window = buf_win[1] end
+    if #buf_win > 0 then
+      img.window = buf_win[1]
+    end
   end
 
   -- only render when the window is visible
-  if img.window and vim.api.nvim_win_is_valid(img.window) then
+  if not vim.api.nvim_win_is_valid(img.window) then
+    img.window = nil
+  end
+
+  if img.window then
     img:render(geometry)
   end
 end
@@ -45,16 +52,24 @@ image_api.move = function(identifier, x, y)
   images[identifier]:move(x, y)
 end
 
+---returns the max height this image can be displayed at considering the image size and user's max
+---width/height settings. Does not consider max width/height percent values.
 image_api.image_size = function(identifier)
   local img = images[identifier]
-  return { width = img.image_width, height = img.image_height }
+  local term_size = require("image.utils.term").get_size()
+  local gopts = img.global_state.options
+  local true_size = {
+    width = math.min(img.image_width / term_size.cell_width, gopts.max_width or math.huge),
+    height = math.min(img.image_height / term_size.cell_height, gopts.max_height or math.huge),
+  }
+  local width, height = utils.math.adjust_to_aspect_ratio(
+    term_size,
+    img.image_width,
+    img.image_height,
+    true_size.width,
+    true_size.height
+  )
+  return { width = math.ceil(width), height = math.ceil(height) }
 end
 
------- utils --------
-
-utils.cell_size = function()
-  local size = require("image.utils.term").get_size()
-  return { width = size.cell_width, height = size.cell_height }
-end
-
-return { image_api = image_api, image_utils = utils }
+return { image_api = image_api }

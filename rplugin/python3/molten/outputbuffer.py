@@ -1,7 +1,7 @@
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from pynvim import Nvim
-from pynvim.api import Buffer
+from pynvim.api import Buffer, Window
 
 from molten.images import Canvas
 from molten.outputchunks import Output, OutputStatus
@@ -15,8 +15,8 @@ class OutputBuffer:
 
     output: Output
 
-    display_buffer: Buffer
-    display_window: Optional[int]
+    display_buf: Buffer
+    display_win: Optional[Window]
 
     options: MoltenOptions
 
@@ -26,8 +26,8 @@ class OutputBuffer:
 
         self.output = Output(None)
 
-        self.display_buffer = self.nvim.buffers[self.nvim.funcs.nvim_create_buf(False, True)]
-        self.display_window = None
+        self.display_buf = self.nvim.buffers[self.nvim.funcs.nvim_create_buf(False, True)]
+        self.display_win = None
 
         self.options = options
 
@@ -76,43 +76,56 @@ class OutputBuffer:
         return f"{old}Out[{execution_count}]: {status}"
 
     def enter(self, anchor: Position) -> None:
-        if self.display_window is None:
+        if self.display_win is None:
             if self.options.enter_output_behavior == "open_then_enter":
                 self.show(anchor)
                 return
             elif self.options.enter_output_behavior == "open_and_enter":
                 self.show(anchor)
-                self.nvim.funcs.nvim_set_current_win(self.display_window)
+                self.nvim.funcs.nvim_set_current_win(self.display_win)
                 return
         elif self.options.enter_output_behavior != "no_open":
-            self.nvim.funcs.nvim_set_current_win(self.display_window)
+            self.nvim.funcs.nvim_set_current_win(self.display_win)
 
     def clear_interface(self) -> None:
-        if self.display_window is not None:
-            self.nvim.funcs.nvim_win_close(self.display_window, True)
-            self.display_window = None
+        if self.display_win is not None:
+            self.nvim.funcs.nvim_win_close(self.display_win, True)
+            self.canvas.clear()
+            self.display_win = None
 
-    def show(self, anchor: Position) -> None:  # XXX .show_outputs(_, anchor)
-        # FIXME use `anchor.buffer`, Not `self.nvim.current.window`
+    def set_win_option(self, option: str, value) -> None:
+        if self.display_win:
+            self.nvim.api.set_option_value(
+                option,
+                value,
+                {"scope": "local", "win": self.display_win.handle},
+            )
 
-        # Get width&height, etc
+    def show(self, anchor: Position) -> None:
         win = self.nvim.current.window
         win_col = win.col
         win_row = self._buffer_to_window_lineno(anchor.lineno + 1)
         win_width = win.width
         win_height = win.height
 
-        if self.options.output_window_borders:
-            win_height -= 2
+        border_w, border_h = border_size(self.options.output_win_border)
+
+        win_height -= border_h
+        win_width -= border_w
 
         # Clear buffer:
-        self.nvim.funcs.deletebufline(self.display_buffer.number, 1, "$")
+        self.nvim.funcs.deletebufline(self.display_buf.number, 1, "$")
         # Add output chunks to buffer
         lines_str = ""
         lineno = 0
         # images are rendered with virtual lines by image.nvim
         virtual_lines = 0
-        sign_col_width = self.nvim.funcs.getwininfo(win.handle)[0]["textoff"]
+
+        if self.options.output_win_cover_gutter:
+            sign_col_width = 0
+        else:
+            sign_col_width = self.nvim.funcs.getwininfo(win.handle)[0]["textoff"]
+
         shape = (
             win_col + sign_col_width,
             win_row,
@@ -122,7 +135,7 @@ class OutputBuffer:
         if len(self.output.chunks) > 0:
             for chunk in self.output.chunks:
                 chunktext, virt_lines = chunk.place(
-                    self.display_buffer.number,
+                    self.display_buf.number,
                     self.options,
                     lineno,
                     shape,
@@ -137,27 +150,36 @@ class OutputBuffer:
         else:
             lines = [lines_str]
 
-        self.display_buffer[0] = self._get_header_text(self.output)
-        self.display_buffer.append(lines)
+        self.display_buf[0] = self._get_header_text(self.output)
+        self.display_buf.append(lines)
 
         # Open output window
-        assert self.display_window is None
+        # assert self.display_window is None
         if win_row < win_height:
-            self.display_window = self.nvim.api.open_win(
-                self.display_buffer.number,
-                False,
-                {
-                    "relative": "win",
-                    "row": win_row,
-                    "col": sign_col_width,
-                    "width": win_width - sign_col_width,
-                    "height": min(win_height - win_row, lineno + virtual_lines + 1),
-                    "style": "minimal",
-                    "border": ("rounded" if self.options.output_window_borders else "none"),
-                    "focusable": False,
-                },
-            )
-            self.canvas.present()
+            win_opts = {
+                "relative": "win",
+                "row": shape[1],
+                "col": shape[0],
+                "width": shape[2],
+                "height": min(win_height - win_row, lineno + virtual_lines + 1),
+                "border": self.options.output_win_border,
+                "focusable": False,
+            }
+            if self.options.output_win_style:
+                win_opts["style"] = self.options.output_win_style
+
+            if self.display_win is None or not self.display_win.valid:  # open a new window
+                self.display_win = self.nvim.api.open_win(
+                    self.display_buf.number,
+                    False,
+                    win_opts,
+                )
+                hl = self.options.output_win_highlight
+                self.set_win_option("winhighlight", f"Normal:{hl},NormalNC:{hl}")
+                self.set_win_option("wrap", self.options.wrap_output)
+                self.canvas.present()
+            else:  # move the current window
+                self.display_win.api.set_config(win_opts)
 
 
 def handle_progress_bars(line_str: str) -> List[str]:
@@ -174,3 +196,28 @@ def handle_progress_bars(line_str: str) -> List[str]:
             lines = actual_lines
 
     return actual_lines
+
+
+def border_size(border: Union[str, List[str], List[List[str]]]):
+    width, height = 0, 0
+    match border:
+        case list(b):
+            height += border_char_size(1, b)
+            height += border_char_size(5, b)
+            width += border_char_size(7, b)
+            width += border_char_size(3, b)
+        case "rounded" | "single" | "double" | "solid":
+            height += 2
+            width += 2
+        case "shadow":
+            height += 1
+            width += 1
+    return width, height
+
+
+def border_char_size(index: int, border: Union[List[str], List[List[str]]]):
+    match border[index % len(border)]:
+        case str(ch) | [str(ch), _]:
+            return len(ch)
+        case _:
+            return 0

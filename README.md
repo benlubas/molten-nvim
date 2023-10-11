@@ -1,17 +1,24 @@
 # Molten
 
-Molten is a fork of [Magma](https://www.github.com/dccsillag/magma-nvim), a plugin for running code interactively with the jupyter kernel.
+Molten is a fork of [Magma](https://www.github.com/dccsillag/magma-nvim), a plugin for running code interactively with the jupyter kernel. I owe a _large_ portion of the functionality of this plugin to Magma. As they say, I stand on the shoulders of giants.
 
-> [!WARNING]
-> I'm still in the process of renaming, and porting over changes. This plugin is not stable at this
-> point in time. If you're ignoring this warning, at least use the dev branch: `output_win_overhaul`
+https://github.com/benlubas/molten-nvim/assets/56943754/3113917e-3719-4ef3-8095-dc72b964c781
 
-![Feature Showcase (gif)](https://user-images.githubusercontent.com/15617291/128964224-f157022c-25cd-4a60-a0da-7d1462564ae4.gif)
+## Features
+
+- Send code to run asynchronously in the jupyter kernel
+- Supports any language with a Jupyter Kernel (in theory, they haven't all been tested)
+- See output in a floating window right below the code
+- Send code from multiple buffers to the same kernel
+- See output in real time, without flicker
+- Python virtual environment support
+- Renders images and LaTeX
 
 ## Requirements
 
 - NeoVim 9.0+
 - Python 3.10+
+- [image.nvim](https://github.com/3rd/image.nvim)
 - Required Python packages:
   - [`pynvim`](https://github.com/neovim/pynvim) (for the Remote Plugin API)
   - [`jupyter_client`](https://github.com/jupyter/jupyter_client) (for interacting with Jupyter)
@@ -31,29 +38,29 @@ You can run `:checkhealth` to see what you have installed.
 
 See the [Wiki Quick-start Guide](https://www.github.com/benlubas/molten-nvim/wiki/Quick-Start-Guide)
 
+The Wiki also contains more in depth setup information/guides.
+
 ## Usage
-
-The plugin provides a bunch of commands to enable interaction. It is recommended to map most of them to keys, as explained in [Keybindings](#keybindings). However, this section will refer to the commands by their names (so as to not depend on some specific mappings).
-
-In-depth setup information can be found in the [wiki](https://github.com/benlubas/molten-nvim/wiki)
-
-### Interface
 
 When you execute some code, it will create a _cell_. You can recognize a cell because it will be highlighted when your cursor is in it.
 
-A cell is delimited using two extmarks (see `:help api-extended-marks`), so it will adjust to you editing the text within it.
+A cell is delimited using two extmarks (see `:h api-extended-marks`), so each cell will adjust when editing
+text within it's boundaries.
 
 When your cursor is in a cell (i.e., you have an _active cell_), a floating window may be shown below the cell, reporting output. This is the _display window_, or _output window_. (To see more about whether a window is shown or not, see `:MoltenShowOutput` and `g:molten_auto_open_output`). When you cursor is not in any cell, no cell is active.
 
 The active cell is chosen from newest to oldest. That means that you can have a cell within another cell, and if the one within is newer, then that one will be selected. (Same goes for merely overlapping cells).
 
-The output window has a header, containing the execution count and execution state (i.e., whether the cell is waiting to be run, running, has finished successfully or has finished with an error). Below the header are shown the outputs.
+The output window has a header, containing the execution count and execution state (i.e., whether the cell is waiting to be run, running, has finished successfully or has finished with an error). Below the header output is shown.
 
 Jupyter provides a rich set of outputs. To see what we can currently handle, see [Output Chunks](#output-chunks).
 
-### Commands Reference
+### Commands
 
-A list of the commands and their arguments. Args in `[]` are optional
+ Molten provides a bunch of user commands as an interface to the user. It is recommended to map most of them to keys, as explained in [Keybindings](#keybindings).
+
+Here is a list of the commands and their arguments. Args in `[]` are optional, args in `""` are
+literal.
 
 | Command                   | Arguments             | Description                        |
 |---------------------------|-----------------------|------------------------------------|
@@ -66,11 +73,11 @@ A list of the commands and their arguments. Args in `[]` are optional
 | `MoltenDelete`            | none                  | Delete the active cell (does nothing if there is no active cell) |
 | `MoltenShowOutput`        | none                  | Shows the output window for the active cell |
 | `MoltenHideOutput`        | none                  | Hide currently open output window |
-| `MoltenEnterOutput`       | none                  | Move into the active cell's output window. **must be called with `noautocmd`** (see [keymaps](#keymaps) for example) |
+| `MoltenEnterOutput`       | none                  | Move into the active cell's output window. Opens but does not enter the output if it's not open. **must be called with `noautocmd`** (see [keymaps](#keymaps) for example) |
 | `MoltenInterrupt`         | none                  | Sends a keyboard interrupt to the kernel which stops any currently running code. (does nothing if there's no current output) |
 | `MoltenRestart`           | `[!]`                 | Shuts down a restarts the current kernel. Deletes all outputs if used with a bang |
 | `MoltenSave`              | `[path]`              | Save the current cells and evaluated outputs into a JSON file. When path is specified, save the file to `path`, otherwise save to `g:molten_save_path` |
-| `MoltenLoad`              | `["shared"] [path]`   | Loads cell locations and output from a JSON file generated by `MoltenSave`. path functions the same as `MoltenSave`. If `shared` is specified, the buffer shares an already running kernel. |
+| `MoltenLoad` (broken)     | `["shared"] [path]`   | Loads cell locations and output from a JSON file generated by `MoltenSave`. path functions the same as `MoltenSave`. If `shared` is specified, the buffer shares an already running kernel. |
 
 ## Keybindings
 
@@ -79,87 +86,52 @@ in the [Wiki](https://github.com/benlubas/molten-nvim/wiki), but here are some e
 Pay attention to `MoltenEvaluateVisual` and `MoltenEnterOutput`, as they need to be run in...odd
 ways.
 
+### Example Run Binds
+
 ```lua
 vim.keymap.set("n", "<localleader>R", ":MoltenEvaluateOperator<CR>",
-    { silent = true, desc = "run operator selection" })
+    { silent = true, noremap = true, desc = "run operator selection" })
 vim.keymap.set("n", "<localleader>rl", ":MoltenEvaluateLine<CR>",
-    { silent = true, desc = "evaluate line" })
+    { silent = true, noremap = true, desc = "evaluate line" })
 vim.keymap.set("n", "<localleader>rc", ":MoltenReevaluateCell<CR>",
-    { silent = true, desc = "re-evaluate cell" })
+    { silent = true, noremap = true, desc = "re-evaluate cell" })
 vim.keymap.set("v", "<localleader>r", ":<C-u>MoltenEvaluateVisual<CR>gv",
-    { silent = true, desc = "evaluate visual selection" })
+    { silent = true, noremap = true, desc = "evaluate visual selection" })
 ```
 
-You can, of course, also map other commands:
+### Other example mappings
 
 ```lua
 vim.keymap.set("n", "<localleader>rd", ":MoltenDelete<CR>",
-    { silent = true, desc = "molten delete cell" })
-vim.keymap.set("n", "<localleader>ro", ":MoltenShowOutput<CR>",
-    { silent = true, desc = "show output" })
-vim.keymap.set("n", "<localleader>rq", ":noautocmd MoltenEnterOutput<CR>",
-    { silent = true, desc = "enter output" })
+    { silent = true, noremap = true, desc = "molten delete cell" })
+vim.keymap.set("n", "<localleader>os", ":MoltenHideOutput<CR>",
+    { silent = true, noremap = true, desc = "hide output" })
+vim.keymap.set("n", "<localleader>os", ":noautocmd MoltenEnterOutput<CR>",
+    { silent = true, noremap = true, desc = "show/enter output" })
 ```
 
 ## Configuration
 
-Configuration is done with variables.
+Configuration is done with variables. Below you'll find a table of all the potential configuration
+variable, their values, and a brief description.
 
-### `g:molten_enter_output_behavior`
+**the default value is wrapped in `()`**
 
-Configures the behavior of [MoltenEnterOutput](#moltenenteroutput)
+| Variable                                      | Values                                                      | Description                                |
+|----------------------                         |-------------------                                          |--------------------------------------------|
+| `g:molten_enter_output_behavior`              | (`"open_then_enter"`) \| `"open_and_enter"` \| `"no_open`   | The behavior of [MoltenEnterOutput](#moltenenteroutput) |
+| `g:molten_image_provider`                     | (`"none"`) \| `"image_nvim"`                                | How image are displayed |
+| `g:molten_auto_open_output`                   | (`true`) \| `false`                                         | Automatically open the output window when your cursor moves over a cell |
+| `g:molten_wrap_output`                        | `true` \| (`false`)                                         | Sets wrap in output windows |
+| `g:molten_output_win_border`                  | (`"none"`) \| any value for `border` in `:h nvim_open_win()`| The border of the output window |
+| `g:molten_output_win_highlight`               | (`"NormalFloat"`) \| any highlight                          | The highlight group value used with `:h winhighlight`, value is used both when the window is active and inactive |
+| `g:molten_output_win_cover_gutter`            | `true` \| (`false`)                                         | Should the output window cover the gutter (numbers and sign col), or not. When true, I'd recommend a value of `false` for the option below. |
+| `g:molten_output_win_style`                   | (`"minimal"`) \| `false`                                    | Value passed to the `style` option in `:h nvim_open_win()` |
+| `g:molten_cell_highlight_group`               | (`"CursorLine"`) \| any highlight                           | The highlight group for the active code cell |
+| `g:molten_save_path`                          | (`stdpath("data").."/molten"`) \| any path to a folder      | Where to save/load data with `:MoltenSave` and `:MoltenLoad` |
+| `g:molten_copy_output`                        | `true` \| (`false`)                                         | Copy evaluation output to clipboard automatically (requires [`pyperclip`](#requirements))|
+| [DEBUG] `g:molten_show_mimetype_debug`        | `true` \| (`false`)                                         | Before any non-iostream output chunk, the mime-type for that output chunk is shown. Meant for debugging/plugin devlopment |
 
-- `"open_then_enter"` (default) -- open the window if it's closed. Enter the window if it's already open
-- `"open_and_enter"` -- open and enter the window if it's closed. Otherwise enter as normal
-- `"no_open"` -- enter the window when it's open, do nothing if it's closed
-
-### `g:molten_image_provider`
-
-This configures how to display images. The following options are available:
-
-- `"none"` (default) -- don't show images.
-- `"image_nvim"` -- use the image nvim plugin
-
-### `g:molten_auto_open_output`
-
-If this is true, then whenever you have an active cell its output window will be automatically shown.
-- `true` (default) -- when you have an active cell, its output window is automatically shown
-- `false` -- Output only opens right after running the code, or after running `:MoltenShowOutput`
-
-### `g:molten_wrap_output`
-
-- `true` -- wrap text in output windows
-- `false` (default) -- don't wrap text in output windows. This option allows for progress bars to
-work properly
-
-### `g:molten_output_window_border`
-
-- `true` (default) -- output windows have a rounded border
-- `false` -- output windows have no border
-
-### `g:molten_cell_highlight_group`
-
-The highlight group to be used for highlighting cells.
-
-- `"CursorLine"` (default)
-
-### `g:molten_save_path`
-
-Where to save/load with `:MoltenSave` and `:MoltenLoad` (with no parameters).
-The generated file is placed in this directory, with the filename itself being the buffer's name, with `%` replaced by `%%` and `/` replaced by `%`, and postfixed with the extension `.json`.
-
-- `stdpath("data") .. "/molten"` (default)
-- any path to a directory
-
-### `g:molten_copy_output`
-
-- `true` -- copy evaluation output to the clipboard automatically (requires `pyperclip`, see [requirements](#requirements))
-- `false` (default) -- don't do that
-
-### [DEBUG] `g:molten_show_mimetype_debug`
-
-- `true` -- Before any non-iostream output chunk, the mime-type of that output chunk is shown. Meant for debugging/plugin development
-- `false` (default) don't do that
 
 ## Autocommands
 
@@ -171,7 +143,7 @@ We provide some `User` autocommands (see `:help User`) for further customization
 - `MoltenDeinitPost`: runs right after `MoltenDeinit` de-initialization happens for a buffer
 
 <details>
-  <summary>Usage</summary>
+  <summary>Lua Usage</summary>
 
 There isn't very good documentation (at the time of writing) on using User Autocommands in lua, so
 here is an example of attaching molten specific mappings to the buffer after initialization
@@ -214,8 +186,8 @@ making an unnecessary number of RPC calls if we were to fetch configuration valu
 needed to use them. This comes with the trade-off of not being able to update config values on the
 fly... can you see where this is going
 
-This function lets you set a configuration value after initialization, and the new value will
-effect immediately.
+This function lets you update a configuration value after initialization, and the new value will
+take effect immediately.
 
 <details>
   <summary>Example Usage</summary>
@@ -243,7 +215,3 @@ Here is a list of the currently handled mime-types:
 - `text/latex`: A LaTeX formula. Rendered into a PNG with [pnglatex](https://pypi.org/project/pnglatex/)
 
 This already provides quite a bit of basic functionality, but if you find a use case for a mime-type that isn't currently supported, feel free to open an issue and/or PR!
-
-### Notifications
-
-We use the `vim.notify` API. This means that you can use plugins such as [rcarriga/nvim-notify](https://github.com/rcarriga/nvim-notify) for pretty notifications.

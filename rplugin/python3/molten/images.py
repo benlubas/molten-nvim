@@ -1,5 +1,4 @@
-import math
-from typing import Set
+from typing import Dict, Set
 from abc import ABC, abstractmethod
 
 from pynvim import Nvim, logging
@@ -40,7 +39,7 @@ class Canvas(ABC):
         """
 
     @abstractmethod
-    def img_height(self, identifier: str) -> int:
+    def img_size(self, identifier: str) -> Dict[str, int]:
         """
         Get the height of an image in terminal rows.
         """
@@ -49,7 +48,6 @@ class Canvas(ABC):
     def add_image(
         self,
         path: str,
-        identifier: str,
         x: int,
         y: int,
         bufnr: int,
@@ -60,10 +58,6 @@ class Canvas(ABC):
         Parameters
         - path: str
           Path to the image we want to show
-        - identifier: str
-          A string which identifies this image (it is a checksum of of its
-          data). It is given for convenience for methods which require
-          identifiers, but can be safely ignored.
         - x: int
           Column number of where the image is supposed to be drawn at (top-left
           corner).
@@ -94,13 +88,12 @@ class NoCanvas(Canvas):
     def clear(self) -> None:
         pass
 
-    def img_height(self, _indentifier: str) -> int:
-        return 0
+    def img_size(self, _indentifier: str) -> Dict[str, int]:
+        return {"height": 0, "width": 0}
 
     def add_image(
         self,
         _path: str,
-        _identifier: str,
         _x: int,
         _y: int,
         _window: int,
@@ -144,7 +137,8 @@ class ImageNvimCanvas(Canvas):
             self.image_api.clear(identifier)
 
         for identifier in to_work_on:
-            self.image_api.render(identifier)
+            size = self.img_size(identifier)
+            self.image_api.render(identifier, size)
 
         self.visible.update(self.to_make_visible)
         self.to_make_invisible.clear()
@@ -154,15 +148,12 @@ class ImageNvimCanvas(Canvas):
         for img in self.visible:
             self.image_api.clear(img)
 
-    def img_height(self, identifier: str) -> int:
-        img_size_px = self.image_api.image_size(identifier)
-        cell_size_px = self.image_utils.cell_size()
-        return math.ceil(img_size_px["height"] / cell_size_px["height"])
+    def img_size(self, identifier: str) -> Dict[str, int]:
+        return self.image_api.image_size(identifier)
 
     def add_image(
         self,
         path: str,
-        identifier: str,
         x: int,
         y: int,
         bufnr: int,
@@ -171,7 +162,7 @@ class ImageNvimCanvas(Canvas):
             img = self.image_api.from_file(
                 path,
                 {
-                    "id": identifier,
+                    "id": path,
                     "buffer": bufnr,
                     "with_virtual_padding": True,
                     "x": x,
