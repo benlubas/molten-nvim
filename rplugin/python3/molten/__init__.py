@@ -436,7 +436,7 @@ class Molten:
 
             molten = self._initialize_buffer(kernel_name, shared=shared)
 
-            load(molten, self.nvim.current.buffer, data)
+            load(self.nvim, molten, self.nvim.current.buffer, data)
 
             self._update_interface()
         except MoltenIOError as err:

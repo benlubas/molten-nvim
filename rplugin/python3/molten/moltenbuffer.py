@@ -50,7 +50,7 @@ class MoltenBuffer:
 
         self._doautocmd("MoltenInitPre")
 
-        self.runtime = JupyterRuntime(kernel_name, options)
+        self.runtime = JupyterRuntime(nvim, kernel_name, options)
 
         self.outputs = {}
         self.current_output = None

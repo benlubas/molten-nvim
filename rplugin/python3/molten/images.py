@@ -48,7 +48,6 @@ class Canvas(ABC):
     def add_image(
         self,
         path: str,
-        identifier: str,
         x: int,
         y: int,
         bufnr: int,
@@ -59,10 +58,6 @@ class Canvas(ABC):
         Parameters
         - path: str
           Path to the image we want to show
-        - identifier: str
-          A string which identifies this image (it is a checksum of of its
-          data). It is given for convenience for methods which require
-          identifiers, but can be safely ignored.
         - x: int
           Column number of where the image is supposed to be drawn at (top-left
           corner).
@@ -99,7 +94,6 @@ class NoCanvas(Canvas):
     def add_image(
         self,
         _path: str,
-        _identifier: str,
         _x: int,
         _y: int,
         _window: int,
@@ -160,7 +154,6 @@ class ImageNvimCanvas(Canvas):
     def add_image(
         self,
         path: str,
-        identifier: str,
         x: int,
         y: int,
         bufnr: int,
@@ -169,7 +162,7 @@ class ImageNvimCanvas(Canvas):
             img = self.image_api.from_file(
                 path,
                 {
-                    "id": identifier,
+                    "id": path,
                     "buffer": bufnr,
                     "with_virtual_padding": True,
                     "x": x,

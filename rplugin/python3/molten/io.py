@@ -1,5 +1,6 @@
 from typing import Type, Optional, Dict, Any
 import os
+from pynvim import Nvim
 
 from pynvim.api import Buffer
 
@@ -36,7 +37,7 @@ def get_default_save_file(options: MoltenOptions, buffer: Buffer) -> str:
     return os.path.join(options.save_path, mangled_name + ".json")
 
 
-def load(moltenbuffer: MoltenBuffer, nvim_buffer: Buffer, data: Dict[str, Any]) -> None:
+def load(nvim: Nvim, moltenbuffer: MoltenBuffer, nvim_buffer: Buffer, data: Dict[str, Any]) -> None:
     MoltenIOError.assert_has_key(data, "content_checksum", str)
 
     if moltenbuffer._get_content_checksum() != data["content_checksum"]:
@@ -84,6 +85,7 @@ def load(moltenbuffer: MoltenBuffer, nvim_buffer: Buffer, data: Dict[str, Any]) 
             MoltenIOError.assert_has_key(chunk, "metadata", dict)
             output.chunks.append(
                 to_outputchunk(
+                    nvim,
                     moltenbuffer.runtime._alloc_file,
                     chunk["data"],
                     chunk["metadata"],
