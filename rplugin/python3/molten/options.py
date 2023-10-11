@@ -1,7 +1,7 @@
 import os
 
 from pynvim import Nvim
-from typing import Optional, Tuple, Union, List
+from typing import Optional, Union, List
 
 from molten.utils import notify_error
 
@@ -13,6 +13,10 @@ class MoltenOptions:
     output_win_style: Optional[str]
     output_win_cover_gutter: bool
     output_win_highlight: str
+    output_win_max_height: int
+    output_win_max_width: int
+    output_show_more: bool
+    output_crop_border: bool
     show_mimetype_debug: bool
     cell_highlight_group: str
     save_path: str
@@ -29,9 +33,12 @@ class MoltenOptions:
             ("molten_wrap_output", False),
             ("molten_output_win_border", "none"),
             ("molten_output_win_style", "minimal"),
-            ("molten_output_win_offset", (0, 0)),
             ("molten_output_win_cover_gutter", False),
             ("molten_output_win_highlight", "NormalFloat"),
+            ("molten_output_win_max_height", 999999),
+            ("molten_output_win_max_width", 999999),
+            ("molten_output_show_more", False),
+            ("molten_output_crop_border", False),
             ("molten_show_mimetype_debug", False),
             ("molten_cell_highlight_group", "CursorLine"),
             ("molten_save_path", os.path.join(nvim.funcs.stdpath("data"), "molten")),

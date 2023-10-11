@@ -76,16 +76,19 @@ class OutputBuffer:
         return f"{old}Out[{execution_count}]: {status}"
 
     def enter(self, anchor: Position) -> None:
+        entered = False
         if self.display_win is None:
             if self.options.enter_output_behavior == "open_then_enter":
                 self.show(anchor)
-                return
             elif self.options.enter_output_behavior == "open_and_enter":
                 self.show(anchor)
+                entered = True
                 self.nvim.funcs.nvim_set_current_win(self.display_win)
-                return
         elif self.options.enter_output_behavior != "no_open":
+            entered = True
             self.nvim.funcs.nvim_set_current_win(self.display_win)
+        if entered and self.options.output_show_more:
+            self.remove_window_footer()
 
     def clear_interface(self) -> None:
         if self.display_win is not None:
@@ -156,17 +159,40 @@ class OutputBuffer:
         # Open output window
         # assert self.display_window is None
         if win_row < win_height:
+            border = self.options.output_win_border
+            max_height = min(virtual_lines + lineno + 1, self.options.output_win_max_height)
+            height = min(win_height - win_row, max_height)
+
+            cropped = False
+            if height == win_height - win_row and max_height > height:  # It didn't fit on the screen
+                if self.options.output_crop_border and type(border) == list:
+                    cropped = True
+                    # Expand the border, so top and bottom can change independently
+                    border = [border[i % len(border)] for i in range(8)]
+                    border[5 % len(border)] = ""
+                    height += 1
+
             win_opts = {
                 "relative": "win",
                 "row": shape[1],
                 "col": shape[0],
-                "width": shape[2],
-                "height": min(win_height - win_row, lineno + virtual_lines + 1),
-                "border": self.options.output_win_border,
+                "width": min(shape[2], self.options.output_win_max_width),
+                "height": height,
+                "border": border,
                 "focusable": False,
             }
             if self.options.output_win_style:
                 win_opts["style"] = self.options.output_win_style
+            if (
+                self.options.output_show_more
+                and not cropped
+                and height == self.options.output_win_max_height
+                and len(self.display_buf) > height - border_h
+            ):
+                # the entire window size is shown, but the buffer still has more lines to render
+                hidden_lines = len(self.display_buf) - height
+                win_opts["footer"] = f" 󰁅 {hidden_lines} More Lines "
+                win_opts["footer_pos"] = "left"
 
             if self.display_win is None or not self.display_win.valid:  # open a new window
                 self.display_win = self.nvim.api.open_win(
@@ -175,12 +201,17 @@ class OutputBuffer:
                     win_opts,
                 )
                 hl = self.options.output_win_highlight
+                # TODO: Refactor once MoltenOutputWindowOpen autocommand is a thing.
                 self.set_win_option("winhighlight", f"Normal:{hl},NormalNC:{hl}")
                 self.set_win_option("wrap", self.options.wrap_output)
+                self.set_win_option("cursorline", False)
                 self.canvas.present()
             else:  # move the current window
                 self.display_win.api.set_config(win_opts)
 
+    def remove_window_footer(self) -> None:
+        if self.display_win is not None:
+            self.display_win.api.set_config({"footer": ""})
 
 def handle_progress_bars(line_str: str) -> List[str]:
     """Progress bars like tqdm use special chars (`\\r`) and some trick to work
