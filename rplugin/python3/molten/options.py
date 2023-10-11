@@ -33,7 +33,6 @@ class MoltenOptions:
     use_border_highlights: bool
     output_win_style: Optional[str]
     output_win_cover_gutter: bool
-    output_win_highlight: str
     output_win_max_height: int
     output_win_max_width: int
     output_show_more: bool

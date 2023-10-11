@@ -6,7 +6,7 @@ from pynvim.api import Buffer, Window
 from molten.images import Canvas
 from molten.outputchunks import Output, OutputStatus
 from molten.options import MoltenOptions
-from molten.utils import Position
+from molten.utils import Position, notify_error
 
 
 class OutputBuffer:
@@ -174,7 +174,9 @@ class OutputBuffer:
                     border[5 % len(border)] = ""
                     height += 1
 
-            border = self.set_border_highlight(border)
+            if self.options.use_border_highlights:
+                border = self.set_border_highlight(border)
+
             win_opts = {
                 "relative": "win",
                 "row": shape[1],
@@ -194,9 +196,12 @@ class OutputBuffer:
             ):
                 # the entire window size is shown, but the buffer still has more lines to render
                 hidden_lines = len(self.display_buf) - height
-                if self.options.output_win_cover_gutter:
+                if self.options.output_win_cover_gutter and type(border) == list:
                     border_pad = border[5 % len(border)][0] * text_off
-                    win_opts["footer"] = [(border_pad, border[5 % len(border)][1]), (f" 󰁅 {hidden_lines} More Lines ", self.options.hl.foot)]
+                    win_opts["footer"] = [
+                        (border_pad, border[5 % len(border)][1]),
+                        (f" 󰁅 {hidden_lines} More Lines ", self.options.hl.foot),
+                    ]
                 else:
                     win_opts["footer"] = [(f" 󰁅 {hidden_lines} More Lines ", self.options.hl.foot)]
                 win_opts["footer_pos"] = "left"
@@ -225,11 +230,19 @@ class OutputBuffer:
         elif self.output.status == OutputStatus.DONE:
             hl = self.options.hl.border_succ
 
+        if type(border) == str:
+            notify_error(
+                self.nvim,
+                "`use_border_highlights` only works when `output_win_border` is specified as a table",
+            )
+            return border
+
         for i in range(len(border)):
-            if type(border[i]) == list:
-                border[i][1] = hl
-            else:
-                border[i] = [border[i], hl]
+            match border[i]:
+                case [str(_), *_]:
+                    border[i][1] = hl
+                case str(_):
+                    border[i] = [border[i], hl]
 
         return border
 
