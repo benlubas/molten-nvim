@@ -9,11 +9,22 @@ from molten.utils import notify_error
 @dataclass
 class HL:
     border_norm = "MoltenOutputBorder"
-    border_fail = "MoltenOutputBorderFailed"
+    border_fail = "MoltenOutputBorderFail"
     border_succ = "MoltenOutputBorderSuccess"
     win = "MoltenOutputWin"
     win_nc = "MoltenOutputWinNC"
     foot = "MoltenOutputFooter"
+    cell = "MoltenCell"
+
+    defaults = {
+        border_norm: "FloatBorder",
+        border_succ: border_norm,
+        border_fail: border_norm,
+        win: "NormalFloat",
+        win_nc: win,
+        foot: "FloatFooter",
+        cell: "CursorLine",
+    }
 
 class MoltenOptions:
     auto_open_output: bool
@@ -28,7 +39,6 @@ class MoltenOptions:
     output_show_more: bool
     output_crop_border: bool
     show_mimetype_debug: bool
-    cell_highlight_group: str
     save_path: str
     image_provider: str
     copy_output: bool
@@ -47,13 +57,11 @@ class MoltenOptions:
             ("molten_use_border_highlights", False),
             ("molten_output_win_style", "minimal"),
             ("molten_output_win_cover_gutter", False),
-            ("molten_output_win_highlight", "NormalFloat"),
             ("molten_output_win_max_height", 999999),
             ("molten_output_win_max_width", 999999),
             ("molten_output_show_more", False),
             ("molten_output_crop_border", False),
             ("molten_show_mimetype_debug", False),
-            ("molten_cell_highlight_group", "CursorLine"),
             ("molten_save_path", os.path.join(nvim.funcs.stdpath("data"), "molten")),
             ("molten_image_provider", "none"),
             ("molten_copy_output", False),

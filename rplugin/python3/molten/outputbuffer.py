@@ -124,10 +124,10 @@ class OutputBuffer:
         # images are rendered with virtual lines by image.nvim
         virtual_lines = 0
 
-        if self.options.output_win_cover_gutter:
-            sign_col_width = 0
-        else:
-            sign_col_width = self.nvim.funcs.getwininfo(win.handle)[0]["textoff"]
+        sign_col_width = 0
+        text_off = self.nvim.funcs.getwininfo(win.handle)[0]["textoff"]
+        if not self.options.output_win_cover_gutter:
+            sign_col_width = text_off
 
         shape = (
             win_col + sign_col_width,
@@ -164,7 +164,9 @@ class OutputBuffer:
             height = min(win_height - win_row, max_height)
 
             cropped = False
-            if height == win_height - win_row and max_height > height:  # It didn't fit on the screen
+            if (
+                height == win_height - win_row and max_height > height
+            ):  # It didn't fit on the screen
                 if self.options.output_crop_border and type(border) == list:
                     cropped = True
                     # Expand the border, so top and bottom can change independently
@@ -172,6 +174,7 @@ class OutputBuffer:
                     border[5 % len(border)] = ""
                     height += 1
 
+            border = self.set_border_highlight(border)
             win_opts = {
                 "relative": "win",
                 "row": shape[1],
@@ -191,8 +194,11 @@ class OutputBuffer:
             ):
                 # the entire window size is shown, but the buffer still has more lines to render
                 hidden_lines = len(self.display_buf) - height
-                win_opts["footer"] = [(f" 󰁅 {hidden_lines} More Lines ", self.options.hl.foot)]
-                self.nvim.out_write(f"footer: {win_opts['footer']}\n")
+                if self.options.output_win_cover_gutter:
+                    border_pad = border[5 % len(border)][0] * text_off
+                    win_opts["footer"] = [(border_pad, border[5 % len(border)][1]), (f" 󰁅 {hidden_lines} More Lines ", self.options.hl.foot)]
+                else:
+                    win_opts["footer"] = [(f" 󰁅 {hidden_lines} More Lines ", self.options.hl.foot)]
                 win_opts["footer_pos"] = "left"
 
             if self.display_win is None or not self.display_win.valid:  # open a new window
@@ -212,9 +218,25 @@ class OutputBuffer:
             else:  # move the current window
                 self.display_win.api.set_config(win_opts)
 
+    def set_border_highlight(self, border):
+        hl = self.options.hl.border_norm
+        if not self.output.success:
+            hl = self.options.hl.border_fail
+        elif self.output.status == OutputStatus.DONE:
+            hl = self.options.hl.border_succ
+
+        for i in range(len(border)):
+            if type(border[i]) == list:
+                border[i][1] = hl
+            else:
+                border[i] = [border[i], hl]
+
+        return border
+
     def remove_window_footer(self) -> None:
         if self.display_win is not None:
             self.display_win.api.set_config({"footer": ""})
+
 
 def handle_progress_bars(line_str: str) -> List[str]:
     """Progress bars like tqdm use special chars (`\\r`) and some trick to work

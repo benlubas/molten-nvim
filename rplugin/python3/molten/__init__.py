@@ -70,14 +70,11 @@ class Molten:
         self.nvim.command("augroup END")
 
     def _setup_highlights(self) -> None:
-        hl = self.options.hl
-        self.nvim.out_write("molten highlights\n")
-        self.nvim.api.command(f"hi default link {hl.win} NormalFloat")
-        self.nvim.api.command(f"hi default link {hl.win_nc} {hl.win}")
-        self.nvim.api.command(f"hi default link {hl.border_norm} FloatBorder")
-        self.nvim.api.command(f"hi default link {hl.border_fail} FloatBorder")
-        self.nvim.api.command(f"hi default link {hl.border_succ} FloatBorder")
-        self.nvim.api.command(f"hi default link {hl.foot} FloatFooter")
+        self.nvim.exec_lua("_hl_utils = require('hl_utils')")
+        hl_utils = self.nvim.lua._hl_utils
+
+        for group, value in self.options.hl.defaults.items():
+            hl_utils.set_default_highlight(group, value)
 
     def _deinitialize(self) -> None:
         for molten in self.buffers.values():

@@ -245,7 +245,7 @@ class MoltenBuffer:
             self.nvim.funcs.nvim_buf_add_highlight(
                 buf.number,
                 self.highlight_namespace,
-                self.options.cell_highlight_group,
+                self.options.hl.cell,
                 span.begin.lineno,
                 span.begin.colno,
                 span.end.colno,
@@ -254,7 +254,7 @@ class MoltenBuffer:
             self.nvim.funcs.nvim_buf_add_highlight(
                 buf.number,
                 self.highlight_namespace,
-                self.options.cell_highlight_group,
+                self.options.hl.cell,
                 span.begin.lineno,
                 span.begin.colno,
                 -1,
@@ -263,7 +263,7 @@ class MoltenBuffer:
                 self.nvim.funcs.nvim_buf_add_highlight(
                     buf.number,
                     self.highlight_namespace,
-                    self.options.cell_highlight_group,
+                    self.options.hl.cell,
                     lineno,
                     0,
                     -1,
@@ -271,7 +271,7 @@ class MoltenBuffer:
             self.nvim.funcs.nvim_buf_add_highlight(
                 buf.number,
                 self.highlight_namespace,
-                self.options.cell_highlight_group,
+                self.options.hl.cell,
                 span.end.lineno,
                 0,
                 span.end.colno,
