@@ -71,12 +71,13 @@ class Molten:
 
     def _setup_highlights(self) -> None:
         hl = self.options.hl
-        self.nvim.api.set_hl(0, hl.win, { "default": True, "link": "NormalFloat" })
-        self.nvim.api.set_hl(0, hl.win_nc, { "default": True, "link": hl.win })
-        self.nvim.api.set_hl(0, hl.border_norm, { "default": True, "link": "FloatBorder" })
-        self.nvim.api.set_hl(0, hl.border_fail, { "default": True, "link": "FloatBorder" })
-        self.nvim.api.set_hl(0, hl.border_succ, { "default": True, "link": "FloatBorder" })
-        self.nvim.api.set_hl(0, hl.foot, { "default": True, "link": "FloatFooter" })
+        self.nvim.out_write("molten highlights\n")
+        self.nvim.api.command(f"hi default link {hl.win} NormalFloat")
+        self.nvim.api.command(f"hi default link {hl.win_nc} {hl.win}")
+        self.nvim.api.command(f"hi default link {hl.border_norm} FloatBorder")
+        self.nvim.api.command(f"hi default link {hl.border_fail} FloatBorder")
+        self.nvim.api.command(f"hi default link {hl.border_succ} FloatBorder")
+        self.nvim.api.command(f"hi default link {hl.foot} FloatFooter")
 
     def _deinitialize(self) -> None:
         for molten in self.buffers.values():

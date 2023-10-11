@@ -192,6 +192,7 @@ class OutputBuffer:
                 # the entire window size is shown, but the buffer still has more lines to render
                 hidden_lines = len(self.display_buf) - height
                 win_opts["footer"] = [(f" 󰁅 {hidden_lines} More Lines ", self.options.hl.foot)]
+                self.nvim.out_write(f"footer: {win_opts['footer']}\n")
                 win_opts["footer_pos"] = "left"
 
             if self.display_win is None or not self.display_win.valid:  # open a new window
