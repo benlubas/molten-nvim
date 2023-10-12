@@ -381,8 +381,18 @@ class Molten:
     @pynvim.command("MoltenHideOutput", nargs=0, sync=True)  # type: ignore
     @nvimui  # type: ignore
     def command_hide_output(self) -> None:
-        molten = self._get_molten(True)
-        assert molten is not None
+        molten = self._get_molten(False)
+        if molten is None:
+            # get the current buffer, and then search for it in all molten buffers
+            cur_buf = self.nvim.current.buffer
+            for moltenbuf in self.buffers.values():
+                # if we find it, then we know this is a molten output, and we can safely quit and
+                # call hide to hide it
+                if cur_buf in map(lambda x: x.display_buf, moltenbuf.outputs.values()):
+                    self.nvim.command("q")
+                    self.nvim.command(":MoltenHideOutput")
+                    return
+            return
 
         molten.should_show_display_window = False
         self._update_interface()
