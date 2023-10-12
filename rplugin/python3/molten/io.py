@@ -97,6 +97,7 @@ def load(nvim: Nvim, moltenbuffer: MoltenBuffer, nvim_buffer: Buffer, data: Dict
         moltenbuffer.outputs[span] = OutputBuffer(
             moltenbuffer.nvim, moltenbuffer.canvas, moltenbuffer.options
         )
+        moltenbuffer.outputs[span].output = output
 
 
 def save(moltenbuffer: MoltenBuffer, nvim_buffer: int) -> Dict[str, Any]:
