@@ -137,7 +137,7 @@ class MoltenBuffer:
         if self.selected_cell is not None:
             if self.options.enter_output_behavior != "no_open":
                 self.should_show_display_window = True
-            self.outputs[self.selected_cell].enter(self.selected_cell.end)
+            self.should_show_display_window = self.outputs[self.selected_cell].enter(self.selected_cell.end)
 
     def _get_cursor_position(self) -> Position:
         _, lineno, colno, _, _ = self.nvim.funcs.getcurpos()

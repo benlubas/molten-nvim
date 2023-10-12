@@ -35,6 +35,7 @@ class MoltenOptions:
     output_show_more: bool
     output_win_border: Union[str, List[str]]
     output_win_cover_gutter: bool
+    output_win_hide_on_leave: bool
     output_win_max_height: int
     output_win_max_width: int
     output_win_style: Optional[str]
@@ -58,6 +59,7 @@ class MoltenOptions:
             ("molten_output_show_more", True),
             ("molten_output_win_border", [ "", "━", "", "" ]),
             ("molten_output_win_cover_gutter", True),
+            ("molten_output_win_hide_on_leave", True),
             ("molten_output_win_max_height", 999999),
             ("molten_output_win_max_width", 999999),
             ("molten_output_win_style", False),

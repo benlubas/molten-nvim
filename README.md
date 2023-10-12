@@ -131,6 +131,7 @@ variable, their values, and a brief description.
 | `g:molten_output_show_more`                   | (`true`) \| `false`                                         | When the window can't display the entire contents of the output buffer, shows the number of extra lines in the window footer (this option needs a border to work). _You should specify your border as a table if you use this option with `cover_gutter = false`_ |
 | `g:molten_output_win_border`                  | (`{ "", "━", "", "" }`) \| any value for `border` in `:h nvim_open_win()`| The border of the output window |
 | `g:molten_output_win_cover_gutter`            | (`true`) \| `false`                                         | Should the output window cover the gutter (numbers and sign col), or not. If you change this, you probably also want to change `molten_output_win_style` |
+| `g:molten_output_win_hide_on_leave`           | (`true`) \| `false`                                         | After leaving the output window (via `:q` or switching windows), do not attempt to redraw the output window |
 | `g:molten_output_win_max_height`              | (`999999`) \| int                                           | Max height of the output window |
 | `g:molten_output_win_max_width`               | (`999999`) \| int                                           | Max width of the output window |
 | `g:molten_output_win_style`                   | (`false`) \| `"minimal"`                                    | Value passed to the `style` option in `:h nvim_open_win()` |
