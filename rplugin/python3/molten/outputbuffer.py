@@ -62,7 +62,7 @@ class OutputBuffer:
 
         return f"{old}Out[{execution_count}]: {status}"
 
-    def enter(self, anchor: Position) -> None:
+    def enter(self, anchor: Position) -> bool:
         entered = False
         if self.display_win is None:
             if self.options.enter_output_behavior == "open_then_enter":
@@ -74,8 +74,12 @@ class OutputBuffer:
         elif self.options.enter_output_behavior != "no_open":
             entered = True
             self.nvim.funcs.nvim_set_current_win(self.display_win)
-        if entered and self.options.output_show_more:
-            self.remove_window_footer()
+        if entered:
+            if self.options.output_show_more:
+                self.remove_window_footer()
+            if self.options.output_win_hide_on_leave:
+                return False
+        return True
 
     def clear_interface(self) -> None:
         if self.display_win is not None:
