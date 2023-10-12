@@ -164,7 +164,10 @@ class JupyterRuntime:
             return True
         elif message_type == "stream":
             copy_on_demand(content["text"])
-            output.chunks.append(TextOutputChunk(content["text"]))
+            chunk = TextOutputChunk(content["text"])
+            chunk.jupyter_data = {"text/plain": content["text"]}
+            chunk.jupyter_metadata = {}
+            output.chunks.append(chunk)
             return True
         elif message_type == "display_data":
             # XXX: consider content['transient'], if we end up saving execution
