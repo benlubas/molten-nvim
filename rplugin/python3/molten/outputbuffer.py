@@ -1,4 +1,4 @@
-from typing import List, Optional, Union
+from typing import Any, List, Optional, Union
 
 from pynvim import Nvim
 from pynvim.api import Buffer, Window
@@ -19,6 +19,7 @@ class OutputBuffer:
     display_win: Optional[Window]
 
     options: MoltenOptions
+    lua: Any
 
     def __init__(self, nvim: Nvim, canvas: Canvas, options: MoltenOptions):
         self.nvim = nvim
@@ -30,25 +31,11 @@ class OutputBuffer:
         self.display_win = None
 
         self.options = options
+        self.nvim.exec_lua("_ow = require('output_window')")
+        self.lua = self.nvim.lua._ow
 
-    def _buffer_to_window_lineno(self, lineno: int) -> int:
-        win_top = self.nvim.funcs.line("w0")
-        assert isinstance(win_top, int)
-        # handle folds
-        # (code modified from image.nvim https://github.com/3rd/image.nvim/blob/16f54077ca91fa8c4d1239cc3c1b6663dd169092/lua/image/renderer.lua#L254)
-        offset = 0
-        if self.nvim.current.window.options["foldenable"]:
-            i = win_top
-            while i <= lineno:
-                fold_start = self.nvim.funcs.foldclosed(i)
-                fold_end = self.nvim.funcs.foldclosedend(i)
-                if fold_start != -1 and fold_end != -1:
-                    offset += fold_end - fold_start
-                    i = fold_end + 1
-                else:
-                    i += 1
-
-        return lineno - win_top + 1 - offset
+    def _buffer_to_window_lineno(self, lineno: int, bufno: int) -> int:
+        return self.lua.calculate_window_position(bufno, lineno)
 
     def _get_header_text(self, output: Output) -> str:
         if output.execution_count is None:
@@ -107,7 +94,7 @@ class OutputBuffer:
     def show(self, anchor: Position) -> None:
         win = self.nvim.current.window
         win_col = win.col
-        win_row = self._buffer_to_window_lineno(anchor.lineno + 1)
+        win_row = self._buffer_to_window_lineno(anchor.lineno + 1, anchor.bufno)
         win_width = win.width
         win_height = win.height
 
@@ -155,6 +142,9 @@ class OutputBuffer:
 
         self.display_buf[0] = self._get_header_text(self.output)
         self.display_buf.append(lines)
+        self.nvim.api.set_option_value(
+            "filetype", "molten_output", {"buf": self.display_buf.handle}
+        )
 
         # Open output window
         # assert self.display_window is None

@@ -72,9 +72,7 @@ class Molten:
     def _setup_highlights(self) -> None:
         self.nvim.exec_lua("_hl_utils = require('hl_utils')")
         hl_utils = self.nvim.lua._hl_utils
-
-        for group, value in self.options.hl.defaults.items():
-            hl_utils.set_default_highlight(group, value)
+        hl_utils.set_default_highlights(self.options.hl.defaults)
 
     def _deinitialize(self) -> None:
         for molten in self.buffers.values():

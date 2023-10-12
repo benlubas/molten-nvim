@@ -60,7 +60,7 @@ class MoltenOptions:
             ("molten_output_win_cover_gutter", True),
             ("molten_output_win_max_height", 999999),
             ("molten_output_win_max_width", 999999),
-            ("molten_output_win_style", "minimal"),
+            ("molten_output_win_style", False),
             ("molten_save_path", os.path.join(nvim.funcs.stdpath("data"), "molten")),
             ("molten_use_border_highlights", False),
             ("molten_wrap_output", False),
