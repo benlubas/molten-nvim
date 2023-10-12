@@ -53,6 +53,7 @@ class Molten:
 
         self.timer = self.nvim.eval("timer_start(500, 'MoltenTick', {'repeat': -1})")  # type: ignore
 
+        self._setup_highlights()
         self._set_autocommands()
 
         self.initialized = True
@@ -67,6 +68,11 @@ class Molten:
         self.nvim.command("autocmd BufUnload    * call MoltenOnBufferUnload()")
         self.nvim.command("autocmd ExitPre      * call MoltenOnExitPre()")
         self.nvim.command("augroup END")
+
+    def _setup_highlights(self) -> None:
+        self.nvim.exec_lua("_hl_utils = require('hl_utils')")
+        hl_utils = self.nvim.lua._hl_utils
+        hl_utils.set_default_highlights(self.options.hl.defaults)
 
     def _deinitialize(self) -> None:
         for molten in self.buffers.values():

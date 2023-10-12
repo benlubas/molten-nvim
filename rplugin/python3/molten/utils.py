@@ -1,6 +1,6 @@
 from typing import Union, List
 
-from pynvim import Nvim, logging
+from pynvim import Nvim
 
 
 class MoltenException(Exception):
