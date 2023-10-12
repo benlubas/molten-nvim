@@ -129,8 +129,6 @@ def save(moltenbuffer: MoltenBuffer, nvim_buffer: int) -> Dict[str, Any]:
                     for chunk in output.output.chunks
                     if chunk.jupyter_data is not None
                     and chunk.jupyter_metadata is not None
-                    # TODO: metadata is None for text chunks I think
-                    # resulting in save not saving text output
                 ],
             }
             for span, output in moltenbuffer.outputs.items() if span.begin.bufno == nvim_buffer
