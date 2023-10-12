@@ -96,8 +96,9 @@ class Molten:
         if not self.initialized:
             return
 
-        for molten in self.buffers.values():
-            molten.clear_interface()
+        for moltenbuf in self.buffers.values():
+            moltenbuf.clear_interface()
+            moltenbuf.clear_open_output_windows()
         assert self.canvas is not None
         self.canvas.present()
 
@@ -455,7 +456,7 @@ class Molten:
 
     @pynvim.function("MoltenClearInterface", sync=True)  # type: ignore
     @nvimui  # type: ignore
-    def function_clear_interface(self, _: Any) -> None:
+    def function_clear_interface(self, _: List[Any]) -> None:
         self._clear_interface()
 
     @pynvim.function("MoltenOnBufferUnload", sync=True)  # type: ignore

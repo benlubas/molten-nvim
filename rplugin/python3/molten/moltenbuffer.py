@@ -155,6 +155,10 @@ class MoltenBuffer:
                 -1,
             )
 
+    def clear_open_output_windows(self) -> None:
+        for output in self.outputs.values():
+            output.clear_interface()
+
     def _get_selected_span(self) -> Optional[Span]:
         current_position = self._get_cursor_position()
         selected = None
