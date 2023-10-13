@@ -19,18 +19,16 @@ https://github.com/benlubas/molten-nvim/assets/56943754/6266efa4-a6e4-46f1-8e15-
 
 - NeoVim 9.4+, nightly recommended
 - Python 3.10+
-- [image.nvim](https://github.com/3rd/image.nvim)
-- Required Python packages:
+- [image.nvim](https://github.com/3rd/image.nvim) is only required if you want to render images
+- Required Python packages (can be installed in a venv. [read more](https://github.com/benlubas/molten-nvim/wiki/Virtual-Environments)):
   - [`pynvim`](https://github.com/neovim/pynvim) (for the Remote Plugin API)
   - [`jupyter_client`](https://github.com/jupyter/jupyter_client) (for interacting with Jupyter)
+- Optional Python packages:
   - [`cairosvg`](https://cairosvg.org/) (for displaying SVG images with transparency)
     - If you don't need transparency, image.nvim can render svg images perfectly fine
   - [`pnglatex`](https://pypi.org/project/pnglatex/) (for displaying TeX formulas)
   - `plotly` and `kaleido` (for displaying Plotly figures)
   - `pyperclip` if you want to use `molten_copy_output`
-- For .NET (C#, F#)
-  - `dotnet tool install -g Microsoft.dotnet-interactive`
-  - `dotnet interactive jupyter install`
 
 You can run `:checkhealth` to see what you have installed.
 
@@ -235,8 +233,9 @@ In the Jupyter protocol, most output-related messages provide a dictionary of mi
 Here is a list of the currently handled mime-types:
 
 - `text/plain`: Plain text. Shown as text in the output window's buffer.
-- `image/png`: A PNG image.
-- `image/svg+xml`: A SVG image. Rendered into a PNG with [CairoSVG](https://cairosvg.org/).
+- `image/*`: Molten attempts to render any `image` mimetype by sending it to image.nvim. In theory,
+this means that Molten can handle any image format that ImageMagick supports, though I've only
+tested common formats
 - `application/vnd.plotly.v1+json`: A Plotly figure. Rendered into a PNG with [Plotly](https://plotly.com/python/) + [Kaleido](https://github.com/plotly/Kaleido)
 - `text/latex`: A LaTeX formula. Rendered into a PNG with [pnglatex](https://pypi.org/project/pnglatex/)
 

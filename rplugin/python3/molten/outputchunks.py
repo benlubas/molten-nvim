@@ -166,10 +166,10 @@ def to_outputchunk(
         return ImageOutputChunk(path)
 
     # Output chunk functions:
-    def _from_image_png(imgdata: bytes) -> OutputChunk:
+    def _from_image(extension: str, imgdata: bytes) -> OutputChunk:
         import base64
 
-        with alloc_file("png", "wb") as (path, file):
+        with alloc_file(extension, "wb") as (path, file):
             file.write(base64.b64decode(str(imgdata)))
         return _to_image_chunk(path)
 
@@ -209,16 +209,15 @@ def to_outputchunk(
     def _from_plaintext(text: str) -> OutputChunk:
         return TextLnOutputChunk(text)
 
-    OUTPUT_CHUNKS = {
-        "image/png": _from_image_png,
-        "image/svg+xml": _from_image_svgxml,
-        "application/vnd.plotly.v1+json": _from_application_plotly,
-        "text/latex": _from_latex,
-        "text/plain": _from_plaintext,
-    }
+    # handle these mimetypes first, since they require Molten to render them
+    OUTPUT_CHUNKS = [
+        ("image/svg+xml", _from_image_svgxml),
+        ("application/vnd.plotly.v1+json", _from_application_plotly),
+        ("text/latex", _from_latex),
+    ]
 
     chunk = None
-    for mimetype, process_func in OUTPUT_CHUNKS.items():
+    for mimetype, process_func in OUTPUT_CHUNKS:
         try:
             maybe_data = data.get(mimetype)
             if maybe_data is not None:
@@ -228,7 +227,19 @@ def to_outputchunk(
             continue
 
     if chunk is None:
-        chunk = BadOutputChunk(list(data.keys()))
+        # handle arbitrary images
+        for mimetype in data.keys():
+            match mimetype.split("/"):
+                case ["image", extension]:
+                    chunk = _from_image(extension, data[mimetype])
+                    break
+
+    if chunk is None:
+        # fallback to plain text if there's nothing else
+        if data.get("text/plain"):
+            chunk = _from_plaintext(data["text/plain"])
+        else:
+            chunk = BadOutputChunk(list(data.keys()))
 
     chunk.jupyter_data = data
     chunk.jupyter_metadata = metadata
