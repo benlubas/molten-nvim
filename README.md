@@ -17,7 +17,7 @@ https://github.com/benlubas/molten-nvim/assets/56943754/6266efa4-a6e4-46f1-8e15-
 
 ## Requirements
 
-- NeoVim 9.0+
+- NeoVim 9.4+, nightly recommended
 - Python 3.10+
 - [image.nvim](https://github.com/3rd/image.nvim)
 - Required Python packages:
@@ -126,8 +126,8 @@ variable, their values, and a brief description.
 | `g:molten_enter_output_behavior`              | (`"open_then_enter"`) \| `"open_and_enter"` \| `"no_open`   | The behavior of [MoltenEnterOutput](#moltenenteroutput) |
 | `g:molten_image_provider`                     | (`"none"`) \| `"image_nvim"`                                | How image are displayed |
 | `g:molten_output_crop_border`                 | (`true`) \| `false`                                         | 'crops' the bottom border of the output window when it would otherwise just sit at the bottom of the screen |
-| `g:molten_output_show_more`                   | (`true`) \| `false`                                         | When the window can't display the entire contents of the output buffer, shows the number of extra lines in the window footer (this option needs a border to work). _You should specify your border as a table if you use this option with `cover_gutter = false`_ |
-| `g:molten_output_win_border`                  | (`{ "", "━", "", "" }`) \| any value for `border` in `:h nvim_open_win()`| The border of the output window |
+| `g:molten_output_show_more`                   | `true` \| (`false`)                                         | When the window can't display the entire contents of the output buffer, shows the number of extra lines in the window footer (requires nvim 10.0+ and a window border) |
+| `g:molten_output_win_border`                  | (`{ "", "━", "", "" }`) \| any value for `border` in `:h nvim_open_win()`| Some border features will not work if you don't specify your border as a table. see border option of `:h nvim_open_win()` |
 | `g:molten_output_win_cover_gutter`            | (`true`) \| `false`                                         | Should the output window cover the gutter (numbers and sign col), or not. If you change this, you probably also want to change `molten_output_win_style` |
 | `g:molten_output_win_hide_on_leave`           | (`true`) \| `false`                                         | After leaving the output window (via `:q` or switching windows), do not attempt to redraw the output window |
 | `g:molten_output_win_max_height`              | (`999999`) \| int                                           | Max height of the output window |

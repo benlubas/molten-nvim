@@ -56,7 +56,7 @@ class MoltenOptions:
             ("molten_enter_output_behavior", "open_then_enter"),
             ("molten_image_provider", "none"),
             ("molten_output_crop_border", True),
-            ("molten_output_show_more", True),
+            ("molten_output_show_more", False),
             ("molten_output_win_border", [ "", "━", "", "" ]),
             ("molten_output_win_cover_gutter", True),
             ("molten_output_win_hide_on_leave", True),
