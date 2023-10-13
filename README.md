@@ -12,7 +12,8 @@ https://github.com/benlubas/molten-nvim/assets/56943754/6266efa4-a6e4-46f1-8e15-
 - Send code from multiple buffers to the same kernel
 - See output in real time, without flicker
 - Python virtual environment support
-- Renders images and LaTeX
+- Renders images, plots, and LaTeX to the terminal
+- Very customizable
 
 ## Requirements
 
@@ -104,7 +105,7 @@ vim.keymap.set("v", "<localleader>r", ":<C-u>MoltenEvaluateVisual<CR>gv",
 ```lua
 vim.keymap.set("n", "<localleader>rd", ":MoltenDelete<CR>",
     { silent = true, noremap = true, desc = "molten delete cell" })
-vim.keymap.set("n", "<localleader>os", ":MoltenHideOutput<CR>",
+vim.keymap.set("n", "<localleader>oh", ":MoltenHideOutput<CR>",
     { silent = true, noremap = true, desc = "hide output" })
 vim.keymap.set("n", "<localleader>os", ":noautocmd MoltenEnterOutput<CR>",
     { silent = true, noremap = true, desc = "show/enter output" })
