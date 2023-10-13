@@ -4,3 +4,6 @@ line-length = 100
 [tool.mypy]
 ignore_missing_imports = true
 strict = true
+
+[tool.pyright]
+extraPaths = ["rplugin/python3"]

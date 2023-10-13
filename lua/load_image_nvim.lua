@@ -29,7 +29,7 @@ image_api.render = function(identifier, geometry)
   end
 
   -- only render when the window is visible
-  if not vim.api.nvim_win_is_valid(img.window) then
+  if not img.window or not vim.api.nvim_win_is_valid(img.window) then
     img.window = nil
   end
 
