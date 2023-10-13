@@ -23,7 +23,8 @@ https://github.com/benlubas/molten-nvim/assets/56943754/6266efa4-a6e4-46f1-8e15-
 - Required Python packages:
   - [`pynvim`](https://github.com/neovim/pynvim) (for the Remote Plugin API)
   - [`jupyter_client`](https://github.com/jupyter/jupyter_client) (for interacting with Jupyter)
-  - [`cairosvg`](https://cairosvg.org/) (for displaying SVG images)
+  - [`cairosvg`](https://cairosvg.org/) (for displaying SVG images with transparency)
+    - If you don't need transparency, image.nvim can render svg images perfectly fine
   - [`pnglatex`](https://pypi.org/project/pnglatex/) (for displaying TeX formulas)
   - `plotly` and `kaleido` (for displaying Plotly figures)
   - `pyperclip` if you want to use `molten_copy_output`
