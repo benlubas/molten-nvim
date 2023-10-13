@@ -174,11 +174,15 @@ def to_outputchunk(
         return _to_image_chunk(path)
 
     def _from_image_svgxml(svg: str) -> OutputChunk:
-        import cairosvg
-
-        with alloc_file("png", "wb") as (path, file):
-            cairosvg.svg2png(svg, write_to=file)
-        return _to_image_chunk(path)
+        try:
+            import cairosvg
+            with alloc_file("png", "wb") as (path, file):
+                cairosvg.svg2png(svg, write_to=file)
+            return _to_image_chunk(path)
+        except ImportError:
+            with alloc_file("svg", "w") as (path, file):
+                file.write(svg)  # type: ignore
+            return _to_image_chunk(path)
 
     def _from_application_plotly(figure_json: Any) -> OutputChunk:
         from plotly.io import from_json
