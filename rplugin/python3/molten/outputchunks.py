@@ -193,10 +193,14 @@ def to_outputchunk(
     def _from_latex(tex: str) -> OutputChunk:
         from pnglatex import pnglatex
 
-        with alloc_file("png", "w") as (path, _):
-            pass
-        pnglatex(tex, path)
-        return _to_image_chunk(path)
+        try:
+            with alloc_file("png", "w") as (path, _):
+                pass
+            pnglatex(tex, path)
+            return _to_image_chunk(path)
+        except ValueError:
+            notify_error(nvim, f"pnglatex was unable to render image from LaTeX: {tex}")
+            return _from_plaintext(tex)
 
     def _from_plaintext(text: str) -> OutputChunk:
         return TextLnOutputChunk(text)

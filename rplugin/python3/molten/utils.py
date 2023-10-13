@@ -20,7 +20,7 @@ def nvimui(func):  # type: ignore
 def _notify(nvim: Nvim, msg: str, log_level: str) -> None:
     lua = f"""
         vim.schedule_wrap(function()
-            vim.notify("[Molten] {msg}", vim.log.levels.{log_level}, {{}})
+            vim.notify([[[Molten] {msg}]], vim.log.levels.{log_level}, {{}})
         end)()
     """
     nvim.exec_lua(lua)
