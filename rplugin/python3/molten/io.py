@@ -95,13 +95,16 @@ def load(nvim: Nvim, moltenbuffer: MoltenBuffer, nvim_buffer: Buffer, data: Dict
         output.old = True
 
         moltenbuffer.outputs[span] = OutputBuffer(
-            moltenbuffer.nvim, moltenbuffer.canvas, moltenbuffer.options
+            moltenbuffer.nvim,
+            moltenbuffer.canvas,
+            moltenbuffer.extmark_namespace,
+            moltenbuffer.options,
         )
         moltenbuffer.outputs[span].output = output
 
 
 def save(moltenbuffer: MoltenBuffer, nvim_buffer: int) -> Dict[str, Any]:
-    """ Save the current kernel state for the given buffer. """
+    """Save the current kernel state for the given buffer."""
     return {
         "version": 1,
         "kernel": moltenbuffer.runtime.kernel_name,
@@ -127,10 +130,10 @@ def save(moltenbuffer: MoltenBuffer, nvim_buffer: int) -> Dict[str, Any]:
                         "metadata": chunk.jupyter_metadata,
                     }
                     for chunk in output.output.chunks
-                    if chunk.jupyter_data is not None
-                    and chunk.jupyter_metadata is not None
+                    if chunk.jupyter_data is not None and chunk.jupyter_metadata is not None
                 ],
             }
-            for span, output in moltenbuffer.outputs.items() if span.begin.bufno == nvim_buffer
+            for span, output in moltenbuffer.outputs.items()
+            if span.begin.bufno == nvim_buffer
         ],
     }

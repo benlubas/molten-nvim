@@ -39,10 +39,12 @@ class MoltenOptions:
     output_win_max_height: int
     output_win_max_width: int
     output_win_style: Optional[str]
+    output_virt_lines: bool
     save_path: str
-    use_border_highlights: bool
-    wrap_output: bool
     show_mimetype_debug: bool
+    use_border_highlights: bool
+    virt_lines_off_by_1: bool
+    wrap_output: bool
     nvim: Nvim
     hl: HL
 
@@ -63,10 +65,12 @@ class MoltenOptions:
             ("molten_output_win_max_height", 999999),
             ("molten_output_win_max_width", 999999),
             ("molten_output_win_style", False),
+            ("molten_output_virt_lines", False),
             ("molten_save_path", os.path.join(nvim.funcs.stdpath("data"), "molten")),
-            ("molten_use_border_highlights", False),
-            ("molten_wrap_output", False),
             ("molten_show_mimetype_debug", False),
+            ("molten_use_border_highlights", False),
+            ("molten_virt_lines_off_by_1", False),
+            ("molten_wrap_output", False),
         ]
         # fmt: on
 

@@ -81,7 +81,17 @@ class DynamicPosition(Position):
             self.bufno, extmark_namespace, lineno, colno, {}
         )
 
+    def set_height(self, height: int) -> None:
+        self.nvim.funcs.nvim_buf_set_extmark(
+            self.bufno, self.extmark_namespace, self.lineno, self.colno,
+            {
+                "id": self.extmark_id,
+                "virt_lines": [[("", "Normal")] for _ in range(height)]
+            }
+        )
+
     def __del__(self) -> None:
+        # Note, this will not fail if the extmark doesn't exist
         self.nvim.funcs.nvim_buf_del_extmark(self.bufno, self.extmark_namespace, self.extmark_id)
 
     def _get_pos(self) -> List[int]:
