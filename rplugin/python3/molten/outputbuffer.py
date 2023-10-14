@@ -149,7 +149,7 @@ class OutputBuffer:
             lines = handle_progress_bars(lines_str)
             lineno = len(lines)
         else:
-            lines = [lines_str]
+            lines = []
 
         self.display_buf[0] = self._get_header_text(self.output)
         self.display_buf.append(lines)
@@ -192,7 +192,7 @@ class OutputBuffer:
             if (
                 self.options.output_show_more
                 and not cropped
-                and len(self.display_buf) > height - border_h
+                and height == self.options.output_win_max_height
             ):
                 # the entire window size is shown, but the buffer still has more lines to render
                 hidden_lines = len(self.display_buf) - height
