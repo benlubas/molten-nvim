@@ -89,6 +89,7 @@ def load(nvim: Nvim, moltenbuffer: MoltenBuffer, nvim_buffer: Buffer, data: Dict
                     moltenbuffer.runtime._alloc_file,
                     chunk["data"],
                     chunk["metadata"],
+                    moltenbuffer.options,
                 )
             )
 

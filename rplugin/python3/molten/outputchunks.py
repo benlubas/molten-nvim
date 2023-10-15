@@ -161,6 +161,7 @@ def to_outputchunk(
     ],
     data: Dict[str, Any],
     metadata: Dict[str, Any],
+    options: MoltenOptions,
 ) -> OutputChunk:
     def _to_image_chunk(path: str) -> OutputChunk:
         return ImageOutputChunk(path)
@@ -209,30 +210,31 @@ def to_outputchunk(
     def _from_plaintext(text: str) -> OutputChunk:
         return TextLnOutputChunk(text)
 
-    # handle these mimetypes first, since they require Molten to render them
-    OUTPUT_CHUNKS = [
-        ("image/svg+xml", _from_image_svgxml),
-        ("application/vnd.plotly.v1+json", _from_application_plotly),
-        ("text/latex", _from_latex),
-    ]
-
     chunk = None
-    for mimetype, process_func in OUTPUT_CHUNKS:
-        try:
-            maybe_data = data.get(mimetype)
-            if maybe_data is not None:
-                chunk = process_func(maybe_data)  # type: ignore
-                break
-        except ImportError:
-            continue
+    if options.image_provider != "none":
+        # handle these mimetypes first, since they require Molten to render them
+        special_mimetypes = [
+            ("image/svg+xml", _from_image_svgxml),
+            ("application/vnd.plotly.v1+json", _from_application_plotly),
+            ("text/latex", _from_latex),
+        ]
 
-    if chunk is None:
-        # handle arbitrary images
-        for mimetype in data.keys():
-            match mimetype.split("/"):
-                case ["image", extension]:
-                    chunk = _from_image(extension, data[mimetype])
+        for mimetype, process_func in special_mimetypes:
+            try:
+                maybe_data = data.get(mimetype)
+                if maybe_data is not None:
+                    chunk = process_func(maybe_data)  # type: ignore
                     break
+            except ImportError:
+                continue
+
+        if chunk is None:
+            # handle arbitrary images
+            for mimetype in data.keys():
+                match mimetype.split("/"):
+                    case ["image", extension]:
+                        chunk = _from_image(extension, data[mimetype])
+                        break
 
     if chunk is None:
         # fallback to plain text if there's nothing else
