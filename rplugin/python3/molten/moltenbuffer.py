@@ -198,7 +198,6 @@ class MoltenKernel:
         if self.selected_cell is None:
             return
 
-        self.nvim.out_write(f"deleting cell: {self.selected_cell}\n")
         self.outputs[self.selected_cell].clear_interface()
         del self.outputs[self.selected_cell]
         self.selected_cell = None
@@ -208,19 +207,16 @@ class MoltenKernel:
         if self.nvim.current.buffer.number not in buffer_numbers:
             return
 
-        # TODO: I think this is redundant
         if self.nvim.current.window.buffer.number not in buffer_numbers:
             return
 
-        self.clear_interface()
-
         self.updating_interface = True
-
         selected_cell = self._get_selected_span()
 
         # Clear the cell we just left
         if self.selected_cell != selected_cell and self.selected_cell is not None:
             self.outputs[self.selected_cell].clear_interface()
+            self.selected_cell.clear_interface(self.highlight_namespace)
 
         if selected_cell is None:
             self.should_show_display_window = False

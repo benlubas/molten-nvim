@@ -68,7 +68,7 @@ def load(nvim: Nvim, moltenbuffer: MoltenKernel, nvim_buffer: Buffer, data: Dict
             cell["span"]["end"]["lineno"],
             cell["span"]["end"]["colno"],
         )
-        span = CodeCell(begin_position, end_position)
+        span = CodeCell(nvim, begin_position, end_position)
 
         # XXX: do we really want to have the execution count here?
         #      what happens when the counts start to overlap?

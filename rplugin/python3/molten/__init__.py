@@ -114,9 +114,8 @@ class Molten:
         assert self.canvas is not None
         self.canvas.present()
 
-    # TODO: update interface and on cursor moved are doing similar things, and they seem to be
-    # interfering with each other
     def _update_interface(self) -> None:
+        """Called on load, show_output/hide_output and buf enter"""
         if not self.initialized:
             return
 
@@ -237,7 +236,6 @@ class Molten:
 
     def _deinit_buffer(self, molten_kernels: List[MoltenKernel]) -> None:
         for kernel in molten_kernels:
-            self.nvim.out_write(f"deinit buffer {kernel.kernel_id}")
             kernel.deinit()
             for buf in kernel.buffers:
                 self.buffers[buf.number].remove(kernel)
@@ -256,16 +254,17 @@ class Molten:
 
         self._deinit_buffer(kernels)
 
+    # TODO: this function needs to maintain the invariant that code run by kernel A cannot overlap
+    # with code run by kernel B, if some portion of code that was originally run with kernel A is
+    # sent to kernel B, the code cell associated with kernel A should be deleted.
     def _do_evaluate(self, kernel_name: str, pos: Tuple[Tuple[int, int], Tuple[int, int]]) -> None:
         self._initialize_if_necessary()
-        self.nvim.out_write(f"evaluating: {kernel_name}\n")
 
         kernels = self._get_current_buf_kernels(True)
         assert kernels is not None
 
         kernel = None
         for k in kernels:
-            self.nvim.out_write(f"kernel_id: {k.kernel_id}\n")
             if k.kernel_id == kernel_name:
                 kernel = k
                 break
@@ -274,6 +273,7 @@ class Molten:
 
         bufno = self.nvim.current.buffer.number
         span = CodeCell(
+            self.nvim,
             DynamicPosition(self.nvim, self.extmark_namespace, bufno, *pos[0]),
             DynamicPosition(self.nvim, self.extmark_namespace, bufno, *pos[1]),
         )
@@ -298,6 +298,7 @@ class Molten:
 
         bufno = self.nvim.current.buffer.number
         cell = CodeCell(
+            self.nvim,
             DynamicPosition(self.nvim, self.extmark_namespace, bufno, 0, 0),
             DynamicPosition(self.nvim, self.extmark_namespace, bufno, 0, 0),
         )
@@ -424,7 +425,6 @@ class Molten:
         def cmd(kernel_id: str):
             if kernel_last:
                 return f"{command} {command_args} {kernel_id}"
-            self.nvim.out_write(f"{command} {kernel_id} {command_args}\n")
             return f"{command} {kernel_id} {command_args}"
 
         kernels = self.buffers.get(buffer.number)
@@ -434,7 +434,6 @@ class Molten:
             )
         elif len(kernels) == 1:
             c = cmd(kernels[0].kernel_id)
-            self.nvim.out_write(f"{c}\n")
             self.nvim.command(c)
         else:
             PROMPT = "Please select a kernel:"
@@ -455,7 +454,6 @@ class Molten:
                     )
                 end)()
             """
-            self.nvim.out_write(f"lua: {lua}\n")
             self.nvim.exec_lua(lua, async_=False)
 
     @pynvim.command("MoltenReevaluateCell", nargs=0, sync=True)  # type: ignore
@@ -523,7 +521,6 @@ class Molten:
                 molten.delete_cell()
                 return
 
-        self.nvim.out_write(f"Unable to find kernel: {kernel}\n")
         notify_error(self.nvim, f"Unable to find kernel: {kernel}")
 
     @pynvim.command("MoltenShowOutput", nargs=0, sync=True)  # type: ignore
@@ -750,6 +747,7 @@ class Molten:
 
         bufno = self.nvim.current.buffer.number
         span = CodeCell(
+            self.nvim,
             DynamicPosition(self.nvim, self.extmark_namespace, bufno, start - 1, 0),
             DynamicPosition(self.nvim, self.extmark_namespace, bufno, end - 1, -1),
         )
