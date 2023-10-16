@@ -1,15 +1,19 @@
 import json
 import os
 from typing import Any, Dict, List, Optional, Tuple
+from itertools import chain
 
 import pynvim
+from pynvim.api import Buffer
+from molten.code_cell import CodeCell
 from molten.images import Canvas, get_canvas_given_provider
 from molten.io import MoltenIOError, get_default_save_file, load, save
-from molten.moltenbuffer import MoltenBuffer
+from molten.moltenbuffer import MoltenKernel
 from molten.options import MoltenOptions
 from molten.outputbuffer import OutputBuffer
+from molten.position import DynamicPosition
 from molten.runtime import get_available_kernels
-from molten.utils import DynamicPosition, MoltenException, Span, notify_error, notify_info, nvimui
+from molten.utils import MoltenException, notify_error, notify_warn, nvimui
 from pynvim import Nvim
 
 
@@ -26,10 +30,11 @@ class Molten:
 
     options: MoltenOptions
 
-    # list of nvim buf numbers to the MoltenBuffer object that handles that nvim buf
-    buffers: Dict[int, MoltenBuffer]
-    # list of kernel names to the MoltenBuffer object that handles that kernel
-    molten_buffers: Dict[str, MoltenBuffer]
+    # list of nvim buf numbers to a list of MoltenKernels 'attached' to that buffer
+    buffers: Dict[int, List[MoltenKernel]]
+    # list of kernel names to the MoltenKernel object that handles that kernel
+    # duplicate names are sufixed with (n)
+    molten_kernels: Dict[str, MoltenKernel]
 
     def __init__(self, nvim: Nvim):
         self.nvim = nvim
@@ -38,7 +43,7 @@ class Molten:
         self.canvas = None
         self.buffers = {}
         self.timer = None
-        self.molten_buffers = {}
+        self.molten_kernels = {}
 
     def _initialize(self) -> None:
         assert not self.initialized
@@ -75,20 +80,25 @@ class Molten:
         hl_utils.set_default_highlights(self.options.hl.defaults)
 
     def _deinitialize(self) -> None:
-        for molten in self.buffers.values():
-            molten.deinit()
+        for molten_kernels in self.buffers.values():
+            for molten_kernel in molten_kernels:
+                molten_kernel.deinit()
         if self.canvas is not None:
             self.canvas.deinit()
         if self.timer is not None:
             self.nvim.funcs.timer_stop(self.timer)
 
+    def guard_init(self) -> None:
+        if not self.initialized:
+            raise MoltenException("Molten is not initialized; run `:MoltenInit` to initialize.")
+
     def _initialize_if_necessary(self) -> None:
         if not self.initialized:
             self._initialize()
 
-    def _get_molten(self, requires_instance: bool) -> Optional[MoltenBuffer]:
+    def _get_current_buf_kernels(self, requires_instance: bool) -> Optional[List[MoltenKernel]]:
         maybe_molten = self.buffers.get(self.nvim.current.buffer.number)
-        if requires_instance and maybe_molten is None:
+        if requires_instance and (maybe_molten is None or len(maybe_molten) == 0):
             raise MoltenException("Molten is not initialized; run `:MoltenInit` to initialize.")
         return maybe_molten
 
@@ -96,9 +106,11 @@ class Molten:
         if not self.initialized:
             return
 
-        for moltenbuf in self.buffers.values():
-            moltenbuf.clear_interface()
-            moltenbuf.clear_open_output_windows()
+        for molten_kernels in self.buffers.values():
+            for molten_kernel in molten_kernels:
+                molten_kernel.clear_interface()
+                molten_kernel.clear_open_output_windows()
+
         assert self.canvas is not None
         self.canvas.present()
 
@@ -106,46 +118,43 @@ class Molten:
         if not self.initialized:
             return
 
-        molten = self._get_molten(False)
-        if molten is None:
+        molten_kernels = self._get_current_buf_kernels(False)
+        if molten_kernels is None:
             return
 
-        molten.update_interface()
+        for m in molten_kernels:
+            m.update_interface()
 
     def _on_cursor_moved(self, scrolled=False) -> None:
         if not self.initialized:
             return
 
-        molten = self._get_molten(False)
-        if molten is None:
+        molten_kernels = self._get_current_buf_kernels(False)
+        if molten_kernels is None:
             return
 
-        molten.on_cursor_moved(scrolled)
+        for m in molten_kernels:
+            m.on_cursor_moved(scrolled)
 
-    def _ask_for_choice(self, preface: str, options: List[str]) -> Optional[str]:
-        index = self.nvim.funcs.inputlist(
-            [preface] + [f"{i+1}. {option}" for i, option in enumerate(options)]
-        )
-        if index == 0:
-            return None
-        else:
-            return options[index - 1]
-
-    def _initialize_buffer(self, kernel_name: str, shared=False) -> MoltenBuffer:
+    def _initialize_buffer(self, kernel_name: str, shared=False) -> MoltenKernel:
         assert self.canvas is not None
-        if shared:  # use an existing molten buffer, for a new neovim buffer
-            molten = self.molten_buffers.get(kernel_name)
+        if shared:  # use an existing molten kernel, for a new neovim buffer
+            molten = self.molten_kernels.get(kernel_name)
             if molten is not None:
                 molten.add_nvim_buffer(self.nvim.current.buffer)
-                self.buffers[self.nvim.current.buffer.number] = molten
+                self.buffers[self.nvim.current.buffer.number] = [molten]
                 return molten
 
-            notify_info(
+            notify_warn(
                 self.nvim,
                 f"No running kernel {kernel_name} to share. Continuing with a new kernel.",
             )
 
-        molten = MoltenBuffer(
+        kernel_id = kernel_name
+        if self.molten_kernels.get(kernel_name) is not None:
+            kernel_id = f"{kernel_name}_({len(self.molten_kernels)})"
+
+        molten = MoltenKernel(
             self.nvim,
             self.canvas,
             self.highlight_namespace,
@@ -153,13 +162,25 @@ class Molten:
             self.nvim.current.buffer,
             self.options,
             kernel_name,
+            kernel_id,
         )
 
-        self.molten_buffers[kernel_name] = molten
-        self.buffers[self.nvim.current.buffer.number] = molten
+        self.add_kernel(self.nvim.current.buffer, kernel_id, molten)
         molten._doautocmd("MoltenInitPost")
 
         return molten
+
+    def add_kernel(self, buffer: Buffer, kernel_id: str, kernel: MoltenKernel):
+        """Add a new MoltenKernel to be tracked by Molten.
+        - Adds the new kernel to the buffer list for the given buffer
+        - Adds the new kernel to the molten_kernels list, with a suffix if the name is already taken
+        """
+        if self.buffers.get(buffer.number) is None:
+            self.buffers[buffer.number] = [kernel]
+        else:
+            self.buffers[buffer.number].append(kernel)
+
+        self.molten_kernels[kernel_id] = kernel
 
     @pynvim.command("MoltenInit", nargs="*", sync=True, complete="file")  # type: ignore
     @nvimui  # type: ignore
@@ -171,7 +192,7 @@ class Molten:
             shared = True
             args = args[1:]
 
-        if args:
+        if len(args) > 0:
             kernel_name = args[0]
             self._initialize_buffer(kernel_name, shared=shared)
         else:
@@ -185,7 +206,7 @@ class Molten:
             if shared:
                 # Only show kernels that are already tracked by Molten
                 available_kernels = list(
-                    filter(lambda x: x in self.molten_buffers.keys(), available_kernels)
+                    filter(lambda x: x in self.molten_kernels.keys(), available_kernels)
                 )
 
             if len(available_kernels) == 0:
@@ -212,60 +233,83 @@ class Molten:
             """
             self.nvim.exec_lua(lua, async_=False)
 
-    def _deinit_buffer(self, molten: MoltenBuffer) -> None:
-        molten.deinit()
-        for buf in molten.buffers:
-            del self.buffers[buf.number]
+    def _deinit_buffer(self, molten_kernels: List[MoltenKernel]) -> None:
+        for kernel in molten_kernels:
+            self.nvim.out_write(f"deinit buffer {kernel.kernel_id}")
+            kernel.deinit()
+            # TODO: this del is flawed, we need to make sure we're keeping around the entry, and
+            # just removing one item from the list at a time.
+            for buf in kernel.buffers:
+                del self.buffers[buf.number]
 
     @pynvim.command("MoltenDeinit", nargs=0, sync=True)  # type: ignore
     @nvimui  # type: ignore
     def command_deinit(self) -> None:
         self._initialize_if_necessary()
 
-        molten = self._get_molten(True)
-        assert molten is not None
+        kernels = self._get_current_buf_kernels(True)
+        assert kernels is not None
 
         self._clear_interface()
 
-        self._deinit_buffer(molten)
+        self._deinit_buffer(kernels)
 
-    def _do_evaluate(self, pos: Tuple[Tuple[int, int], Tuple[int, int]]) -> None:
+    def _do_evaluate(self, kernel_name: str, pos: Tuple[Tuple[int, int], Tuple[int, int]]) -> None:
         self._initialize_if_necessary()
+        self.nvim.out_write(f"evaluating: {kernel_name}\n")
 
-        molten = self._get_molten(True)
-        assert molten is not None
+        kernels = self._get_current_buf_kernels(True)
+        assert kernels is not None
+
+        kernel = None
+        for k in kernels:
+            self.nvim.out_write(f"kernel_id: {k.kernel_id}\n")
+            if k.kernel_id == kernel_name:
+                kernel = k
+                break
+        if kernel is None:
+            raise MoltenException(f"Kernel {kernel_name} not found")
 
         bufno = self.nvim.current.buffer.number
-        span = Span(
+        span = CodeCell(
             DynamicPosition(self.nvim, self.extmark_namespace, bufno, *pos[0]),
             DynamicPosition(self.nvim, self.extmark_namespace, bufno, *pos[1]),
         )
 
         code = span.get_text(self.nvim)
 
-        molten.run_code(code, span)
+        kernel.run_code(code, span)
 
-    def _do_evaluate_expr(self, expr):
+    def _do_evaluate_expr(self, kernel_name: str, expr):
         self._initialize_if_necessary()
 
-        molten = self._get_molten(True)
-        assert molten is not None
+        kernels = self._get_current_buf_kernels(True)
+        assert kernels is not None
+
+        kernel = None
+        for kernel in kernels:
+            if kernel.kernel_id == kernel_name:
+                kernel = kernel
+                break
+        if kernel is None:
+            raise MoltenException(f"Kernel {kernel_name} not found")
+
         bufno = self.nvim.current.buffer.number
-        span = Span(
+        cell = CodeCell(
             DynamicPosition(self.nvim, self.extmark_namespace, bufno, 0, 0),
             DynamicPosition(self.nvim, self.extmark_namespace, bufno, 0, 0),
         )
-        molten.run_code(expr, span)
+
+        kernel.run_code(expr, cell)
 
     @pynvim.function("MoltenUpdateOption", sync=True)  # type: ignore
     @nvimui  # type: ignore
     def function_update_option(self, args) -> None:
-        molten = self._get_molten(True)
-        assert molten is not None
+        self.guard_init()
 
         if len(args) == 2:
             option, value = args
-            molten.options.update_option(option, value)
+            self.options.update_option(option, value)
         else:
             notify_error(
                 self.nvim,
@@ -275,19 +319,29 @@ class Molten:
     @pynvim.command("MoltenEnterOutput", sync=True)  # type: ignore
     @nvimui  # type: ignore
     def command_enter_output_window(self) -> None:
-        molten = self._get_molten(True)
-        assert molten is not None
-        molten.enter_output()
+        molten_kernels = self._get_current_buf_kernels(True)
+        assert molten_kernels is not None
 
-    @pynvim.command("MoltenEvaluateArgument", nargs=1, sync=True)
+        # We can do this iff we ensure that different kernels don't contain code cells that overlap
+        for kernel in molten_kernels:
+            kernel.enter_output()
+
+    @pynvim.command("MoltenEvaluateArgument", nargs="*", sync=True)  # type: ignore
     @nvimui
-    def commnand_molten_evaluate_argument(self, expr) -> None:
-        assert len(expr) == 1
-        self._do_evaluate_expr(expr[0])
+    def commnand_molten_evaluate_argument(self, args: List[str]) -> None:
+        if len(args) > 0 and args[0] in self.buffers[self.nvim.current.buffer.number]:
+            self._do_evaluate_expr(args[0], args[1:])
+        else:
+            self.kernel_check("MoltenEvaluateArgument", " ".join(args), self.nvim.current.buffer)
 
-    @pynvim.command("MoltenEvaluateVisual", sync=True)  # type: ignore
+    @pynvim.command("MoltenEvaluateVisual", nargs="*", sync=True)  # type: ignore
     @nvimui  # type: ignore
-    def command_evaluate_visual(self) -> None:
+    def command_evaluate_visual(self, *args) -> None:
+        if len(args) > 0:
+            kernel = args[0]
+        else:
+            self.kernel_check("MoltenEvaluateVisual", "", self.nvim.current.buffer)
+            return
         _, lineno_begin, colno_begin, _ = self.nvim.funcs.getpos("'<")
         _, lineno_end, colno_end, _ = self.nvim.funcs.getpos("'>")
         span = (
@@ -301,17 +355,40 @@ class Molten:
             ),
         )
 
-        self._do_evaluate(span)
+        self._do_evaluate(kernel, span)
 
     @pynvim.function("MoltenEvaluateRange", sync=True)  # type: ignore
     @nvimui  # type: ignore
     def evaulate_range(self, *args) -> None:
-        start_line, end_line = args[0]
+        start_col, end_col = 0, -1
+        kernel = None
+        span = args[0]
+        if type(args[0][0]) == str:
+            kernel = args[0][0]
+            span = args[0][1:]
+
+        if len(span) == 2:
+            start_line, end_line = span
+        elif len(span) == 4:
+            start_line, end_line, start_col, end_col = span
+        else:
+            notify_error(self.nvim, f"Invalid args passed to MoltenEvaluateRange. Got: {args}")
+            return
+
+        if not kernel:
+            self.kernel_check(
+                "call MoltenEvaluateRange('",
+                f"', {start_line}, {end_line}, {start_col}, {end_col})",
+                self.nvim.current.buffer,
+            )
+            return
+
         span = (
-            (start_line - 1, 0),
-            (end_line - 1, len(self.nvim.funcs.getline(end_line))),
+            (start_line - 1, start_col),
+            (end_line - 1, end_col),
         )
-        self._do_evaluate(span)
+
+        self._do_evaluate(kernel.strip(), span)
 
     @pynvim.command("MoltenEvaluateOperator", sync=True)  # type: ignore
     @nvimui  # type: ignore
@@ -321,80 +398,168 @@ class Molten:
         self.nvim.options["operatorfunc"] = "MoltenOperatorfunc"
         self.nvim.feedkeys("g@")
 
-    @pynvim.command("MoltenEvaluateLine", nargs=0, sync=True)  # type: ignore
+    @pynvim.command("MoltenEvaluateLine", nargs="*", sync=True)  # type: ignore
     @nvimui  # type: ignore
-    def command_evaluate_line(self) -> None:
+    def command_evaluate_line(self, args: List[str]) -> None:
         _, lineno, _, _, _ = self.nvim.funcs.getcurpos()
         lineno -= 1
 
         span = ((lineno, 0), (lineno, -1))
 
-        self._do_evaluate(span)
+        if len(args) > 0:
+            self._do_evaluate(args[0], span)
+        else:
+            self.kernel_check("MoltenEvaluateLine", "", self.nvim.current.buffer)
+
+    def kernel_check(
+        self, command: str, command_args: str, buffer: Buffer, kernel_last=False
+    ) -> None:
+        """Figure out if there is more than one kernel attached to the given buffer. If there is,
+        and there is prompt the user for the kernel name, and run the given command with the new
+        kernel, and arguments. If there is no kernel, throw an error. If there is one kernel, use
+        it"""
+
+        def cmd(kernel_id: str):
+            if kernel_last:
+                return f"{command} {command_args} {kernel_id}"
+            self.nvim.out_write(f"{command} {kernel_id} {command_args}\n")
+            return f"{command} {kernel_id} {command_args}"
+
+        kernels = self.buffers.get(buffer.number)
+        if not kernels:
+            raise MoltenException(
+                "Molten has not been initialized for this buffer. Please run :MoltenInit"
+            )
+        elif len(kernels) == 1:
+            c = cmd(kernels[0].kernel_id)
+            self.nvim.out_write(f"{c}\n")
+            self.nvim.command(c)
+        else:
+            PROMPT = "Please select a kernel:"
+            available_kernels = [kernel.kernel_id for kernel in kernels]
+
+            lua = f"""
+                vim.schedule_wrap(function()
+                    vim.ui.select(
+                        {{{", ".join(repr(x) for x in available_kernels)}}},
+                        {{prompt = "{PROMPT}"}},
+                        function(choice)
+                            if choice ~= nil then
+                                vim.schedule_wrap(function()
+                                    vim.cmd("{cmd('".. choice .."')}")
+                                end)()
+                            end
+                        end
+                    )
+                end)()
+            """
+            self.nvim.out_write(f"lua: {lua}\n")
+            self.nvim.exec_lua(lua, async_=False)
 
     @pynvim.command("MoltenReevaluateCell", nargs=0, sync=True)  # type: ignore
     @nvimui  # type: ignore
     def command_evaluate_cell(self) -> None:
         self._initialize_if_necessary()
 
-        molten = self._get_molten(True)
-        assert molten is not None
+        molten_kernels = self._get_current_buf_kernels(True)
+        assert molten_kernels is not None
 
-        molten.reevaluate_cell()
+        # we can do this iff we ensure that different kernels don't contain code cells that overlap
+        for kernel in molten_kernels:
+            kernel.reevaluate_cell()
 
-    @pynvim.command("MoltenInterrupt", nargs=0, sync=True)  # type: ignore
+    @pynvim.command("MoltenInterrupt", nargs="*", sync=True)  # type: ignore
     @nvimui  # type: ignore
-    def command_interrupt(self) -> None:
-        molten = self._get_molten(True)
-        assert molten is not None
+    def command_interrupt(self, *args) -> None:
+        if len(args) > 0:
+            kernel = args[0]
+        else:
+            self.kernel_check("MoltenInterrupt", "", self.nvim.current.buffer)
+            return
 
-        molten.interrupt()
+        molten_kernels = self._get_current_buf_kernels(True)
+        assert molten_kernels is not None
+        for molten in molten_kernels:
+            if molten.kernel_id == kernel:
+                molten.interrupt()
+                return
 
-    @pynvim.command("MoltenRestart", nargs=0, sync=True, bang=True)  # type: ignore # noqa
+        notify_error(self.nvim, f"Unable to find kernel: {kernel}")
+
+    @pynvim.command("MoltenRestart", nargs="*", sync=True, bang=True)  # type: ignore
     @nvimui  # type: ignore
-    def command_restart(self, bang: bool) -> None:
-        molten = self._get_molten(True)
-        assert molten is not None
+    def command_restart(self, bang: bool, *args) -> None:
+        if len(args) > 0:
+            kernel = args[0]
+        else:
+            self.kernel_check(f"MoltenRestart{'!' if bang else ''}", "", self.nvim.current.buffer)
+            return
 
-        molten.restart(delete_outputs=bang)
+        molten_kernels = self._get_current_buf_kernels(True)
+        assert molten_kernels is not None
 
-    @pynvim.command("MoltenDelete", nargs=0, sync=True)  # type: ignore
+        for molten in molten_kernels:
+            if molten.kernel_id == kernel:
+                molten.restart(delete_outputs=bang)
+                return
+        notify_error(self.nvim, f"Unable to find kernel: {kernel}")
+
+    @pynvim.command("MoltenDelete", nargs="*", sync=True)  # type: ignore
     @nvimui  # type: ignore
-    def command_delete(self) -> None:
-        self._initialize_if_necessary()
+    def command_delete(self, *args) -> None:
+        if args and len(args[0]) > 0:
+            kernel = args[0][0]
+        else:
+            self.kernel_check(f"MoltenDelete", "", self.nvim.current.buffer)
+            return
 
-        molten = self._get_molten(True)
-        assert molten is not None
+        molten_kernels = self._get_current_buf_kernels(True)
+        assert molten_kernels is not None
 
-        molten.delete_cell()
+        for molten in molten_kernels:
+            if molten.kernel_id == kernel:
+                molten.delete_cell()
+                return
+
+        self.nvim.out_write(f"Unable to find kernel: {kernel}\n")
+        notify_error(self.nvim, f"Unable to find kernel: {kernel}")
 
     @pynvim.command("MoltenShowOutput", nargs=0, sync=True)  # type: ignore
     @nvimui  # type: ignore
     def command_show_output(self) -> None:
         self._initialize_if_necessary()
 
-        molten = self._get_molten(True)
-        assert molten is not None
+        molten_kernels = self._get_current_buf_kernels(True)
+        assert molten_kernels is not None
 
-        molten.should_show_display_window = True
-        self._update_interface()
+        for molten in molten_kernels:
+            if molten.current_output is not None:
+                molten.should_show_display_window = True
+                self._update_interface()
+                return
 
     @pynvim.command("MoltenHideOutput", nargs=0, sync=True)  # type: ignore
     @nvimui  # type: ignore
     def command_hide_output(self) -> None:
-        molten = self._get_molten(False)
-        if molten is None:
+        molten_kernels = self._get_current_buf_kernels(False)
+        if molten_kernels is None:
             # get the current buffer, and then search for it in all molten buffers
             cur_buf = self.nvim.current.buffer
             for moltenbuf in self.buffers.values():
                 # if we find it, then we know this is a molten output, and we can safely quit and
                 # call hide to hide it
-                if cur_buf in map(lambda x: x.display_buf, moltenbuf.outputs.values()):
+                output_windows = map(
+                    lambda x: x.display_buf, chain(*[o.outputs.values() for o in moltenbuf])
+                )
+                if cur_buf in output_windows:
                     self.nvim.command("q")
                     self.nvim.command(":MoltenHideOutput")
                     return
             return
 
-        molten.should_show_display_window = False
+        for molten in molten_kernels:
+            molten.should_show_display_window = False
+
         self._update_interface()
 
     @pynvim.command("MoltenSave", nargs="?", sync=True)  # type: ignore
@@ -408,15 +573,23 @@ class Molten:
         else:
             path = get_default_save_file(self.options, buf)
 
+        if len(args) > 1:
+            kernel = args[1]
+        else:
+            self.kernel_check("MoltenSave", path, buf, kernel_last=True)
+            return
+
         dirname = os.path.dirname(path)
         if not os.path.exists(dirname):
             os.makedirs(dirname)
 
-        molten = self._get_molten(True)
-        assert molten is not None
-
-        with open(path, "w") as file:
-            json.dump(save(molten, buf.number), file)
+        kernels = self._get_current_buf_kernels(True)
+        assert kernels is not None
+        for molten in kernels:
+            if molten.kernel_id == kernel:
+                with open(path, "w") as file:
+                    json.dump(save(molten, buf.number), file)
+                break
 
     @pynvim.command("MoltenLoad", nargs="*", sync=True)  # type: ignore
     @nvimui  # type: ignore
@@ -458,7 +631,7 @@ class Molten:
             self._update_interface()
         except MoltenIOError as err:
             if molten is not None:
-                self._deinit_buffer(molten)
+                self._deinit_buffer([molten])
 
             raise MoltenException("Error while doing Molten IO: " + str(err))
 
@@ -492,11 +665,12 @@ class Molten:
     def function_molten_tick(self, _: Any) -> None:
         self._initialize_if_necessary()
 
-        molten = self._get_molten(False)
-        if molten is None:
+        molten_kernels = self._get_current_buf_kernels(False)
+        if molten_kernels is None:
             return
 
-        molten.tick()
+        for m in molten_kernels:
+            m.tick()
 
     @pynvim.function("MoltenUpdateInterface", sync=True)  # type: ignore
     @nvimui  # type: ignore
@@ -543,25 +717,44 @@ class Molten:
             ),
         )
 
-        self._do_evaluate(span)
+        self.kernel_check(
+            "call MoltenEvaluateRange(",
+            f", {span[0][0]}, {span[1][0]}, {span[0][1]}, {span[1][1]})",
+            self.nvim.current.buffer,
+        )
 
+    # TODO: this is currently undocumented.
     @pynvim.function("MoltenDefineCell", sync=True)
     def function_molten_define_cell(self, args: List[int]) -> None:
         if not args:
             return
 
         self._initialize_if_necessary()
-        molten = self._get_molten(True)
-        assert molten is not None
+        molten_kernels = self._get_current_buf_kernels(True)
+        assert molten_kernels is not None
         assert self.canvas is not None
 
         start = args[0]
         end = args[1]
+
+        if len(args) == 3:
+            kernel = args[2]
+        elif len(self.buffers[self.nvim.current.buffer.number]) == 1:
+            kernel = self.buffers[self.nvim.current.buffer.number][0].kernel_id
+        else:
+            raise MoltenException(
+                "MoltenDefineCell called without a kernel argument while multiple kernels are active"
+            )
+
         bufno = self.nvim.current.buffer.number
-        span = Span(
+        span = CodeCell(
             DynamicPosition(self.nvim, self.extmark_namespace, bufno, start - 1, 0),
             DynamicPosition(self.nvim, self.extmark_namespace, bufno, end - 1, -1),
         )
-        molten.outputs[span] = OutputBuffer(
-            self.nvim, self.canvas, molten.extmark_namespace, self.options
-        )
+
+        for molten in molten_kernels:
+            if molten.kernel_id == kernel:
+                molten.outputs[span] = OutputBuffer(
+                    self.nvim, self.canvas, molten.extmark_namespace, self.options
+                )
+                break

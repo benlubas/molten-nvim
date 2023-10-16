@@ -6,7 +6,8 @@ from pynvim.api import Buffer, Window
 from molten.images import Canvas
 from molten.outputchunks import Output, OutputStatus
 from molten.options import MoltenOptions
-from molten.utils import DynamicPosition, Position, notify_error
+from molten.position import DynamicPosition, Position
+from molten.utils import notify_error
 
 
 class OutputBuffer:

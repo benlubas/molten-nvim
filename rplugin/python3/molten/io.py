@@ -3,12 +3,14 @@ import os
 from pynvim import Nvim
 
 from pynvim.api import Buffer
+from molten.code_cell import CodeCell
+from molten.position import DynamicPosition
 
-from molten.utils import MoltenException, Span, DynamicPosition
+from molten.utils import MoltenException
 from molten.options import MoltenOptions
 from molten.outputchunks import OutputStatus, Output, to_outputchunk
 from molten.outputbuffer import OutputBuffer
-from molten.moltenbuffer import MoltenBuffer
+from molten.moltenbuffer import MoltenKernel
 
 
 class MoltenIOError(Exception):
@@ -37,7 +39,7 @@ def get_default_save_file(options: MoltenOptions, buffer: Buffer) -> str:
     return os.path.join(options.save_path, mangled_name + ".json")
 
 
-def load(nvim: Nvim, moltenbuffer: MoltenBuffer, nvim_buffer: Buffer, data: Dict[str, Any]) -> None:
+def load(nvim: Nvim, moltenbuffer: MoltenKernel, nvim_buffer: Buffer, data: Dict[str, Any]) -> None:
     MoltenIOError.assert_has_key(data, "content_checksum", str)
 
     if moltenbuffer._get_content_checksum() != data["content_checksum"]:
@@ -66,7 +68,7 @@ def load(nvim: Nvim, moltenbuffer: MoltenBuffer, nvim_buffer: Buffer, data: Dict
             cell["span"]["end"]["lineno"],
             cell["span"]["end"]["colno"],
         )
-        span = Span(begin_position, end_position)
+        span = CodeCell(begin_position, end_position)
 
         # XXX: do we really want to have the execution count here?
         #      what happens when the counts start to overlap?
@@ -104,7 +106,7 @@ def load(nvim: Nvim, moltenbuffer: MoltenBuffer, nvim_buffer: Buffer, data: Dict
         moltenbuffer.outputs[span].output = output
 
 
-def save(moltenbuffer: MoltenBuffer, nvim_buffer: int) -> Dict[str, Any]:
+def save(moltenbuffer: MoltenKernel, nvim_buffer: int) -> Dict[str, Any]:
     """Save the current kernel state for the given buffer."""
     return {
         "version": 1,
