@@ -112,14 +112,15 @@ class MoltenKernel:
 
         self._check_if_done_running()
 
-    def reevaluate_cell(self) -> None:
+    def reevaluate_cell(self) -> bool:
         self.selected_cell = self._get_selected_span()
         if self.selected_cell is None:
-            raise MoltenException("Not in a cell")
+            return False
 
         code = self.selected_cell.get_text(self.nvim)
 
         self.run_code(code, self.selected_cell)
+        return True
 
     def _check_if_done_running(self) -> None:
         # TODO: refactor
@@ -182,6 +183,15 @@ class MoltenKernel:
 
         return selected
 
+    def delete_overlapping_cells(self, span: CodeCell) -> None:
+        """ Delete the code cells in this kernel that overlap with the given span """
+        for output_span in list(self.outputs.keys()):
+            if output_span.overlaps(span):
+                if self.current_output == output_span:
+                    self.current_output = None
+                self.outputs[output_span].clear_interface()
+                del self.outputs[output_span]
+
     def _delete_all_cells_in_span(self, span: CodeCell) -> None:
         for output_span in reversed(list(self.outputs.keys())):
             if (
@@ -215,7 +225,8 @@ class MoltenKernel:
 
         # Clear the cell we just left
         if self.selected_cell != selected_cell and self.selected_cell is not None:
-            self.outputs[self.selected_cell].clear_interface()
+            if self.selected_cell in self.outputs:
+                self.outputs[self.selected_cell].clear_interface()
             self.selected_cell.clear_interface(self.highlight_namespace)
 
         if selected_cell is None:

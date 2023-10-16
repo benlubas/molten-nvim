@@ -1,4 +1,3 @@
-
 from typing import List, Union
 
 from pynvim import Nvim
@@ -26,9 +25,12 @@ class CodeCell:
     def __contains__(self, pos: Union[Position, DynamicPosition]) -> bool:
         return self.bufno == pos.bufno and self.begin <= pos and pos < self.end
 
+    def overlaps(self, other: "CodeCell") -> bool:
+        return self.bufno == other.bufno and self.begin < other.end and other.begin < self.end
+
     def __str__(self) -> str:
         return f"CodeCell({self.begin}, {self.end})"
-    
+
     def clear_interface(self, highlight_namespace):
         """Clear the highlight of the code cell"""
         self.nvim.funcs.nvim_buf_clear_namespace(

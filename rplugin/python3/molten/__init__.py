@@ -19,6 +19,14 @@ from pynvim import Nvim
 
 @pynvim.plugin
 class Molten:
+    """The plugin class. Provides an interface for interacting with the plugin via vim functions,
+    user commands and user autocommands.
+
+    Invariants that must be maintained in order for this plugin to work:
+    - Any CodeCell which belongs to some MoltenKernel _a_ never overlaps with any CodeCell which
+      belongs to some MoltenKernel _b_.
+    """
+
     nvim: Nvim
     canvas: Optional[Canvas]
     initialized: bool
@@ -281,6 +289,11 @@ class Molten:
         code = span.get_text(self.nvim)
 
         kernel.run_code(code, span)
+        # delete overlapping cells from other kernels. Maintains the invariant that all code cells
+        # from different kernels are disjoint
+        for k in kernels:
+            if k != kernel:
+                k.delete_overlapping_cells(span)
 
     def _do_evaluate_expr(self, kernel_name: str, expr):
         self._initialize_if_necessary()
@@ -340,8 +353,8 @@ class Molten:
     @pynvim.command("MoltenEvaluateVisual", nargs="*", sync=True)  # type: ignore
     @nvimui  # type: ignore
     def command_evaluate_visual(self, *args) -> None:
-        if len(args) > 0:
-            kernel = args[0]
+        if args and len(args[0]) > 0:
+            kernel = args[0][0]
         else:
             self.kernel_check("MoltenEvaluateVisual", "", self.nvim.current.buffer)
             return
@@ -409,8 +422,9 @@ class Molten:
 
         span = ((lineno, 0), (lineno, -1))
 
-        if len(args) > 0:
-            self._do_evaluate(args[0], span)
+
+        if args and len(args[0]) > 0:
+            self._do_evaluate(args[0][0], span)
         else:
             self.kernel_check("MoltenEvaluateLine", "", self.nvim.current.buffer)
 
@@ -465,8 +479,13 @@ class Molten:
         assert molten_kernels is not None
 
         # we can do this iff we ensure that different kernels don't contain code cells that overlap
+        in_cell = False
         for kernel in molten_kernels:
-            kernel.reevaluate_cell()
+            if kernel.reevaluate_cell():
+                in_cell = True
+
+        if not in_cell:
+            notify_error(self.nvim, "Not in a cell")
 
     @pynvim.command("MoltenInterrupt", nargs="*", sync=True)  # type: ignore
     @nvimui  # type: ignore
