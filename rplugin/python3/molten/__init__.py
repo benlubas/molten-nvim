@@ -114,6 +114,8 @@ class Molten:
         assert self.canvas is not None
         self.canvas.present()
 
+    # TODO: update interface and on cursor moved are doing similar things, and they seem to be
+    # interfering with each other
     def _update_interface(self) -> None:
         if not self.initialized:
             return
@@ -237,10 +239,10 @@ class Molten:
         for kernel in molten_kernels:
             self.nvim.out_write(f"deinit buffer {kernel.kernel_id}")
             kernel.deinit()
-            # TODO: this del is flawed, we need to make sure we're keeping around the entry, and
-            # just removing one item from the list at a time.
             for buf in kernel.buffers:
-                del self.buffers[buf.number]
+                self.buffers[buf.number].remove(kernel)
+                if len(self.buffers[buf.number]) == 0:
+                    del self.buffers[buf.number]
 
     @pynvim.command("MoltenDeinit", nargs=0, sync=True)  # type: ignore
     @nvimui  # type: ignore
