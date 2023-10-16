@@ -125,6 +125,7 @@ variable, their values, and a brief description.
 | `g:molten_image_provider`                     | (`"none"`) \| `"image_nvim"`                                | How image are displayed |
 | `g:molten_output_crop_border`                 | (`true`) \| `false`                                         | 'crops' the bottom border of the output window when it would otherwise just sit at the bottom of the screen |
 | `g:molten_output_show_more`                   | `true` \| (`false`)                                         | When the window can't display the entire contents of the output buffer, shows the number of extra lines in the window footer (requires nvim 10.0+ and a window border) |
+| `g:molten_output_virt_lines`                  | `true` \| (`false`)                                         | Pad the main buffer with virtual lines so the output doesn't cover anything while it's open |
 | `g:molten_output_win_border`                  | (`{ "", "━", "", "" }`) \| any value for `border` in `:h nvim_open_win()`| Some border features will not work if you don't specify your border as a table. see border option of `:h nvim_open_win()` |
 | `g:molten_output_win_cover_gutter`            | (`true`) \| `false`                                         | Should the output window cover the gutter (numbers and sign col), or not. If you change this, you probably also want to change `molten_output_win_style` |
 | `g:molten_output_win_hide_on_leave`           | (`true`) \| `false`                                         | After leaving the output window (via `:q` or switching windows), do not attempt to redraw the output window |
@@ -133,6 +134,7 @@ variable, their values, and a brief description.
 | `g:molten_output_win_style`                   | (`false`) \| `"minimal"`                                    | Value passed to the `style` option in `:h nvim_open_win()` |
 | `g:molten_save_path`                          | (`stdpath("data").."/molten"`) \| any path to a folder      | Where to save/load data with `:MoltenSave` and `:MoltenLoad` |
 | `g:molten_use_border_highlights`              | `true` \| (`false`)                                         | When true, uses different highlights for output border depending on the state of the cell (running, done, error). see [highlights](#highlights) |
+| `g:molten_virt_lines_off_by_1`                | `true` \| (`false`)                                         | _only has effect when `output_virt_lines` is true_ Allows the output window to cover exactly one line of the regular buffer. (useful for running code in a markdown file where that covered line will just be \`\`\`) |
 | `g:molten_wrap_output`                        | `true` \| (`false`)                                         | Wrap text in output windows |
 | [DEBUG] `g:molten_show_mimetype_debug`        | `true` \| (`false`)                                         | Before any non-iostream output chunk, the mime-type for that output chunk is shown. Meant for debugging/plugin devlopment |
 

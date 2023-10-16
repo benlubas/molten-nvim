@@ -562,4 +562,6 @@ class Molten:
             DynamicPosition(self.nvim, self.extmark_namespace, bufno, start - 1, 0),
             DynamicPosition(self.nvim, self.extmark_namespace, bufno, end - 1, -1),
         )
-        molten.outputs[span] = OutputBuffer(self.nvim, self.canvas, self.options)
+        molten.outputs[span] = OutputBuffer(
+            self.nvim, self.canvas, molten.extmark_namespace, self.options
+        )

@@ -108,7 +108,9 @@ class JupyterRuntime:
             output.chunks.append(MimetypesOutputChunk(list(data.keys())))
 
         if output.success:
-            output.chunks.append(to_outputchunk(self.nvim, self._alloc_file, data, metadata))
+            output.chunks.append(
+                to_outputchunk(self.nvim, self._alloc_file, data, metadata, self.options)
+            )
 
     def _tick_one(self, output: Output, message_type: str, content: Dict[str, Any]) -> bool:
         def copy_on_demand(content_ctor):
