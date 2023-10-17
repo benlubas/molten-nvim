@@ -262,9 +262,6 @@ class Molten:
 
         self._deinit_buffer(kernels)
 
-    # TODO: this function needs to maintain the invariant that code run by kernel A cannot overlap
-    # with code run by kernel B, if some portion of code that was originally run with kernel A is
-    # sent to kernel B, the code cell associated with kernel A should be deleted.
     def _do_evaluate(self, kernel_name: str, pos: Tuple[Tuple[int, int], Tuple[int, int]]) -> None:
         self._initialize_if_necessary()
 
@@ -292,8 +289,10 @@ class Molten:
         # delete overlapping cells from other kernels. Maintains the invariant that all code cells
         # from different kernels are disjoint
         for k in kernels:
-            if k != kernel:
+            if k.kernel_id != kernel.kernel_id:
                 k.delete_overlapping_cells(span)
+            else:
+                self.nvim.out_write("k == kernel\n")
 
     def _do_evaluate_expr(self, kernel_name: str, expr):
         self._initialize_if_necessary()

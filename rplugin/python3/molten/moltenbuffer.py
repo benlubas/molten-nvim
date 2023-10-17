@@ -192,6 +192,7 @@ class MoltenKernel:
                 self.outputs[output_span].clear_interface()
                 del self.outputs[output_span]
 
+    # TODO: This logic is flawed
     def _delete_all_cells_in_span(self, span: CodeCell) -> None:
         for output_span in reversed(list(self.outputs.keys())):
             if (
