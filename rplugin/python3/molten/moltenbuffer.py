@@ -94,7 +94,7 @@ class MoltenKernel:
         self.runtime.restart()
 
     def run_code(self, code: str, span: CodeCell) -> None:
-        self._delete_all_cells_in_span(span)
+        self.delete_overlapping_cells(span)
         self.runtime.run_code(code)
 
         if span in self.outputs:
@@ -191,18 +191,7 @@ class MoltenKernel:
                     self.current_output = None
                 self.outputs[output_span].clear_interface()
                 del self.outputs[output_span]
-
-    # TODO: This logic is flawed
-    def _delete_all_cells_in_span(self, span: CodeCell) -> None:
-        for output_span in reversed(list(self.outputs.keys())):
-            if (
-                output_span.begin in span
-                or output_span.end in span
-                or span.begin in output_span
-                or span.end in output_span
-            ):
-                self.outputs[output_span].clear_interface()
-                del self.outputs[output_span]
+                output_span.clear_interface(self.highlight_namespace)
 
     def delete_cell(self) -> None:
         self.selected_cell = self._get_selected_span()
@@ -210,6 +199,7 @@ class MoltenKernel:
             return
 
         self.outputs[self.selected_cell].clear_interface()
+        self.selected_cell.clear_interface(self.highlight_namespace)
         del self.outputs[self.selected_cell]
         self.selected_cell = None
 

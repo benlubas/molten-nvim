@@ -10,6 +10,7 @@ https://github.com/benlubas/molten-nvim/assets/56943754/6266efa4-a6e4-46f1-8e15-
 - Supports any language with a Jupyter Kernel (in theory, they haven't all been tested)
 - See output in a floating window right below the code
 - Send code from multiple buffers to the same kernel
+- Send code from the same buffer to multiple kernels
 - See output in real time, without flicker
 - Python virtual environment support
 - Renders images, plots, and LaTeX to the terminal
@@ -49,7 +50,7 @@ text within it's boundaries.
 
 When your cursor is in a cell (i.e., you have an _active cell_), a floating window may be shown below the cell, reporting output. This is the _display window_, or _output window_. (To see more about whether a window is shown or not, see `:MoltenShowOutput` and `g:molten_auto_open_output`). When you cursor is not in any cell, no cell is active.
 
-The active cell is chosen from newest to oldest. That means that you can have a cell within another cell, and if the one within is newer, then that one will be selected. (Same goes for merely overlapping cells).
+Overlapping cells are not allowed. If you create an overlapping cell, the old cell will be deleted.
 
 The output window has a header, containing the execution count and execution state (i.e., whether the cell is waiting to be run, running, has finished successfully or has finished with an error). Below the header output is shown.
 
@@ -62,21 +63,27 @@ Jupyter provides a rich set of outputs. To see what we can currently handle, see
 Here is a list of the commands and their arguments. Args in `[]` are optional, args in `""` are
 literal.
 
+When the `kernel` argument is specified as optional a command behaves in the following way:
+- if the kernel is specified, send the code to that kernel
+- else if there is only one active kernel for the current buffer, send the code to that kernel
+- else if there is more than one active kernel for the current buffer, prompt the user for the
+kernel
+
 | Command                   | Arguments             | Description                        |
 |---------------------------|-----------------------|------------------------------------|
 | `MoltenInit`              | `["shared"] [kernel]` | Initialize a kernel for the current buffer. If `shared` is passed as the first value, this buffer will use an already running kernel. If no kernel is given, prompts the user. |
 | `MoltenDeinit`            | none                  | De-initialize the current buffer's runtime and molten instance. (called automatically on vim close/buffer unload) |
-| `MoltenEvaluateLine`      | none                  | Evaluate the current line |
-| `MoltenEvaluateVisual`    | none                  | Evaluate the visual selection (**cannot be called with a range!**) |
-| `MoltenEvaluateOperator`  | none                  | Evaluate text selected by the following operator. see [keymaps](#keymaps) for useage |
-| `MoltenReevaluateCell`    | none                  | Re-evaluate the active cell (including new code) |
+| `MoltenEvaluateLine`      | `[kernel]`            | Evaluate the current line |
+| `MoltenEvaluateVisual`    | `[kernel]`            | Evaluate the visual selection (**cannot be called with a range!**) |
+| `MoltenEvaluateOperator`  | `[kernel]`            | Evaluate text selected by the following operator. see [keymaps](#keymaps) for useage |
+| `MoltenReevaluateCell`    | none                  | Re-evaluate the active cell (including new code) with the same kernel that it was originally evaluated with |
 | `MoltenDelete`            | none                  | Delete the active cell (does nothing if there is no active cell) |
 | `MoltenShowOutput`        | none                  | Shows the output window for the active cell |
 | `MoltenHideOutput`        | none                  | Hide currently open output window |
 | `MoltenEnterOutput`       | none                  | Move into the active cell's output window. Opens but does not enter the output if it's not open. **must be called with `noautocmd`** (see [keymaps](#keymaps) for example) |
-| `MoltenInterrupt`         | none                  | Sends a keyboard interrupt to the kernel which stops any currently running code. (does nothing if there's no current output) |
-| `MoltenRestart`           | `[!]`                 | Shuts down a restarts the current kernel. Deletes all outputs if used with a bang |
-| `MoltenSave`              | `[path]`              | Save the current cells and evaluated outputs into a JSON file. When path is specified, save the file to `path`, otherwise save to `g:molten_save_path` |
+| `MoltenInterrupt`         | `[kernel]`            | Sends a keyboard interrupt to the kernel which stops any currently running code. (does nothing if there's no current output) |
+| `MoltenRestart`           | `[!] [kernel]`        | Shuts down a restarts the kernel. Deletes all outputs if used with a bang |
+| `MoltenSave`              | `[path] [kernel]`     | Save the current cells and evaluated outputs into a JSON file. When path is specified, save the file to `path`, otherwise save to `g:molten_save_path` |
 | `MoltenLoad`              | `["shared"] [path]`   | Loads cell locations and output from a JSON file generated by `MoltenSave`. path functions the same as `MoltenSave`. If `shared` is specified, the buffer shares an already running kernel. |
 
 ## Keybindings
@@ -224,6 +231,23 @@ vim.fn.MoltenUpdateOption("auto_open_output", true)
 vim.fn.MoltenUpdateOption("molten_auto_open_output", true)
 ```
 
+</details>
+
+### MoltenDefineCell
+
+Takes in a start line, and end line, and a kernel and creates a code cell in the current buffer
+associated with that kernel. Does not run the code or create/open an output window.
+
+_for compatibility reasons, if there is only one active kernel, you do not need to pass the kernel
+argument_
+
+<details>
+  <summary>Example Usage</summary>
+
+```lua
+-- Creates a cell from line 5 to line 10 associated with the python3 kernel
+vim.fn.MoltenDefineCell(5, 10, 'python3')
+```
 </details>
 
 ## Extras

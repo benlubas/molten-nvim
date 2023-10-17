@@ -291,8 +291,6 @@ class Molten:
         for k in kernels:
             if k.kernel_id != kernel.kernel_id:
                 k.delete_overlapping_cells(span)
-            else:
-                self.nvim.out_write("k == kernel\n")
 
     def _do_evaluate_expr(self, kernel_name: str, expr):
         self._initialize_if_necessary()
@@ -522,24 +520,16 @@ class Molten:
                 return
         notify_error(self.nvim, f"Unable to find kernel: {kernel}")
 
-    @pynvim.command("MoltenDelete", nargs="*", sync=True)  # type: ignore
+    @pynvim.command("MoltenDelete", nargs=0, sync=True)  # type: ignore
     @nvimui  # type: ignore
-    def command_delete(self, *args) -> None:
-        if args and len(args[0]) > 0:
-            kernel = args[0][0]
-        else:
-            self.kernel_check(f"MoltenDelete", "", self.nvim.current.buffer)
-            return
-
+    def command_delete(self) -> None:
         molten_kernels = self._get_current_buf_kernels(True)
         assert molten_kernels is not None
 
         for molten in molten_kernels:
-            if molten.kernel_id == kernel:
+            if molten.current_output is not None:
                 molten.delete_cell()
                 return
-
-        notify_error(self.nvim, f"Unable to find kernel: {kernel}")
 
     @pynvim.command("MoltenShowOutput", nargs=0, sync=True)  # type: ignore
     @nvimui  # type: ignore
