@@ -1,5 +1,3 @@
-from typing import Union, List
-
 from pynvim import Nvim
 
 
