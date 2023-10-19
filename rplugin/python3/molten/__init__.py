@@ -571,6 +571,7 @@ class Molten:
 
         self._update_interface()
 
+    # TODO: this also might be parsed wrong ..maybe (?)
     @pynvim.command("MoltenSave", nargs="*", sync=True)  # type: ignore
     @nvimui  # type: ignore
     def command_save(self, args) -> None:
@@ -601,6 +602,7 @@ class Molten:
                 break
         notify_info(self.nvim, f"Saved kernel `{kernel}` to: {path}")
 
+    # TODO: this is still parsed wrong
     @pynvim.command("MoltenLoad", nargs="*", sync=True)  # type: ignore
     @nvimui  # type: ignore
     def command_load(self, args) -> None:
