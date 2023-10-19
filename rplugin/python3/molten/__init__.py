@@ -161,7 +161,7 @@ class Molten:
 
         kernel_id = kernel_name
         if self.molten_kernels.get(kernel_name) is not None:
-            kernel_id = f"{kernel_name}_({len(self.molten_kernels)})"
+            kernel_id = f"{kernel_name}_{len(self.molten_kernels)}"
 
         molten = MoltenKernel(
             self.nvim,
@@ -571,19 +571,20 @@ class Molten:
 
         self._update_interface()
 
-    # TODO: this also might be parsed wrong ..maybe (?)
     @pynvim.command("MoltenSave", nargs="*", sync=True)  # type: ignore
     @nvimui  # type: ignore
     def command_save(self, args) -> None:
         self._initialize_if_necessary()
+        self.nvim.out_write(f"args: {args}\n")
 
         buf = self.nvim.current.buffer
         if len(args) > 0:
+            args = args[0].split(" ")
             path = args[0]
         else:
             path = get_default_save_file(self.options, buf)
 
-        if args and len(args[0]) > 1:
+        if len(args) > 1:
             kernel = args[1]
         else:
             self.kernel_check(f"MoltenSave", path, buf, kernel_last=True)
@@ -602,19 +603,22 @@ class Molten:
                 break
         notify_info(self.nvim, f"Saved kernel `{kernel}` to: {path}")
 
-    # TODO: this is still parsed wrong
     @pynvim.command("MoltenLoad", nargs="*", sync=True)  # type: ignore
     @nvimui  # type: ignore
     def command_load(self, args) -> None:
         self._initialize_if_necessary()
 
+        self.nvim.out_write(f"args: {args}\n")
         shared = False
 
-        if len(args[0]) > 0 and args[0] == "shared":
+        if len(args) > 0:
+            args = args[0].split(" ")
+
+        if len(args) > 0 and args[0] == "shared":
             shared = True
             args = args[1:]
 
-        if len(args[0]) > 0:
+        if len(args) > 0:
             path = args[0]
         else:
             path = get_default_save_file(self.options, self.nvim.current.buffer)
