@@ -42,6 +42,7 @@ def get_default_save_file(options: MoltenOptions, buffer: Buffer) -> str:
 def load(nvim: Nvim, moltenbuffer: MoltenKernel, nvim_buffer: Buffer, data: Dict[str, Any]) -> None:
     MoltenIOError.assert_has_key(data, "content_checksum", str)
 
+    # checksums are being calculated differently?
     if moltenbuffer._get_content_checksum() != data["content_checksum"]:
         raise MoltenIOError("Buffer contents' checksum does not match!")
 

@@ -13,7 +13,7 @@ from molten.options import MoltenOptions
 from molten.outputbuffer import OutputBuffer
 from molten.position import DynamicPosition
 from molten.runtime import get_available_kernels
-from molten.utils import MoltenException, notify_error, notify_warn, nvimui
+from molten.utils import MoltenException, notify_error, notify_info, notify_warn, nvimui
 from pynvim import Nvim
 
 
@@ -197,7 +197,7 @@ class Molten:
         self._initialize_if_necessary()
 
         shared = False
-        if args and args[0] == "shared":
+        if len(args) > 0 and args[0]  == "shared":
             shared = True
             args = args[1:]
 
@@ -243,12 +243,14 @@ class Molten:
             self.nvim.exec_lua(lua, async_=False)
 
     def _deinit_buffer(self, molten_kernels: List[MoltenKernel]) -> None:
-        for kernel in molten_kernels:
+        # Have to copy this to get around reference issues
+        for kernel in [x for x in molten_kernels]:
             kernel.deinit()
             for buf in kernel.buffers:
                 self.buffers[buf.number].remove(kernel)
                 if len(self.buffers[buf.number]) == 0:
                     del self.buffers[buf.number]
+            del self.molten_kernels[kernel.kernel_id]
 
     @pynvim.command("MoltenDeinit", nargs=0, sync=True)  # type: ignore
     @nvimui  # type: ignore
@@ -349,9 +351,9 @@ class Molten:
 
     @pynvim.command("MoltenEvaluateVisual", nargs="*", sync=True)  # type: ignore
     @nvimui  # type: ignore
-    def command_evaluate_visual(self, *args) -> None:
-        if args and len(args[0]) > 0:
-            kernel = args[0][0]
+    def command_evaluate_visual(self, args) -> None:
+        if len(args[0]) > 0:
+            kernel = args[0]
         else:
             self.kernel_check("MoltenEvaluateVisual", "", self.nvim.current.buffer)
             return
@@ -372,13 +374,13 @@ class Molten:
 
     @pynvim.function("MoltenEvaluateRange", sync=True)  # type: ignore
     @nvimui  # type: ignore
-    def evaulate_range(self, *args) -> None:
+    def evaulate_range(self, args) -> None:
         start_col, end_col = 0, -1
         kernel = None
-        span = args[0]
-        if type(args[0][0]) == str:
-            kernel = args[0][0]
-            span = args[0][1:]
+        span = args
+        if type(args[0]) == str:
+            kernel = args[0]
+            span = args[1:]
 
         if len(span) == 2:
             start_line, end_line = span
@@ -486,7 +488,7 @@ class Molten:
 
     @pynvim.command("MoltenInterrupt", nargs="*", sync=True)  # type: ignore
     @nvimui  # type: ignore
-    def command_interrupt(self, *args) -> None:
+    def command_interrupt(self, args) -> None:
         if len(args) > 0:
             kernel = args[0]
         else:
@@ -504,7 +506,7 @@ class Molten:
 
     @pynvim.command("MoltenRestart", nargs="*", sync=True, bang=True)  # type: ignore
     @nvimui  # type: ignore
-    def command_restart(self, bang: bool, *args) -> None:
+    def command_restart(self, bang: bool, args) -> None:
         if len(args) > 0:
             kernel = args[0]
         else:
@@ -569,21 +571,21 @@ class Molten:
 
         self._update_interface()
 
-    @pynvim.command("MoltenSave", nargs="?", sync=True)  # type: ignore
+    @pynvim.command("MoltenSave", nargs="*", sync=True)  # type: ignore
     @nvimui  # type: ignore
-    def command_save(self, args: List[str]) -> None:
+    def command_save(self, args) -> None:
         self._initialize_if_necessary()
 
         buf = self.nvim.current.buffer
-        if args:
+        if len(args) > 0:
             path = args[0]
         else:
             path = get_default_save_file(self.options, buf)
 
-        if len(args) > 1:
+        if args and len(args[0]) > 1:
             kernel = args[1]
         else:
-            self.kernel_check("MoltenSave", path, buf, kernel_last=True)
+            self.kernel_check(f"MoltenSave", path, buf, kernel_last=True)
             return
 
         dirname = os.path.dirname(path)
@@ -597,18 +599,20 @@ class Molten:
                 with open(path, "w") as file:
                     json.dump(save(molten, buf.number), file)
                 break
+        notify_info(self.nvim, f"Saved kernel `{kernel}` to: {path}")
 
     @pynvim.command("MoltenLoad", nargs="*", sync=True)  # type: ignore
     @nvimui  # type: ignore
-    def command_load(self, args: List[str]) -> None:
+    def command_load(self, args) -> None:
         self._initialize_if_necessary()
 
         shared = False
-        if args and args[0] == "shared":
+
+        if len(args[0]) > 0 and args[0] == "shared":
             shared = True
             args = args[1:]
 
-        if len(args) == 1:
+        if len(args[0]) > 0:
             path = args[0]
         else:
             path = get_default_save_file(self.options, self.nvim.current.buffer)
@@ -624,6 +628,8 @@ class Molten:
         molten = None
 
         try:
+            notify_info(self.nvim, f"Attempting to load from: {path}")
+
             MoltenIOError.assert_has_key(data, "version", int)
             if (version := data["version"]) != 1:
                 raise MoltenIOError(f"Bad version: {version}")
