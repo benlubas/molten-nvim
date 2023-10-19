@@ -575,11 +575,9 @@ class Molten:
     @nvimui  # type: ignore
     def command_save(self, args) -> None:
         self._initialize_if_necessary()
-        self.nvim.out_write(f"args: {args}\n")
 
         buf = self.nvim.current.buffer
         if len(args) > 0:
-            args = args[0].split(" ")
             path = args[0]
         else:
             path = get_default_save_file(self.options, buf)
@@ -608,11 +606,7 @@ class Molten:
     def command_load(self, args) -> None:
         self._initialize_if_necessary()
 
-        self.nvim.out_write(f"args: {args}\n")
         shared = False
-
-        if len(args) > 0:
-            args = args[0].split(" ")
 
         if len(args) > 0 and args[0] == "shared":
             shared = True
