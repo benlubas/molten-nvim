@@ -93,6 +93,7 @@ kernel
 | `MoltenEvaluateLine`      | `[kernel]`            | Evaluate the current line |
 | `MoltenEvaluateVisual`    | `[kernel]`            | Evaluate the visual selection (**cannot be called with a range!**) |
 | `MoltenEvaluateOperator`  | `[kernel]`            | Evaluate text selected by the following operator. see [keymaps](#keymaps) for useage |
+| `MoltenEvaluateArgument`  | `[kernel] code`       | Evaluate given code in the given kernel |
 | `MoltenReevaluateCell`    | none                  | Re-evaluate the active cell (including new code) with the same kernel that it was originally evaluated with |
 | `MoltenDelete`            | none                  | Delete the active cell (does nothing if there is no active cell) |
 | `MoltenShowOutput`        | none                  | Shows the output window for the active cell |

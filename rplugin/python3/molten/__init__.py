@@ -197,7 +197,7 @@ class Molten:
         self._initialize_if_necessary()
 
         shared = False
-        if len(args) > 0 and args[0]  == "shared":
+        if len(args) > 0 and args[0] == "shared":
             shared = True
             args = args[1:]
 
@@ -344,15 +344,17 @@ class Molten:
     @pynvim.command("MoltenEvaluateArgument", nargs="*", sync=True)  # type: ignore
     @nvimui
     def commnand_molten_evaluate_argument(self, args: List[str]) -> None:
-        if len(args) > 0 and args[0] in self.buffers[self.nvim.current.buffer.number]:
-            self._do_evaluate_expr(args[0], args[1:])
+        if len(args) > 0 and args[0] in map(
+            lambda x: x.kernel_id, self.buffers[self.nvim.current.buffer.number]
+        ):
+            self._do_evaluate_expr(args[0], " ".join(args[1:]))
         else:
             self.kernel_check("MoltenEvaluateArgument", " ".join(args), self.nvim.current.buffer)
 
     @pynvim.command("MoltenEvaluateVisual", nargs="*", sync=True)  # type: ignore
     @nvimui  # type: ignore
     def command_evaluate_visual(self, args) -> None:
-        if len(args[0]) > 0:
+        if len(args) > 0:
             kernel = args[0]
         else:
             self.kernel_check("MoltenEvaluateVisual", "", self.nvim.current.buffer)
@@ -375,7 +377,7 @@ class Molten:
     @pynvim.function("MoltenEvaluateRange", sync=True)  # type: ignore
     @nvimui  # type: ignore
     def evaulate_range(self, args) -> None:
-        start_col, end_col = 0, -1
+        start_col, end_col = 1, 0
         kernel = None
         span = args
         if type(args[0]) == str:
@@ -399,8 +401,8 @@ class Molten:
             return
 
         span = (
-            (start_line - 1, start_col),
-            (end_line - 1, end_col),
+            (start_line - 1, start_col - 1),
+            (end_line - 1, end_col - 1),
         )
 
         self._do_evaluate(kernel.strip(), span)
@@ -421,9 +423,8 @@ class Molten:
 
         span = ((lineno, 0), (lineno, -1))
 
-
-        if args and len(args[0]) > 0:
-            self._do_evaluate(args[0][0], span)
+        if len(args) > 0 and args[0]:
+            self._do_evaluate(args[0], span)
         else:
             self.kernel_check("MoltenEvaluateLine", "", self.nvim.current.buffer)
 
@@ -713,30 +714,25 @@ class Molten:
 
         if kind == "line":
             colno_begin = 1
-            colno_end = -1
+            colno_end = 0
         elif kind == "char":
             pass
+            colno_begin = min(colno_begin, len(self.nvim.funcs.getline(lineno_begin)))
+            colno_end = min(colno_end, len(self.nvim.funcs.getline(lineno_end)))
         else:
             raise MoltenException(f"this kind of selection is not supported: '{kind}'")
 
         span = (
-            (
-                lineno_begin - 1,
-                min(colno_begin, len(self.nvim.funcs.getline(lineno_begin))) - 1,
-            ),
-            (
-                lineno_end - 1,
-                min(colno_end, len(self.nvim.funcs.getline(lineno_end))),
-            ),
+            (lineno_begin, colno_begin),
+            (lineno_end, colno_end),
         )
 
         self.kernel_check(
-            "call MoltenEvaluateRange(",
-            f", {span[0][0]}, {span[1][0]}, {span[0][1]}, {span[1][1]})",
+            "call MoltenEvaluateRange('",
+            f"', {span[0][0]}, {span[1][0]}, {span[0][1]}, {span[1][1]})",
             self.nvim.current.buffer,
         )
 
-    # TODO: this is currently undocumented.
     @pynvim.function("MoltenDefineCell", sync=True)
     def function_molten_define_cell(self, args: List[int]) -> None:
         if not args:
