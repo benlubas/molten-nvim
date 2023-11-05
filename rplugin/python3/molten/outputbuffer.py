@@ -6,7 +6,8 @@ from pynvim.api import Buffer, Window
 from molten.images import Canvas
 from molten.outputchunks import Output, OutputStatus
 from molten.options import MoltenOptions
-from molten.utils import Position, notify_error
+from molten.position import DynamicPosition, Position
+from molten.utils import notify_error
 
 
 class OutputBuffer:
@@ -17,11 +18,13 @@ class OutputBuffer:
 
     display_buf: Buffer
     display_win: Optional[Window]
+    display_virt_lines: Optional[DynamicPosition]
+    extmark_namespace: int
 
     options: MoltenOptions
     lua: Any
 
-    def __init__(self, nvim: Nvim, canvas: Canvas, options: MoltenOptions):
+    def __init__(self, nvim: Nvim, canvas: Canvas, extmark_namespace: int, options: MoltenOptions):
         self.nvim = nvim
         self.canvas = canvas
 
@@ -29,6 +32,8 @@ class OutputBuffer:
 
         self.display_buf = self.nvim.buffers[self.nvim.funcs.nvim_create_buf(False, True)]
         self.display_win = None
+        self.display_virt_lines = None
+        self.extmark_namespace = extmark_namespace
 
         self.options = options
         self.nvim.exec_lua("_ow = require('output_window')")
@@ -86,6 +91,9 @@ class OutputBuffer:
             self.nvim.funcs.nvim_win_close(self.display_win, True)
             self.canvas.clear()
             self.display_win = None
+        if self.display_virt_lines is not None:
+            del self.display_virt_lines
+            self.display_virt_lines = None
 
     def set_win_option(self, option: str, value) -> None:
         if self.display_win:
@@ -142,7 +150,7 @@ class OutputBuffer:
             lines = handle_progress_bars(lines_str)
             lineno = len(lines)
         else:
-            lines = [lines_str]
+            lines = []
 
         self.display_buf[0] = self._get_header_text(self.output)
         self.display_buf.append(lines)
@@ -186,7 +194,6 @@ class OutputBuffer:
                 self.options.output_show_more
                 and not cropped
                 and height == self.options.output_win_max_height
-                and len(self.display_buf) > height - border_h
             ):
                 # the entire window size is shown, but the buffer still has more lines to render
                 hidden_lines = len(self.display_buf) - height
@@ -216,6 +223,20 @@ class OutputBuffer:
                 self.canvas.present()
             else:  # move the current window
                 self.display_win.api.set_config(win_opts)
+
+            if self.display_virt_lines is not None:
+                del self.display_virt_lines
+
+            if self.options.output_virt_lines:
+                virt_lines_y = anchor.lineno
+                virt_lines_height = max_height + border_h
+                if self.options.virt_lines_off_by_1:
+                    virt_lines_y += 1
+                    virt_lines_height -= 1
+                self.display_virt_lines = DynamicPosition(
+                    self.nvim, self.extmark_namespace, anchor.bufno, virt_lines_y, 0
+                )
+                self.display_virt_lines.set_height(virt_lines_height)
 
     def set_border_highlight(self, border):
         hl = self.options.hl.border_norm

@@ -4,16 +4,20 @@ import hashlib
 
 from pynvim import Nvim
 from pynvim.api import Buffer
+from molten.code_cell import CodeCell
 
 from molten.options import MoltenOptions
 from molten.images import Canvas
-from molten.utils import MoltenException, Position, Span, notify_info
+from molten.position import Position
+from molten.utils import MoltenException, notify_info
 from molten.outputbuffer import OutputBuffer
 from molten.outputchunks import OutputStatus
 from molten.runtime import JupyterRuntime
 
 
-class MoltenBuffer:
+# Handles a Single Kernel that can be attached to multiple buffers
+# Other MoltenKernels can be attached to the same buffers
+class MoltenKernel:
     nvim: Nvim
     canvas: Canvas
     highlight_namespace: int
@@ -22,11 +26,14 @@ class MoltenBuffer:
 
     runtime: JupyterRuntime
 
-    outputs: Dict[Span, OutputBuffer]
-    current_output: Optional[Span]
-    queued_outputs: "Queue[Span]"
+    # name unique to this specific jupyter runtime. Only used within Molten. Human Readable
+    kernel_id: str
 
-    selected_cell: Optional[Span]
+    outputs: Dict[CodeCell, OutputBuffer]
+    current_output: Optional[CodeCell]
+    queued_outputs: "Queue[CodeCell]"
+
+    selected_cell: Optional[CodeCell]
     should_show_display_window: bool
     updating_interface: bool
 
@@ -41,6 +48,7 @@ class MoltenBuffer:
         main_buffer: Buffer,
         options: MoltenOptions,
         kernel_name: str,
+        kernel_id: str,
     ):
         self.nvim = nvim
         self.canvas = canvas
@@ -51,6 +59,7 @@ class MoltenBuffer:
         self._doautocmd("MoltenInitPre")
 
         self.runtime = JupyterRuntime(nvim, kernel_name, options)
+        self.kernel_id = kernel_id
 
         self.outputs = {}
         self.current_output = None
@@ -84,15 +93,17 @@ class MoltenBuffer:
 
         self.runtime.restart()
 
-    def run_code(self, code: str, span: Span) -> None:
-        self._delete_all_cells_in_span(span)
+    def run_code(self, code: str, span: CodeCell) -> None:
+        self.delete_overlapping_cells(span)
         self.runtime.run_code(code)
 
         if span in self.outputs:
             self.outputs[span].clear_interface()
             del self.outputs[span]
 
-        self.outputs[span] = OutputBuffer(self.nvim, self.canvas, self.options)
+        self.outputs[span] = OutputBuffer(
+            self.nvim, self.canvas, self.extmark_namespace, self.options
+        )
         self.queued_outputs.put(span)
 
         self.selected_cell = span
@@ -101,14 +112,15 @@ class MoltenBuffer:
 
         self._check_if_done_running()
 
-    def reevaluate_cell(self) -> None:
+    def reevaluate_cell(self) -> bool:
         self.selected_cell = self._get_selected_span()
         if self.selected_cell is None:
-            raise MoltenException("Not in a cell")
+            return False
 
         code = self.selected_cell.get_text(self.nvim)
 
         self.run_code(code, self.selected_cell)
+        return True
 
     def _check_if_done_running(self) -> None:
         # TODO: refactor
@@ -137,7 +149,9 @@ class MoltenBuffer:
         if self.selected_cell is not None:
             if self.options.enter_output_behavior != "no_open":
                 self.should_show_display_window = True
-            self.should_show_display_window = self.outputs[self.selected_cell].enter(self.selected_cell.end)
+            self.should_show_display_window = self.outputs[self.selected_cell].enter(
+                self.selected_cell.end
+            )
 
     def _get_cursor_position(self) -> Position:
         _, lineno, colno, _, _ = self.nvim.funcs.getcurpos()
@@ -159,7 +173,7 @@ class MoltenBuffer:
         for output in self.outputs.values():
             output.clear_interface()
 
-    def _get_selected_span(self) -> Optional[Span]:
+    def _get_selected_span(self) -> Optional[CodeCell]:
         current_position = self._get_cursor_position()
         selected = None
         for span in reversed(self.outputs.keys()):
@@ -169,16 +183,15 @@ class MoltenBuffer:
 
         return selected
 
-    def _delete_all_cells_in_span(self, span: Span) -> None:
-        for output_span in reversed(list(self.outputs.keys())):
-            if (
-                output_span.begin in span
-                or output_span.end in span
-                or span.begin in output_span
-                or span.end in output_span
-            ):
+    def delete_overlapping_cells(self, span: CodeCell) -> None:
+        """ Delete the code cells in this kernel that overlap with the given span """
+        for output_span in list(self.outputs.keys()):
+            if output_span.overlaps(span):
+                if self.current_output == output_span:
+                    self.current_output = None
                 self.outputs[output_span].clear_interface()
                 del self.outputs[output_span]
+                output_span.clear_interface(self.highlight_namespace)
 
     def delete_cell(self) -> None:
         self.selected_cell = self._get_selected_span()
@@ -186,26 +199,26 @@ class MoltenBuffer:
             return
 
         self.outputs[self.selected_cell].clear_interface()
+        self.selected_cell.clear_interface(self.highlight_namespace)
         del self.outputs[self.selected_cell]
+        self.selected_cell = None
 
     def update_interface(self) -> None:
         buffer_numbers = [buf.number for buf in self.buffers]
         if self.nvim.current.buffer.number not in buffer_numbers:
             return
 
-        # TODO: I think this is redundant
         if self.nvim.current.window.buffer.number not in buffer_numbers:
             return
 
-        self.clear_interface()
-
         self.updating_interface = True
-
         selected_cell = self._get_selected_span()
 
         # Clear the cell we just left
         if self.selected_cell != selected_cell and self.selected_cell is not None:
-            self.outputs[self.selected_cell].clear_interface()
+            if self.selected_cell in self.outputs:
+                self.outputs[self.selected_cell].clear_interface()
+            self.selected_cell.clear_interface(self.highlight_namespace)
 
         if selected_cell is None:
             self.should_show_display_window = False
@@ -239,7 +252,7 @@ class MoltenBuffer:
 
         self.update_interface()
 
-    def _show_selected(self, span: Span) -> None:
+    def _show_selected(self, span: CodeCell) -> None:
         """Show the selected cell. Can only have a selected cell in the current buffer"""
         buf = self.nvim.current.buffer
         if buf.number not in [b.number for b in self.buffers]:
