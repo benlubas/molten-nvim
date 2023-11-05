@@ -7,20 +7,26 @@ Contributions are more than welcome. Please keep the following in mind:
 - The code is old and rather messy in some places
 - This is a remote plugin. So it's written mostly in python using `pynvim` (which is not the best
 documented thing out there), if you have questions about how to do something, I've probably done it
-in this plugin, so just poke around, grep around, and you'll probably find it.
+in this plugin, so just poke around, grep around, and you'll probably find it, or open an issue here
+if you still have trouble.
 
 ## Dev Environment
 
-I believe this is all you need to write code without unresolved imports and test all the output
-types.
+This project is configured for the pyright language server and black code formatter.
+
+### With nix
+
+You can make use of the flake.nix in conjunction with direnv to easily build an environment with all
+the dependencies. You will need the flakes experimental feature enabled.
+
+### Without nix
+
+You're kinda on your own. I've listed all the python requirements here. you can install them with
+pip into a venv.
 
 ```bash
-# please use a venv for this type of stuff
 pip install plotly pnglatex pynvim pyperclip svgwrite sympy tqdm cairosvg ipykernel jupyter_client kaleido matplotlib
 ```
-
-This project is configured for the pyright language server and black code formatter. There's also
-config for mypy type checking, but I just use pyright for that.
 
 ## Code Style
 
