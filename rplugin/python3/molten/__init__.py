@@ -264,6 +264,20 @@ class Molten:
 
         self._deinit_buffer(kernels)
 
+    @pynvim.command("MoltenInfo", nargs=0, sync=True)  # type: ignore
+    @nvimui  # type: ignore
+    def command_info(self) -> None:
+        buf = self.nvim.current.buffer.number
+        buf_kernels = [x.kernel_id for x in self.buffers[buf]] if buf in self.buffers else []
+        text = f"=== Molten Info ===\n"
+        text += f"state: {'initialized' if self.initialized else 'uninitialized'}\n"
+        text += f"available kernels: {get_available_kernels()}\n"
+        if self.initialized:
+            text += f"kernel(s) attached to buffer: {buf_kernels}\n"
+            text += f"all running kernels: {list(self.molten_kernels.keys())}\n"
+
+        self.nvim.out_write(text)
+
     def _do_evaluate(self, kernel_name: str, pos: Tuple[Tuple[int, int], Tuple[int, int]]) -> None:
         self._initialize_if_necessary()
 
