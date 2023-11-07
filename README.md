@@ -20,7 +20,7 @@ https://github.com/benlubas/molten-nvim/assets/56943754/6266efa4-a6e4-46f1-8e15-
 
 ## Requirements
 
-- NeoVim 9.4+, nightly recommended
+- NeoVim 9.4+
 - Python 3.10+
 - [image.nvim](https://github.com/3rd/image.nvim) is only required if you want to render images
 - Required Python packages (can be installed in a venv. [read more](https://github.com/benlubas/molten-nvim/wiki/Virtual-Environments)):
@@ -216,32 +216,50 @@ Similarly, you could remove these mappings on `MoltenDeinitPost`
 
 ## Functions
 
-### MoltenEvaluateRange
-
-There is a provided function `MoltenEvaluateRange(start_line, end_line)` which evaluates the code
-between the given line numbers (inclusive). This is intended for use in scripts.
+Molten exposes some functionality through vim functions.
 
 <details>
-  <summary>Example Usage</summary>
+  <summary>MoltenEvaluateRange</summary>
+
+There is a provided function `MoltenEvaluateRange(start_line, end_line, [start_col, end_col])` which
+evaluates the code between the given line numbers (inclusive). This is intended for use in scripts.
 
 ```lua
+-- run lines 1 through 23 (inclusive):
 vim.fn.MoltenEvaluateRange(1, 23)
+
+-- run code starting with col 4 on line 1, and ending with col 20 on line 3
+vim.fn.MoltenEvaluateRange(1, 3, 4, 20)
 ```
+
+Additionally, this function can take a string as the first argument. When a string is specified,
+it's assumed to be a `kernel_id`.
+
+```lua
+-- run lines 1 through 23 (inclusive) with the python3 kernel
+vim.fn.MoltenEvaluateRange("python3", 1, 23)
+
+-- run code starting with col 4 on line 1, and ending with col 20 on line 3 with the R kernel
+vim.fn.MoltenEvaluateRange("ir", 1, 3, 4, 20)
+```
+
+When there are multiple kernels attached to the buffer, and this function is called without
+a `kernel_id`, the user will be prompted for a kernel with vim.ui.select
 
 </details>
 
-### MoltenUpdateOption
+<details>
+  <summary>MoltenUpdateOption</summary>
 
 Because Molten is a remote plugin, options are loaded and cached at initialization. This avoids
 making an unnecessary number of RPC calls if we were to fetch configuration values every time we
 needed to use them. This comes with the trade-off of not being able to update config values on the
-fly... can you see where this is going
+fly... can you see where this is going.
 
 This function lets you update a configuration value after initialization, and the new value will
 take effect immediately.
 
-<details>
-  <summary>Example Usage</summary>
+You can specify option names with or without the "molten" prefix.
 
 ```lua
 -- these are the same!
@@ -251,7 +269,8 @@ vim.fn.MoltenUpdateOption("molten_auto_open_output", true)
 
 </details>
 
-### MoltenDefineCell
+<details>
+  <summary>MoltenDefineCell</summary>
 
 Takes in a start line, and end line, and a kernel and creates a code cell in the current buffer
 associated with that kernel. Does not run the code or create/open an output window.
@@ -259,13 +278,11 @@ associated with that kernel. Does not run the code or create/open an output wind
 _for compatibility reasons, if there is only one active kernel, you do not need to pass the kernel
 argument_
 
-<details>
-  <summary>Example Usage</summary>
-
 ```lua
 -- Creates a cell from line 5 to line 10 associated with the python3 kernel
 vim.fn.MoltenDefineCell(5, 10, 'python3')
 ```
+
 </details>
 
 ## Extras
