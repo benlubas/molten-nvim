@@ -88,6 +88,7 @@ kernel
 
 | Command                   | Arguments             | Description                        |
 |---------------------------|-----------------------|------------------------------------|
+| `MoltenInfo`              | none                  | Show information about the state of the plugin, initialization status, available kernels, and running kernels |
 | `MoltenInit`              | `["shared"] [kernel]` | Initialize a kernel for the current buffer. If `shared` is passed as the first value, this buffer will use an already running kernel. If no kernel is given, prompts the user. |
 | `MoltenDeinit`            | none                  | De-initialize the current buffer's runtime and molten instance. (called automatically on vim close/buffer unload) |
 | `MoltenEvaluateLine`      | `[kernel]`            | Evaluate the current line |
@@ -163,20 +164,33 @@ variable, their values, and a brief description.
 | `g:molten_wrap_output`                        | `true` \| (`false`)                                         | Wrap text in output windows |
 | [DEBUG] `g:molten_show_mimetype_debug`        | `true` \| (`false`)                                         | Before any non-iostream output chunk, the mime-type for that output chunk is shown. Meant for debugging/plugin devlopment |
 
+### Status Line
 
-## Highlights
+Molten provides a few functions that you can use to see information in your status line. These are
+listed below:
+
+```lua
+require('molten.status').initialized() -- "Molten" or "" based on initialization information
+require('molten.status').kernels() -- "kernel1 kernel2" list of kernels attached to buffer or ""
+require('molten.status').all_kernels() -- same as kernels, but will show all kernels
+```
+
+The way these are used will vary based on status line plugin. So please refer to your status line
+plugin to figure out how to use these.
+
+### Highlights
 
 You can change highlights like so:
 
 ```lua
 -- see :h nvim_set_hl for the values of opts
--- I would recommend using `link` to link the values to colors from your color scheme
+-- I would recommend using the `link` option to link the values to colors from your color scheme
 vim.api.nvim_set_hl(0, "MoltenOutputBorder", { opts })
 ```
 
 Here is a complete list of the highlight groups that Molten uses, and their default values
 
-- `MoltenOutputBorder` = `FloatBorder`: default border
+- `MoltenOutputBorder` = `FloatBorder`: default output window border
 - `MoltenOutputBorderFail` = `MoltenOutputBorder`: border of a failed output window
 - `MoltenOutputBorderSuccess` = `MoltenOutputBorder`: border of a successfully run output window
 - `MoltenOutputWin` = `NormalFloat`: the innards of the output window

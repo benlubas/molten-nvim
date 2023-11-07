@@ -346,22 +346,19 @@ class Molten:
             )
 
     @pynvim.function("MoltenRunningKernels", sync=True)  # type: ignore
-    def function_list_running_kernels(self, args) -> List[str]:
-        """ List all the running kernels
-        args: [buf: bool] - when true, return the buffer local kernels
-        """
+    def function_list_running_kernels(self, args: List[Optional[bool]]) -> List[str]:
+        """ List all the running kernels. When passed [True], returns only buf local kernels """
         if not self.initialized:
             return []
-        if args[0]:
+        if len(args) > 0 and args[0]:
             buf = self.nvim.current.buffer.number
             return [x.kernel_id for x in self.buffers[buf]]
         return list(self.molten_kernels.keys())
 
-    @pynvim.function("MoltenStatusLineKernel", sync=True)  # type: ignore
-    def function_status_line_kernel(self, _) -> str:
-        if not self.initialized:
-            return ""
-        return " ".join(self.molten_kernels.keys())
+    @pynvim.function("MoltenStatusLineKernels", sync=True)  # type: ignore
+    def function_status_line_kernels(self, args) -> str:
+        kernels = self.function_list_running_kernels(args)
+        return " ".join(kernels)
 
     @pynvim.function("MoltenStatusLineInit", sync=True)  # type: ignore
     def function_status_line_init(self, _) -> str:
