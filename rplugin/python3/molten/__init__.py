@@ -345,6 +345,30 @@ class Molten:
                 f"Wrong number of arguments passed to :MoltenUpdateOption, expected 2, given {len(args)}",
             )
 
+    @pynvim.function("MoltenRunningKernels", sync=True)  # type: ignore
+    def function_list_running_kernels(self, args) -> List[str]:
+        """ List all the running kernels
+        args: [buf: bool] - when true, return the buffer local kernels
+        """
+        if not self.initialized:
+            return []
+        if args[0]:
+            buf = self.nvim.current.buffer.number
+            return [x.kernel_id for x in self.buffers[buf]]
+        return list(self.molten_kernels.keys())
+
+    @pynvim.function("MoltenStatusLineKernel", sync=True)  # type: ignore
+    def function_status_line_kernel(self, _) -> str:
+        if not self.initialized:
+            return ""
+        return " ".join(self.molten_kernels.keys())
+
+    @pynvim.function("MoltenStatusLineInit", sync=True)  # type: ignore
+    def function_status_line_init(self, _) -> str:
+        if self.initialized:
+            return "Molten"
+        return ""
+
     @pynvim.command("MoltenEnterOutput", sync=True)  # type: ignore
     @nvimui  # type: ignore
     def command_enter_output_window(self) -> None:
