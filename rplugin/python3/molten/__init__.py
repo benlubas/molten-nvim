@@ -269,14 +269,31 @@ class Molten:
     def command_info(self) -> None:
         buf = self.nvim.current.buffer.number
         buf_kernels = [x.kernel_id for x in self.buffers[buf]] if buf in self.buffers else []
-        text = f"=== Molten Info ===\n"
-        text += f"state: {'initialized' if self.initialized else 'uninitialized'}\n"
-        text += f"available kernels: {get_available_kernels()}\n"
+        info_buf = self.nvim.api.create_buf(False, True)
+        info_buf.append(["press q or <esc> to close this window", ""])
+        info_buf.append("==== Molten Info ====")
+        info_buf.append(f" - state: {'initialized' if self.initialized else 'uninitialized'}")
+        info_buf.append(f" - available kernels: {get_available_kernels()}")
         if self.initialized:
-            text += f"kernel(s) attached to buffer: {buf_kernels}\n"
-            text += f"all running kernels: {list(self.molten_kernels.keys())}\n"
+            info_buf.append(f" - kernel(s) attached to buffer: {buf_kernels}")
+            info_buf.append(f" - all running kernels: {list(self.molten_kernels.keys())}")
 
-        self.nvim.out_write(text)
+        # TODO: open a float, and display this text...
+        
+        win_opts = {
+            "relative": "editor",
+            "row": 2,
+            "col": 5,
+            "width": 100,
+            "height": len(info_buf) + 1,
+            "focusable": True,
+            "style": "minimal",
+        }
+        info_window = self.nvim.api.open_win(
+            info_buf.number,
+            True,
+            win_opts,
+        )
 
     def _do_evaluate(self, kernel_name: str, pos: Tuple[Tuple[int, int], Tuple[int, int]]) -> None:
         self._initialize_if_necessary()
