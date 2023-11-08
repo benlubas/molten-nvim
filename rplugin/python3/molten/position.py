@@ -1,6 +1,7 @@
 from typing import List
 from pynvim import Nvim
 
+
 class Position:
     bufno: int
     lineno: int
@@ -43,11 +44,11 @@ class DynamicPosition(Position):
 
     def set_height(self, height: int) -> None:
         self.nvim.funcs.nvim_buf_set_extmark(
-            self.bufno, self.extmark_namespace, self.lineno, self.colno,
-            {
-                "id": self.extmark_id,
-                "virt_lines": [[("", "Normal")] for _ in range(height)]
-            }
+            self.bufno,
+            self.extmark_namespace,
+            self.lineno,
+            self.colno,
+            {"id": self.extmark_id, "virt_lines": [[("", "Normal")] for _ in range(height)]},
         )
 
     def __del__(self) -> None:

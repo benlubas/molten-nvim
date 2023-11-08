@@ -177,6 +177,7 @@ def to_outputchunk(
     def _from_image_svgxml(svg: str) -> OutputChunk:
         try:
             import cairosvg
+
             with alloc_file("png", "wb") as (path, file):
                 cairosvg.svg2png(svg, write_to=file)
             return _to_image_chunk(path)

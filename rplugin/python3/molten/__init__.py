@@ -7,6 +7,7 @@ import pynvim
 from pynvim.api import Buffer
 from molten.code_cell import CodeCell
 from molten.images import Canvas, get_canvas_given_provider
+from molten.info_window import create_info_window
 from molten.io import MoltenIOError, get_default_save_file, load, save
 from molten.moltenbuffer import MoltenKernel
 from molten.options import MoltenOptions
@@ -267,33 +268,7 @@ class Molten:
     @pynvim.command("MoltenInfo", nargs=0, sync=True)  # type: ignore
     @nvimui  # type: ignore
     def command_info(self) -> None:
-        buf = self.nvim.current.buffer.number
-        buf_kernels = [x.kernel_id for x in self.buffers[buf]] if buf in self.buffers else []
-        info_buf = self.nvim.api.create_buf(False, True)
-        info_buf.append(["press q or <esc> to close this window", ""])
-        info_buf.append("==== Molten Info ====")
-        info_buf.append(f" - state: {'initialized' if self.initialized else 'uninitialized'}")
-        info_buf.append(f" - available kernels: {get_available_kernels()}")
-        if self.initialized:
-            info_buf.append(f" - kernel(s) attached to buffer: {buf_kernels}")
-            info_buf.append(f" - all running kernels: {list(self.molten_kernels.keys())}")
-
-        # TODO: open a float, and display this text...
-        
-        win_opts = {
-            "relative": "editor",
-            "row": 2,
-            "col": 5,
-            "width": 100,
-            "height": len(info_buf) + 1,
-            "focusable": True,
-            "style": "minimal",
-        }
-        info_window = self.nvim.api.open_win(
-            info_buf.number,
-            True,
-            win_opts,
-        )
+        create_info_window(self.nvim, self.molten_kernels, self.buffers, self.initialized)
 
     def _do_evaluate(self, kernel_name: str, pos: Tuple[Tuple[int, int], Tuple[int, int]]) -> None:
         self._initialize_if_necessary()
@@ -364,7 +339,7 @@ class Molten:
 
     @pynvim.function("MoltenRunningKernels", sync=True)  # type: ignore
     def function_list_running_kernels(self, args: List[Optional[bool]]) -> List[str]:
-        """ List all the running kernels. When passed [True], returns only buf local kernels """
+        """List all the running kernels. When passed [True], returns only buf local kernels"""
         if not self.initialized:
             return []
         if len(args) > 0 and args[0]:
