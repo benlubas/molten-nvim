@@ -7,6 +7,7 @@ import pynvim
 from pynvim.api import Buffer
 from molten.code_cell import CodeCell
 from molten.images import Canvas, get_canvas_given_provider
+from molten.info_window import create_info_window
 from molten.io import MoltenIOError, get_default_save_file, load, save
 from molten.moltenbuffer import MoltenKernel
 from molten.options import MoltenOptions
@@ -264,6 +265,11 @@ class Molten:
 
         self._deinit_buffer(kernels)
 
+    @pynvim.command("MoltenInfo", nargs=0, sync=True)  # type: ignore
+    @nvimui  # type: ignore
+    def command_info(self) -> None:
+        create_info_window(self.nvim, self.molten_kernels, self.buffers, self.initialized)
+
     def _do_evaluate(self, kernel_name: str, pos: Tuple[Tuple[int, int], Tuple[int, int]]) -> None:
         self._initialize_if_necessary()
 
@@ -330,6 +336,27 @@ class Molten:
                 self.nvim,
                 f"Wrong number of arguments passed to :MoltenUpdateOption, expected 2, given {len(args)}",
             )
+
+    @pynvim.function("MoltenRunningKernels", sync=True)  # type: ignore
+    def function_list_running_kernels(self, args: List[Optional[bool]]) -> List[str]:
+        """List all the running kernels. When passed [True], returns only buf local kernels"""
+        if not self.initialized:
+            return []
+        if len(args) > 0 and args[0]:
+            buf = self.nvim.current.buffer.number
+            return [x.kernel_id for x in self.buffers[buf]]
+        return list(self.molten_kernels.keys())
+
+    @pynvim.function("MoltenStatusLineKernels", sync=True)  # type: ignore
+    def function_status_line_kernels(self, args) -> str:
+        kernels = self.function_list_running_kernels(args)
+        return " ".join(kernels)
+
+    @pynvim.function("MoltenStatusLineInit", sync=True)  # type: ignore
+    def function_status_line_init(self, _) -> str:
+        if self.initialized:
+            return "Molten"
+        return ""
 
     @pynvim.command("MoltenEnterOutput", sync=True)  # type: ignore
     @nvimui  # type: ignore

@@ -20,7 +20,7 @@ https://github.com/benlubas/molten-nvim/assets/56943754/6266efa4-a6e4-46f1-8e15-
 
 ## Requirements
 
-- NeoVim 9.4+, nightly recommended
+- NeoVim 9.4+
 - Python 3.10+
 - [image.nvim](https://github.com/3rd/image.nvim) is only required if you want to render images
 - Required Python packages (can be installed in a venv. [read more](https://github.com/benlubas/molten-nvim/wiki/Virtual-Environments)):
@@ -88,6 +88,7 @@ kernel
 
 | Command                   | Arguments             | Description                        |
 |---------------------------|-----------------------|------------------------------------|
+| `MoltenInfo`              | none                  | Show information about the state of the plugin, initialization status, available kernels, and running kernels |
 | `MoltenInit`              | `["shared"] [kernel]` | Initialize a kernel for the current buffer. If `shared` is passed as the first value, this buffer will use an already running kernel. If no kernel is given, prompts the user. |
 | `MoltenDeinit`            | none                  | De-initialize the current buffer's runtime and molten instance. (called automatically on vim close/buffer unload) |
 | `MoltenEvaluateLine`      | `[kernel]`            | Evaluate the current line |
@@ -163,20 +164,33 @@ variable, their values, and a brief description.
 | `g:molten_wrap_output`                        | `true` \| (`false`)                                         | Wrap text in output windows |
 | [DEBUG] `g:molten_show_mimetype_debug`        | `true` \| (`false`)                                         | Before any non-iostream output chunk, the mime-type for that output chunk is shown. Meant for debugging/plugin devlopment |
 
+### Status Line
 
-## Highlights
+Molten provides a few functions that you can use to see information in your status line. These are
+listed below:
+
+```lua
+require('molten.status').initialized() -- "Molten" or "" based on initialization information
+require('molten.status').kernels() -- "kernel1 kernel2" list of kernels attached to buffer or ""
+require('molten.status').all_kernels() -- same as kernels, but will show all kernels
+```
+
+The way these are used will vary based on status line plugin. So please refer to your status line
+plugin to figure out how to use these.
+
+### Highlights
 
 You can change highlights like so:
 
 ```lua
 -- see :h nvim_set_hl for the values of opts
--- I would recommend using `link` to link the values to colors from your color scheme
+-- I would recommend using the `link` option to link the values to colors from your color scheme
 vim.api.nvim_set_hl(0, "MoltenOutputBorder", { opts })
 ```
 
 Here is a complete list of the highlight groups that Molten uses, and their default values
 
-- `MoltenOutputBorder` = `FloatBorder`: default border
+- `MoltenOutputBorder` = `FloatBorder`: default output window border
 - `MoltenOutputBorderFail` = `MoltenOutputBorder`: border of a failed output window
 - `MoltenOutputBorderSuccess` = `MoltenOutputBorder`: border of a successfully run output window
 - `MoltenOutputWin` = `NormalFloat`: the innards of the output window
@@ -216,32 +230,50 @@ Similarly, you could remove these mappings on `MoltenDeinitPost`
 
 ## Functions
 
-### MoltenEvaluateRange
-
-There is a provided function `MoltenEvaluateRange(start_line, end_line)` which evaluates the code
-between the given line numbers (inclusive). This is intended for use in scripts.
+Molten exposes some functionality through vim functions.
 
 <details>
-  <summary>Example Usage</summary>
+  <summary>MoltenEvaluateRange</summary>
+
+There is a provided function `MoltenEvaluateRange(start_line, end_line, [start_col, end_col])` which
+evaluates the code between the given line numbers (inclusive). This is intended for use in scripts.
 
 ```lua
+-- run lines 1 through 23 (inclusive):
 vim.fn.MoltenEvaluateRange(1, 23)
+
+-- run code starting with col 4 on line 1, and ending with col 20 on line 3
+vim.fn.MoltenEvaluateRange(1, 3, 4, 20)
 ```
+
+Additionally, this function can take a string as the first argument. When a string is specified,
+it's assumed to be a `kernel_id`.
+
+```lua
+-- run lines 1 through 23 (inclusive) with the python3 kernel
+vim.fn.MoltenEvaluateRange("python3", 1, 23)
+
+-- run code starting with col 4 on line 1, and ending with col 20 on line 3 with the R kernel
+vim.fn.MoltenEvaluateRange("ir", 1, 3, 4, 20)
+```
+
+When there are multiple kernels attached to the buffer, and this function is called without
+a `kernel_id`, the user will be prompted for a kernel with vim.ui.select
 
 </details>
 
-### MoltenUpdateOption
+<details>
+  <summary>MoltenUpdateOption</summary>
 
 Because Molten is a remote plugin, options are loaded and cached at initialization. This avoids
 making an unnecessary number of RPC calls if we were to fetch configuration values every time we
 needed to use them. This comes with the trade-off of not being able to update config values on the
-fly... can you see where this is going
+fly... can you see where this is going.
 
 This function lets you update a configuration value after initialization, and the new value will
 take effect immediately.
 
-<details>
-  <summary>Example Usage</summary>
+You can specify option names with or without the "molten" prefix.
 
 ```lua
 -- these are the same!
@@ -251,7 +283,8 @@ vim.fn.MoltenUpdateOption("molten_auto_open_output", true)
 
 </details>
 
-### MoltenDefineCell
+<details>
+  <summary>MoltenDefineCell</summary>
 
 Takes in a start line, and end line, and a kernel and creates a code cell in the current buffer
 associated with that kernel. Does not run the code or create/open an output window.
@@ -259,13 +292,11 @@ associated with that kernel. Does not run the code or create/open an output wind
 _for compatibility reasons, if there is only one active kernel, you do not need to pass the kernel
 argument_
 
-<details>
-  <summary>Example Usage</summary>
-
 ```lua
 -- Creates a cell from line 5 to line 10 associated with the python3 kernel
 vim.fn.MoltenDefineCell(5, 10, 'python3')
 ```
+
 </details>
 
 ## Extras

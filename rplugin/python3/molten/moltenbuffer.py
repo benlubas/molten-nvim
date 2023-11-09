@@ -9,7 +9,7 @@ from molten.code_cell import CodeCell
 from molten.options import MoltenOptions
 from molten.images import Canvas
 from molten.position import Position
-from molten.utils import MoltenException, notify_info
+from molten.utils import notify_info
 from molten.outputbuffer import OutputBuffer
 from molten.outputchunks import OutputStatus
 from molten.runtime import JupyterRuntime
@@ -184,7 +184,7 @@ class MoltenKernel:
         return selected
 
     def delete_overlapping_cells(self, span: CodeCell) -> None:
-        """ Delete the code cells in this kernel that overlap with the given span """
+        """Delete the code cells in this kernel that overlap with the given span"""
         for output_span in list(self.outputs.keys()):
             if output_span.overlaps(span):
                 if self.current_output == output_span:

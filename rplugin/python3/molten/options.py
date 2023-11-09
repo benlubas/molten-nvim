@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 from molten.utils import notify_error
 
+
 @dataclass
 class HL:
     border_norm = "MoltenOutputBorder"
@@ -25,6 +26,7 @@ class HL:
         foot: "FloatFooter",
         cell: "CursorLine",
     }
+
 
 class MoltenOptions:
     auto_open_output: bool
