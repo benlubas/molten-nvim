@@ -23,13 +23,13 @@ def create_info_window(nvim, molten_kernels, buffers, initialized):
     info_buf.append("")
 
     # Kernel Information
-    buf_kernels = [x.kernel_id for x in buffers[buf]] if buf in buffers else []
-    other_buf_kernels = set(molten_kernels.keys()) - set(buf_kernels)
+    buf_kernels = [(x.kernel_id, x.runtime.kernel_name) for x in buffers[buf]] if buf in buffers else []
+    other_buf_kernels = set(molten_kernels.keys()) - set(map(lambda x: x[0], buf_kernels))
     other_kernels = set(kernel_info.keys()) - set(molten_kernels.keys())
 
     if len(buf_kernels) > 0:
         info_buf.append([f" {len(buf_kernels)} active kernel(s), attached to current buffer:", ""])
-        for kernel, spec in filter(lambda x: x[0] in buf_kernels, kernel_info.items()):
+        for kernel, spec in filter(any, map(lambda x: (x[0], kernel_info[x[1]]) if x[1] in kernel_info else (None, None), buf_kernels)):
             running_buffers = map(lambda x: str(x.number), molten_kernels[kernel].buffers)
             running = f"(running, bufnr: [{', '.join(running_buffers)}])"
             draw_kernel_info(info_buf, running, kernel, spec)
@@ -68,7 +68,7 @@ def create_info_window(nvim, molten_kernels, buffers, initialized):
     info_buf.api.set_keymap("n", "<ESC>", ":q<CR>", {"silent": True, "noremap": True})
 
     # open the window
-    _info_window = nvim.api.open_win(
+    nvim.api.open_win(
         info_buf.number,
         True,
         win_opts,
