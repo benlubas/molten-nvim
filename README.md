@@ -39,7 +39,7 @@ You can run `:checkhealth` to see what you have installed.
 
 ## Quick-start
 
-See the [Wiki Quick-start Guide](https://www.github.com/benlubas/molten-nvim/wiki/Quick-Start-Guide)
+See the [Wiki Quick-start Guide](https://www.github.com/benlubas/molten-nvim/wiki/Not-So-Quick-Start-Guide)
 
 The Wiki also contains more in depth setup information/guides.
 
