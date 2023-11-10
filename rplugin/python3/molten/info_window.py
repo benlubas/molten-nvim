@@ -23,30 +23,44 @@ def create_info_window(nvim, molten_kernels, buffers, initialized):
     info_buf.append("")
 
     # Kernel Information
-    buf_kernels = [(x.kernel_id, x.runtime.kernel_name) for x in buffers[buf]] if buf in buffers else []
-    other_buf_kernels = set(molten_kernels.keys()) - set(map(lambda x: x[0], buf_kernels))
+    buf_kernels = buffers[buf] if buf in buffers else []
+    other_buf_kernels = set(molten_kernels.keys()) - set(map(lambda x: x.kernel_id, buf_kernels))
     other_kernels = set(kernel_info.keys()) - set(molten_kernels.keys())
 
     if len(buf_kernels) > 0:
         info_buf.append([f" {len(buf_kernels)} active kernel(s), attached to current buffer:", ""])
-        for kernel, spec in filter(any, map(lambda x: (x[0], kernel_info[x[1]]) if x[1] in kernel_info else (None, None), buf_kernels)):
-            running_buffers = map(lambda x: str(x.number), molten_kernels[kernel].buffers)
+        for m_kernel in buf_kernels:
+            running_buffers = map(lambda x: str(x.number), m_kernel.buffers)
             running = f"(running, bufnr: [{', '.join(running_buffers)}])"
-            draw_kernel_info(info_buf, running, kernel, spec)
+            spec = m_kernel.runtime.kernel_manager.kernel_spec
+            draw_kernel_info(
+                info_buf, running, m_kernel.kernel_id, spec.language, spec.argv, spec.resource_dir
+            )
 
     if len(other_buf_kernels) > 0:
         info_buf.append(
             [f" {len(other_buf_kernels)} active kernels(s), not attached to this buffer:", ""]
         )
-        for kernel, spec in filter(lambda x: x[0] in other_buf_kernels, kernel_info.items()):
-            running_buffers = map(lambda x: str(x.number), molten_kernels[kernel].buffers)
+        for kernel_id in other_buf_kernels:
+            m_kernel = molten_kernels[kernel_id]
+            running_buffers = map(lambda x: str(x.number), m_kernel.buffers)
             running = f"(running, bufnr: [{', '.join(running_buffers)}])"
-            draw_kernel_info(info_buf, running, kernel, spec)
+            spec = m_kernel.runtime.kernel_manager.kernel_spec
+            draw_kernel_info(
+                info_buf, running, m_kernel.kernel_id, spec.language, spec.argv, spec.resource_dir
+            )
 
     if len(other_kernels) > 0:
         info_buf.append([f" {len(other_kernels)} inactive kernel(s):", ""])
         for kernel, spec in filter(lambda x: x[0] in other_kernels, kernel_info.items()):
-            draw_kernel_info(info_buf, "", kernel, spec)
+            draw_kernel_info(
+                info_buf,
+                "",
+                kernel,
+                spec["spec"]["language"],
+                spec["spec"]["argv"],
+                spec["resource_dir"],
+            )
 
     nvim_width = nvim.api.get_option("columns")
     nvim_height = nvim.api.get_option("lines")
@@ -75,11 +89,11 @@ def create_info_window(nvim, molten_kernels, buffers, initialized):
     )
 
 
-def draw_kernel_info(buf, running, kernel_name, spec):
+def draw_kernel_info(buf, running, kernel_name, language, argv, resource_dir):
     buf.append(f" Kernel: {kernel_name} {running}")
     buf.api.add_highlight(-1, "Title", len(buf) - 1, 8, 9 + len(kernel_name))
-    buf.append(f"   language:     {spec['spec']['language']}")
+    buf.append(f"   language:     {language}")
     buf.api.add_highlight(-1, "LspInfoFiletype", len(buf) - 1, 16, -1)
-    buf.append(f"   cmd:          {' '.join(spec['spec']['argv'])}")
+    buf.append(f"   cmd:          {' '.join(argv)}")
     buf.api.add_highlight(-1, "String", len(buf) - 1, 16, -1)
-    buf.append([f"   resource_dir: {spec['resource_dir']}", ""])
+    buf.append([f"   resource_dir: {resource_dir}", ""])
