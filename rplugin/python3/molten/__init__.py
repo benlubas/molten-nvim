@@ -12,7 +12,7 @@ from molten.io import MoltenIOError, get_default_save_file, load, save
 from molten.moltenbuffer import MoltenKernel
 from molten.options import MoltenOptions
 from molten.outputbuffer import OutputBuffer
-from molten.position import DynamicPosition
+from molten.position import DynamicPosition, Position
 from molten.runtime import get_available_kernels
 from molten.utils import MoltenException, notify_error, notify_info, notify_warn, nvimui
 from pynvim import Nvim
@@ -253,6 +253,30 @@ class Molten:
                     del self.buffers[buf.number]
             del self.molten_kernels[kernel.kernel_id]
 
+    def _do_evaluate_expr(self, kernel_name: str, expr):
+        self._initialize_if_necessary()
+
+        kernels = self._get_current_buf_kernels(True)
+        assert kernels is not None
+
+        kernel = None
+        for kernel in kernels:
+            if kernel.kernel_id == kernel_name:
+                kernel = kernel
+                break
+        if kernel is None:
+            raise MoltenException(f"Kernel {kernel_name} not found")
+
+        bufno = self.nvim.current.buffer.number
+        cell = CodeCell(
+            self.nvim,
+            DynamicPosition(self.nvim, self.extmark_namespace, bufno, 0, 0),
+            DynamicPosition(self.nvim, self.extmark_namespace, bufno, 0, 0),
+        )
+
+        kernel.run_code(expr, cell)
+
+
     @pynvim.command("MoltenDeinit", nargs=0, sync=True)  # type: ignore
     @nvimui  # type: ignore
     def command_deinit(self) -> None:
@@ -300,29 +324,6 @@ class Molten:
             if k.kernel_id != kernel.kernel_id:
                 k.delete_overlapping_cells(span)
 
-    def _do_evaluate_expr(self, kernel_name: str, expr):
-        self._initialize_if_necessary()
-
-        kernels = self._get_current_buf_kernels(True)
-        assert kernels is not None
-
-        kernel = None
-        for kernel in kernels:
-            if kernel.kernel_id == kernel_name:
-                kernel = kernel
-                break
-        if kernel is None:
-            raise MoltenException(f"Kernel {kernel_name} not found")
-
-        bufno = self.nvim.current.buffer.number
-        cell = CodeCell(
-            self.nvim,
-            DynamicPosition(self.nvim, self.extmark_namespace, bufno, 0, 0),
-            DynamicPosition(self.nvim, self.extmark_namespace, bufno, 0, 0),
-        )
-
-        kernel.run_code(expr, cell)
-
     @pynvim.function("MoltenUpdateOption", sync=True)  # type: ignore
     @nvimui  # type: ignore
     def function_update_option(self, args) -> None:
@@ -357,6 +358,46 @@ class Molten:
         if self.initialized:
             return "Molten"
         return ""
+
+    @pynvim.command("MoltenNext", sync=True, nargs="*")  # type: ignore
+    @nvimui
+    def command_next(self, args: List[str]) -> None:
+        count = 1
+        if len(args) > 0:
+            try:
+                count = int(args[0])
+            except ValueError:
+                count = 1
+
+        # find the next cell, and jump to it
+        c = self.nvim.api.win_get_cursor(0)
+        bufnr = self.nvim.current.buffer.number
+        pos = Position(bufnr, c[0] - 1, c[1])
+        kernels = self._get_current_buf_kernels(True)
+        assert kernels is not None
+
+        all_cells: List[CodeCell] = sorted(chain(*[k.outputs.keys() for k in kernels]))
+        for i, cell in enumerate(all_cells):
+            if pos in cell:
+                # this is the current cell, we now have to jump "count" cells forward
+                target_idx = max(0, min(i + count, len(all_cells) - 1))
+                target_pos = all_cells[target_idx].begin
+                self.nvim.api.win_set_cursor(0, (target_pos.lineno + 1, target_pos.colno))
+            elif i < len(all_cells) - 2 and pos < cell.begin and all_cells[i + 1].end < pos:
+                pass
+                # TODO:
+                # then we're in between two cells.. and need to jump to the next cell
+
+    @pynvim.command("MoltenPrev", sync=True, nargs="*")  # type: ignore
+    @nvimui
+    def command_prev(self, args: List[str]) -> None:
+        count = -1
+        if len(args) > 0:
+            try:
+                count = -int(args[0])
+            except ValueError:
+                count = -1
+        self.command_next([str(count)])
 
     @pynvim.command("MoltenEnterOutput", sync=True)  # type: ignore
     @nvimui  # type: ignore

@@ -9,6 +9,7 @@ from molten.code_cell import CodeCell
 from molten.options import MoltenOptions
 from molten.images import Canvas
 from molten.position import Position
+from molten.sorted_dict import SortedDict
 from molten.utils import notify_info
 from molten.outputbuffer import OutputBuffer
 from molten.outputchunks import OutputStatus
@@ -29,7 +30,8 @@ class MoltenKernel:
     # name unique to this specific jupyter runtime. Only used within Molten. Human Readable
     kernel_id: str
 
-    outputs: Dict[CodeCell, OutputBuffer]
+    # NOTE: idk that this typedef will work
+    outputs: SortedDict[CodeCell, OutputBuffer]
     current_output: Optional[CodeCell]
     queued_outputs: "Queue[CodeCell]"
 
