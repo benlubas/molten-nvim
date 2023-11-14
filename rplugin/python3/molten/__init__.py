@@ -822,7 +822,7 @@ class Molten:
         elif kind == "char":
             pass
             colno_begin = min(colno_begin, len(self.nvim.funcs.getline(lineno_begin)))
-            colno_end = min(colno_end, len(self.nvim.funcs.getline(lineno_end)))
+            colno_end = min(colno_end, len(self.nvim.funcs.getline(lineno_end))) + 1
         else:
             raise MoltenException(f"this kind of selection is not supported: '{kind}'")
 
