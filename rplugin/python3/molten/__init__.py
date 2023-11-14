@@ -276,7 +276,6 @@ class Molten:
 
         kernel.run_code(expr, cell)
 
-
     @pynvim.command("MoltenDeinit", nargs=0, sync=True)  # type: ignore
     @nvimui  # type: ignore
     def command_deinit(self) -> None:
@@ -377,16 +376,31 @@ class Molten:
         assert kernels is not None
 
         all_cells: List[CodeCell] = sorted(chain(*[k.outputs.keys() for k in kernels]))
-        for i, cell in enumerate(all_cells):
-            if pos in cell:
-                # this is the current cell, we now have to jump "count" cells forward
-                target_idx = max(0, min(i + count, len(all_cells) - 1))
-                target_pos = all_cells[target_idx].begin
-                self.nvim.api.win_set_cursor(0, (target_pos.lineno + 1, target_pos.colno))
-            elif i < len(all_cells) - 2 and pos < cell.begin and all_cells[i + 1].end < pos:
-                pass
-                # TODO:
-                # then we're in between two cells.. and need to jump to the next cell
+
+
+        starting_index = None
+        match all_cells:
+            case [first, *_] if pos < first.begin:
+                starting_index = 0
+                if count > 0:
+                    count -= 1
+            case [*_, last] if last.end < pos:
+                starting_index = len(all_cells) - 1
+                if count < 0:
+                    count += 1
+            case _:
+                for i, cell in enumerate(all_cells):
+                    if pos in cell or (
+                        i <= len(all_cells) - 2 and pos < all_cells[i + 1].begin and cell.end < pos
+                    ):
+                        starting_index = i
+
+        if starting_index is not None:
+            target_idx = (starting_index + count) % len(all_cells)
+            target_pos = all_cells[target_idx].begin
+            self.nvim.api.win_set_cursor(0, (target_pos.lineno + 1, target_pos.colno))
+        else:
+            notify_warn(self.nvim, "No cells to jump to")
 
     @pynvim.command("MoltenPrev", sync=True, nargs="*")  # type: ignore
     @nvimui
