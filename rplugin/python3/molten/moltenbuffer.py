@@ -9,7 +9,6 @@ from molten.code_cell import CodeCell
 from molten.options import MoltenOptions
 from molten.images import Canvas
 from molten.position import Position
-from molten.sorted_dict import SortedDict
 from molten.utils import notify_info
 from molten.outputbuffer import OutputBuffer
 from molten.outputchunks import OutputStatus
@@ -31,7 +30,7 @@ class MoltenKernel:
     kernel_id: str
 
     # NOTE: idk that this typedef will work
-    outputs: SortedDict[CodeCell, OutputBuffer]
+    outputs: Dict[CodeCell, OutputBuffer]
     current_output: Optional[CodeCell]
     queued_outputs: "Queue[CodeCell]"
 
