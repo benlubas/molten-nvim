@@ -276,6 +276,9 @@ class Molten:
 
         kernel.run_code(expr, cell)
 
+    def _get_sorted_buf_cells(self, kernels: List[MoltenKernel], bufnr: int) -> List[CodeCell]:
+        return sorted([x for x in chain(*[k.outputs.keys() for k in kernels]) if x.bufno == bufnr])
+
     @pynvim.command("MoltenDeinit", nargs=0, sync=True)  # type: ignore
     @nvimui  # type: ignore
     def command_deinit(self) -> None:
@@ -375,8 +378,7 @@ class Molten:
         kernels = self._get_current_buf_kernels(True)
         assert kernels is not None
 
-        all_cells: List[CodeCell] = sorted(chain(*[k.outputs.keys() for k in kernels]))
-
+        all_cells = self._get_sorted_buf_cells(kernels, bufnr)
 
         starting_index = None
         match all_cells:
@@ -401,6 +403,27 @@ class Molten:
             self.nvim.api.win_set_cursor(0, (target_pos.lineno + 1, target_pos.colno))
         else:
             notify_warn(self.nvim, "No cells to jump to")
+
+    @pynvim.command("MoltenGoto", sync=True, nargs="*")  # type: ignore
+    @nvimui
+    def command_goto(self, args: List[str]) -> None:
+        count = 1
+        if len(args) > 0:
+            try:
+                count = int(args[0])
+            except ValueError:
+                count = 1
+
+        kernels = self._get_current_buf_kernels(True)
+        assert kernels is not None
+
+        all_cells = self._get_sorted_buf_cells(kernels, self.nvim.current.buffer.number)
+        if len(all_cells) == 0:
+            notify_warn(self.nvim, "No cells to jump to")
+            return
+
+        target_pos = all_cells[(count - 1) % len(all_cells)].begin
+        self.nvim.api.win_set_cursor(0, (target_pos.lineno + 1, target_pos.colno))
 
     @pynvim.command("MoltenPrev", sync=True, nargs="*")  # type: ignore
     @nvimui
