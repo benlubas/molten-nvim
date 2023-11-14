@@ -100,13 +100,13 @@ kernel
 | `MoltenPrev`              | `[n]`                 | like `Next` but backwards |
 | `MoltenEvaluateLine`      | `[kernel]`            | Evaluate the current line |
 | `MoltenEvaluateVisual`    | `[kernel]`            | Evaluate the visual selection (**cannot be called with a range!**) |
-| `MoltenEvaluateOperator`  | `[kernel]`            | Evaluate text selected by the following operator. see [keymaps](#keymaps) for useage |
+| `MoltenEvaluateOperator`  | `[kernel]`            | Evaluate text selected by the following operator. see [Keybindings](#keybindings) for useage |
 | `MoltenEvaluateArgument`  | `[kernel] code`       | Evaluate given code in the given kernel |
 | `MoltenReevaluateCell`    | none                  | Re-evaluate the active cell (including new code) with the same kernel that it was originally evaluated with |
 | `MoltenDelete`            | none                  | Delete the active cell (does nothing if there is no active cell) |
 | `MoltenShowOutput`        | none                  | Shows the output window for the active cell |
 | `MoltenHideOutput`        | none                  | Hide currently open output window |
-| `MoltenEnterOutput`       | none                  | Move into the active cell's output window. Opens but does not enter the output if it's not open. **must be called with `noautocmd`** (see [keymaps](#keymaps) for example) |
+| `MoltenEnterOutput`       | none                  | Move into the active cell's output window. Opens but does not enter the output if it's not open. **must be called with `noautocmd`** (see [Keybindings](#keybindings) for example) |
 | `MoltenInterrupt`         | `[kernel]`            | Sends a keyboard interrupt to the kernel which stops any currently running code. (does nothing if there's no current output) |
 | `MoltenRestart`           | `[!] [kernel]`        | Shuts down a restarts the kernel. Deletes all outputs if used with a bang |
 | `MoltenSave`              | `[path] [kernel]`     | Save the current cells and evaluated outputs into a JSON file. When path is specified, save the file to `path`, otherwise save to `g:molten_save_path`. _currently only saves one kernel per file_ |
