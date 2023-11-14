@@ -34,7 +34,7 @@ class MoltenKernel:
     queued_outputs: "Queue[CodeCell]"
 
     selected_cell: Optional[CodeCell]
-    should_show_display_window: bool
+    should_show_floating_window: bool
     updating_interface: bool
 
     options: MoltenOptions
@@ -66,7 +66,7 @@ class MoltenKernel:
         self.queued_outputs = Queue()
 
         self.selected_cell = None
-        self.should_show_display_window = False
+        self.should_show_floating_window = False
         self.updating_interface = False
 
         self.options = options
@@ -107,7 +107,7 @@ class MoltenKernel:
         self.queued_outputs.put(span)
 
         self.selected_cell = span
-        self.should_show_display_window = True
+        self.should_show_floating_window = True
         self.update_interface()
 
         self._check_if_done_running()
@@ -148,8 +148,8 @@ class MoltenKernel:
     def enter_output(self) -> None:
         if self.selected_cell is not None:
             if self.options.enter_output_behavior != "no_open":
-                self.should_show_display_window = True
-            self.should_show_display_window = self.outputs[self.selected_cell].enter(
+                self.should_show_floating_window = True
+            self.should_show_floating_window = self.outputs[self.selected_cell].enter(
                 self.selected_cell.end
             )
 
@@ -221,7 +221,7 @@ class MoltenKernel:
             self.selected_cell.clear_interface(self.highlight_namespace)
 
         if selected_cell is None:
-            self.should_show_display_window = False
+            self.should_show_floating_window = False
 
         self.selected_cell = selected_cell
 
@@ -239,13 +239,13 @@ class MoltenKernel:
             and selected_cell is not None
             and self.options.auto_open_output
         ):
-            self.should_show_display_window = True
+            self.should_show_floating_window = True
 
         if self.selected_cell == selected_cell and selected_cell is not None:
             if (
                 scrolled
                 and selected_cell.end.lineno < self.nvim.funcs.line("w$")
-                and self.should_show_display_window
+                and self.should_show_floating_window
             ):
                 self.update_interface()
             return
@@ -294,8 +294,8 @@ class MoltenKernel:
                 span.end.colno,
             )
 
-        if self.should_show_display_window:
-            self.outputs[span].show(span.end)
+        if self.should_show_floating_window:
+            self.outputs[span].show_floating_win(span.end)
         else:
             self.outputs[span].clear_interface()
 
