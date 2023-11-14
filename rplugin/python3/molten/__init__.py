@@ -371,7 +371,6 @@ class Molten:
             except ValueError:
                 count = 1
 
-        # find the next cell, and jump to it
         c = self.nvim.api.win_get_cursor(0)
         bufnr = self.nvim.current.buffer.number
         pos = Position(bufnr, c[0] - 1, c[1])

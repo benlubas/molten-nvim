@@ -29,7 +29,6 @@ class MoltenKernel:
     # name unique to this specific jupyter runtime. Only used within Molten. Human Readable
     kernel_id: str
 
-    # NOTE: idk that this typedef will work
     outputs: Dict[CodeCell, OutputBuffer]
     current_output: Optional[CodeCell]
     queued_outputs: "Queue[CodeCell]"
