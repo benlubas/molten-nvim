@@ -95,6 +95,9 @@ kernel
 | `MoltenInfo`              | none                  | Show information about the state of the plugin, initialization status, available kernels, and running kernels |
 | `MoltenInit`              | `["shared"] [kernel]` | Initialize a kernel for the current buffer. If `shared` is passed as the first value, this buffer will use an already running kernel. If no kernel is given, prompts the user. |
 | `MoltenDeinit`            | none                  | De-initialize the current buffer's runtime and molten instance. (called automatically on vim close/buffer unload) |
+| `MoltenGoto`              | `[n]`                 | Go to the `n`th code cell `n` defaults to 1 (1 indexed) |
+| `MoltenNext`              | `[n]`                 | Go to the next code cell, or jump `n` code cells `n` defaults to 1. Values wrap. Negative values move backwards |
+| `MoltenPrev`              | `[n]`                 | like `Next` but backwards |
 | `MoltenEvaluateLine`      | `[kernel]`            | Evaluate the current line |
 | `MoltenEvaluateVisual`    | `[kernel]`            | Evaluate the visual selection (**cannot be called with a range!**) |
 | `MoltenEvaluateOperator`  | `[kernel]`            | Evaluate text selected by the following operator. see [keymaps](#keymaps) for useage |
