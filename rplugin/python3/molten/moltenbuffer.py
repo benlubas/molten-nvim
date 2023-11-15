@@ -34,7 +34,7 @@ class MoltenKernel:
     queued_outputs: "Queue[CodeCell]"
 
     selected_cell: Optional[CodeCell]
-    should_show_floating_window: bool
+    should_show_display_window: bool
     updating_interface: bool
 
     options: MoltenOptions
@@ -66,7 +66,7 @@ class MoltenKernel:
         self.queued_outputs = Queue()
 
         self.selected_cell = None
-        self.should_show_floating_window = False
+        self.should_show_display_window = False
         self.updating_interface = False
 
         self.options = options
@@ -98,7 +98,7 @@ class MoltenKernel:
         self.runtime.run_code(code)
 
         if span in self.outputs:
-            self.outputs[span].clear_interface()
+            self.outputs[span].clear_interface(span.bufno)
             del self.outputs[span]
 
         self.outputs[span] = OutputBuffer(
@@ -107,7 +107,10 @@ class MoltenKernel:
         self.queued_outputs.put(span)
 
         self.selected_cell = span
-        self.should_show_floating_window = True
+
+        if not self.options.output_as_virtual_text:
+            self.should_show_display_window = True
+
         self.update_interface()
 
         self._check_if_done_running()
@@ -148,8 +151,8 @@ class MoltenKernel:
     def enter_output(self) -> None:
         if self.selected_cell is not None:
             if self.options.enter_output_behavior != "no_open":
-                self.should_show_floating_window = True
-            self.should_show_floating_window = self.outputs[self.selected_cell].enter(
+                self.should_show_display_window = True
+            self.should_show_display_window = self.outputs[self.selected_cell].enter(
                 self.selected_cell.end
             )
 
@@ -170,8 +173,8 @@ class MoltenKernel:
             )
 
     def clear_open_output_windows(self) -> None:
-        for output in self.outputs.values():
-            output.clear_interface()
+        for span, output in self.outputs.items():
+            output.clear_interface(span.bufno)
 
     def _get_selected_span(self) -> Optional[CodeCell]:
         current_position = self._get_cursor_position()
@@ -189,7 +192,7 @@ class MoltenKernel:
             if output_span.overlaps(span):
                 if self.current_output == output_span:
                     self.current_output = None
-                self.outputs[output_span].clear_interface()
+                self.outputs[output_span].clear_interface(span.bufno)
                 del self.outputs[output_span]
                 output_span.clear_interface(self.highlight_namespace)
 
@@ -198,7 +201,7 @@ class MoltenKernel:
         if self.selected_cell is None:
             return
 
-        self.outputs[self.selected_cell].clear_interface()
+        self.outputs[self.selected_cell].clear_interface(self.selected_cell.bufno)
         self.selected_cell.clear_interface(self.highlight_namespace)
         del self.outputs[self.selected_cell]
         self.selected_cell = None
@@ -212,40 +215,44 @@ class MoltenKernel:
             return
 
         self.updating_interface = True
-        selected_cell = self._get_selected_span()
+        new_selected_cell = self._get_selected_span()
 
         # Clear the cell we just left
-        if self.selected_cell != selected_cell and self.selected_cell is not None:
+        if self.selected_cell != new_selected_cell and self.selected_cell is not None:
             if self.selected_cell in self.outputs:
-                self.outputs[self.selected_cell].clear_interface()
+                self.outputs[self.selected_cell].clear_interface(self.selected_cell.bufno)
             self.selected_cell.clear_interface(self.highlight_namespace)
 
-        if selected_cell is None:
-            self.should_show_floating_window = False
+        if new_selected_cell is None:
+            self.should_show_display_window = False
 
-        self.selected_cell = selected_cell
+        self.selected_cell = new_selected_cell
 
         if self.selected_cell is not None:
             self._show_selected(self.selected_cell)
         self.canvas.present()
 
+        if self.options.output_as_virtual_text:
+            for span, output in self.outputs.items():
+                output.show_virtual_text(span.end)
+
         self.updating_interface = False
 
     def on_cursor_moved(self, scrolled=False) -> None:
-        selected_cell = self._get_selected_span()
+        new_selected_cell = self._get_selected_span()
 
         if (
             self.selected_cell is None
-            and selected_cell is not None
+            and new_selected_cell is not None
             and self.options.auto_open_output
         ):
-            self.should_show_floating_window = True
+            self.should_show_display_window = True
 
-        if self.selected_cell == selected_cell and selected_cell is not None:
+        if self.selected_cell == new_selected_cell and new_selected_cell is not None:
             if (
                 scrolled
-                and selected_cell.end.lineno < self.nvim.funcs.line("w$")
-                and self.should_show_floating_window
+                and new_selected_cell.end.lineno < self.nvim.funcs.line("w$")
+                and self.should_show_display_window
             ):
                 self.update_interface()
             return
@@ -294,10 +301,10 @@ class MoltenKernel:
                 span.end.colno,
             )
 
-        if self.should_show_floating_window:
+        if self.should_show_display_window:
             self.outputs[span].show_floating_win(span.end)
         else:
-            self.outputs[span].clear_interface()
+            self.outputs[span].clear_interface(span.bufno)
 
     def _get_content_checksum(self) -> str:
         return hashlib.md5(

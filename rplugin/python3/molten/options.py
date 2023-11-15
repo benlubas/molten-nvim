@@ -16,6 +16,7 @@ class HL:
     win_nc = "MoltenOutputWinNC"
     foot = "MoltenOutputFooter"
     cell = "MoltenCell"
+    virtual_text = "MoltenVirtualText"
 
     defaults = {
         border_norm: "FloatBorder",
@@ -25,6 +26,7 @@ class HL:
         win_nc: win,
         foot: "FloatFooter",
         cell: "CursorLine",
+        virtual_text: "Type",
     }
 
 
@@ -42,6 +44,8 @@ class MoltenOptions:
     output_win_max_width: int
     output_win_style: Optional[str]
     output_virt_lines: bool
+    output_as_virtual_text: bool
+    virtual_text_max_lines: int
     save_path: str
     show_mimetype_debug: bool
     use_border_highlights: bool
@@ -67,6 +71,9 @@ class MoltenOptions:
             ("molten_output_win_max_height", 999999),
             ("molten_output_win_max_width", 999999),
             ("molten_output_win_style", False),
+            # TODO: default to false
+            ("molten_output_as_virtual_text", True),
+            ("molten_virtual_text_max_lines", 15),
             ("molten_output_virt_lines", False),
             ("molten_save_path", os.path.join(nvim.funcs.stdpath("data"), "molten")),
             ("molten_show_mimetype_debug", False),

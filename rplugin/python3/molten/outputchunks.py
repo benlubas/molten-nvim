@@ -32,6 +32,7 @@ class OutputChunk(ABC):
         lineno: int,
         shape: Tuple[int, int, int, int],
         canvas: Canvas,
+        hard_wrap: bool,
     ) -> Tuple[str, int]:
         pass
 
@@ -62,14 +63,27 @@ class TextOutputChunk(OutputChunk):
         _: int,
         shape: Tuple[int, int, int, int],
         _canvas: Canvas,
+        hard_wrap: bool,
     ) -> Tuple[str, int]:
         text = self._cleanup_text(self.text)
         extra_lines = 0
         if options.wrap_output:  # count the number of extra lines this will need when wrapped
             win_width = shape[2]
-            for line in text.split("\n"):
-                if len(line) > win_width:
-                    extra_lines += len(line) // win_width
+            if hard_wrap:
+                lines = []
+                splits = []
+                for line in text.split("\n"):
+                    for i in range(len(line) // win_width):
+                        splits.append(line[i * win_width : win_width])
+                    else:
+                        splits.append(line)
+                lines.extend(splits)
+                text = "\n".join(lines)
+            else:
+                for line in text.split("\n"):
+                    if len(line) > win_width:
+                        extra_lines += len(line) // win_width
+
         return text, extra_lines
 
 
@@ -117,6 +131,7 @@ class ImageOutputChunk(OutputChunk):
         lineno: int,
         _shape: Tuple[int, int, int, int],
         canvas: Canvas,
+        _hard_wrap: bool,
     ) -> Tuple[str, int]:
         # _x, _y, win_w, win_h = shape
         img = canvas.add_image(
