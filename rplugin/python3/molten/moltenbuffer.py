@@ -90,16 +90,13 @@ class MoltenKernel:
         if delete_outputs:
             self.outputs = {}
             self.clear_interface()
+            self.clear_open_output_windows()
 
         self.runtime.restart()
 
     def run_code(self, code: str, span: CodeCell) -> None:
         self.delete_overlapping_cells(span)
         self.runtime.run_code(code)
-
-        if span in self.outputs:
-            self.outputs[span].clear_interface(span.bufno)
-            del self.outputs[span]
 
         self.outputs[span] = OutputBuffer(
             self.nvim, self.canvas, self.extmark_namespace, self.options
@@ -173,8 +170,8 @@ class MoltenKernel:
             )
 
     def clear_open_output_windows(self) -> None:
-        for span, output in self.outputs.items():
-            output.clear_interface(span.bufno)
+        for output in self.outputs.values():
+            output.clear_float_win()
 
     def _get_selected_span(self) -> Optional[CodeCell]:
         current_position = self._get_cursor_position()
@@ -192,7 +189,8 @@ class MoltenKernel:
             if output_span.overlaps(span):
                 if self.current_output == output_span:
                     self.current_output = None
-                self.outputs[output_span].clear_interface(span.bufno)
+                self.outputs[output_span].clear_float_win()
+                self.outputs[output_span].clear_virt_output(span.bufno)
                 del self.outputs[output_span]
                 output_span.clear_interface(self.highlight_namespace)
 
@@ -201,7 +199,7 @@ class MoltenKernel:
         if self.selected_cell is None:
             return
 
-        self.outputs[self.selected_cell].clear_interface(self.selected_cell.bufno)
+        self.outputs[self.selected_cell].clear_float_win()
         self.selected_cell.clear_interface(self.highlight_namespace)
         del self.outputs[self.selected_cell]
         self.selected_cell = None
@@ -220,7 +218,7 @@ class MoltenKernel:
         # Clear the cell we just left
         if self.selected_cell != new_selected_cell and self.selected_cell is not None:
             if self.selected_cell in self.outputs:
-                self.outputs[self.selected_cell].clear_interface(self.selected_cell.bufno)
+                self.outputs[self.selected_cell].clear_float_win()
             self.selected_cell.clear_interface(self.highlight_namespace)
 
         if new_selected_cell is None:
@@ -234,7 +232,7 @@ class MoltenKernel:
 
         if self.options.output_as_virtual_text:
             for span, output in self.outputs.items():
-                output.show_virtual_text(span.end)
+                output.show_virtual_output(span.end)
 
         self.updating_interface = False
 
@@ -304,7 +302,7 @@ class MoltenKernel:
         if self.should_show_display_window:
             self.outputs[span].show_floating_win(span.end)
         else:
-            self.outputs[span].clear_interface(span.bufno)
+            self.outputs[span].clear_float_win()
 
     def _get_content_checksum(self) -> str:
         return hashlib.md5(
