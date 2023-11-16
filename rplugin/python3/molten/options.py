@@ -71,8 +71,7 @@ class MoltenOptions:
             ("molten_output_win_max_height", 999999),
             ("molten_output_win_max_width", 999999),
             ("molten_output_win_style", False),
-            # TODO: default to false
-            ("molten_output_as_virtual_text", True),
+            ("molten_output_as_virtual_text", False),
             ("molten_virtual_text_max_lines", 12),
             ("molten_output_virt_lines", False),
             ("molten_save_path", os.path.join(nvim.funcs.stdpath("data"), "molten")),
