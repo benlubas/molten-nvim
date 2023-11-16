@@ -189,6 +189,8 @@ class OutputBuffer:
         win = self.nvim.current.window
         win_col = win.col
         win_row = self._buffer_to_window_lineno(anchor.lineno + 1)
+        if win_row == 0: # anchor position is off screen
+            return
         win_width = win.width
         win_height = win.height
 
