@@ -105,7 +105,7 @@ class MoltenKernel:
 
         self.selected_cell = span
 
-        if not self.options.output_as_virtual_text:
+        if not self.options.virt_text_output:
             self.should_show_floating_win = True
 
         self.update_interface()
@@ -230,7 +230,7 @@ class MoltenKernel:
             self._show_selected(self.selected_cell)
         self.canvas.present()
 
-        if self.options.output_as_virtual_text:
+        if self.options.virt_text_output:
             for span, output in self.outputs.items():
                 output.show_virtual_output(span.end)
 

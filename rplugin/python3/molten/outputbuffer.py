@@ -168,10 +168,10 @@ class OutputBuffer:
             win_height,
         )
         lines, _ = self.build_output_text(shape, anchor.bufno, True)
-        if len(lines) > self.options.virtual_text_max_lines:
-            l = len(lines)
-            lines = lines[: self.options.virtual_text_max_lines - 1]
-            lines.append(f"󰁅 {l - self.options.virtual_text_max_lines} More Lines ")
+        l = len(lines)
+        if l > self.options.virt_text_max_lines:
+            lines = lines[: self.options.virt_text_max_lines - 1]
+            lines.append(f"󰁅 {l - self.options.virt_text_max_lines} More Lines ")
 
         self.virt_text_id = self.nvim.current.buffer.api.set_extmark(
             self.extmark_namespace,

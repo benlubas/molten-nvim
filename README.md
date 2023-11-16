@@ -164,12 +164,12 @@ variable, their values, and a brief description.
 | `g:molten_output_win_hide_on_leave`           | (`true`) \| `false`                                         | After leaving the output window (via `:q` or switching windows), do not attempt to redraw the output window |
 | `g:molten_output_win_max_height`              | (`999999`) \| int                                           | Max height of the output window |
 | `g:molten_output_win_max_width`               | (`999999`) \| int                                           | Max width of the output window |
-| `g:molten_output_as_virtual_text`             | `true` \| (`false`)                                         | When true, show output as virtual text below the cell. When true, output window doesn't open automatically on run. Effected by `virt_lines_off_by_1` |
-| `g:molten_virtual_text_max_lines`             | (`12`) \| int                                               | Max height of the virtual text |
 | `g:molten_output_win_style`                   | (`false`) \| `"minimal"`                                    | Value passed to the `style` option in `:h nvim_open_win()` |
 | `g:molten_save_path`                          | (`stdpath("data").."/molten"`) \| any path to a folder      | Where to save/load data with `:MoltenSave` and `:MoltenLoad` |
 | `g:molten_use_border_highlights`              | `true` \| (`false`)                                         | When true, uses different highlights for output border depending on the state of the cell (running, done, error). see [highlights](#highlights) |
-| `g:molten_virt_lines_off_by_1`                | `true` \| (`false`)                                         | _only has effect when `output_virt_lines` is true_ Allows the output window to cover exactly one line of the regular buffer. (useful for running code in a markdown file where that covered line will just be \`\`\`) |
+| `g:molten_virt_lines_off_by_1`                | `true` \| (`false`)                                         | Allows the output window to cover exactly one line of the regular buffer when `output_virt_lines` is true, also effects `virt_text_output`. (useful for running code in a markdown file where that covered line will just be \`\`\`) |
+| `g:molten_virt_text_output`                   | `true` \| (`false`)                                         | When true, show output as virtual text below the cell. When true, output window doesn't open automatically on run. Effected by `virt_lines_off_by_1` |
+| `g:molten_virt_text_max_lines`                | (`12`) \| int                                               | Max height of the virtual text |
 | `g:molten_wrap_output`                        | `true` \| (`false`)                                         | Wrap text in output windows |
 | [DEBUG] `g:molten_show_mimetype_debug`        | `true` \| (`false`)                                         | Before any non-iostream output chunk, the mime-type for that output chunk is shown. Meant for debugging/plugin devlopment |
 

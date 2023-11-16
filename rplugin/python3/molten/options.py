@@ -44,8 +44,9 @@ class MoltenOptions:
     output_win_max_width: int
     output_win_style: Optional[str]
     output_virt_lines: bool
-    output_as_virtual_text: bool
-    virtual_text_max_lines: int
+    virt_text_output: bool
+    virt_text_max_lines: int
+    virt_text_border: Optional[str]
     save_path: str
     show_mimetype_debug: bool
     use_border_highlights: bool
@@ -71,8 +72,8 @@ class MoltenOptions:
             ("molten_output_win_max_height", 999999),
             ("molten_output_win_max_width", 999999),
             ("molten_output_win_style", False),
-            ("molten_output_as_virtual_text", False),
-            ("molten_virtual_text_max_lines", 12),
+            ("molten_output_as_virt_text", False),
+            ("molten_virt_text_max_lines", 12),
             ("molten_output_virt_lines", False),
             ("molten_save_path", os.path.join(nvim.funcs.stdpath("data"), "molten")),
             ("molten_show_mimetype_debug", False),
