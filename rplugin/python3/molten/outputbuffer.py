@@ -111,20 +111,23 @@ class OutputBuffer:
                 {"scope": "local", "win": self.display_win.handle},
             )
 
-    def build_output_text(self, shape, hard_wrap: bool) -> Tuple[List[str], int]:
+    def build_output_text(self, shape, buf: int, virtual: bool) -> Tuple[List[str], int]:
         lineno = 0
         lines_str = ""
         # images are rendered with virtual lines by image.nvim
         virtual_lines = 0
         if len(self.output.chunks) > 0:
             for chunk in self.output.chunks:
+                y = lineno
+                if virtual:
+                    y += shape[1]
                 chunktext, virt_lines = chunk.place(
-                    self.display_buf.number,
+                    buf,
                     self.options,
-                    lineno,
+                    y,
                     shape,
                     self.canvas,
-                    hard_wrap,
+                    virtual,
                 )
                 lines_str += chunktext
                 lineno += chunktext.count("\n")
@@ -164,7 +167,7 @@ class OutputBuffer:
             win_width,
             win_height,
         )
-        lines, _ = self.build_output_text(shape, True)
+        lines, _ = self.build_output_text(shape, anchor.bufno, True)
         if len(lines) > self.options.virtual_text_max_lines:
             l = len(lines)
             lines = lines[: self.options.virtual_text_max_lines - 1]
@@ -178,6 +181,7 @@ class OutputBuffer:
                 "virt_lines": [[(line, self.options.hl.virtual_text)] for line in lines],
             }
         )
+        self.canvas.present()
 
     def show_floating_win(self, anchor: Position) -> None:
         win = self.nvim.current.window
@@ -205,7 +209,7 @@ class OutputBuffer:
             win_width - sign_col_width,
             win_height,
         )
-        lines, real_height = self.build_output_text(shape, False)
+        lines, real_height = self.build_output_text(shape, self.display_buf.number, False)
 
         # You can't append lines normally, there will be a blank line at the top
         self.display_buf[0] = lines[0]
