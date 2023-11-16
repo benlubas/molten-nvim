@@ -149,7 +149,9 @@ class OutputBuffer:
 
         # clear the existing virtual text
         if self.virt_text_id is not None:
-            self.nvim.funcs.nvim_buf_del_extmark(anchor.bufno, self.extmark_namespace, self.virt_text_id)
+            self.nvim.funcs.nvim_buf_del_extmark(
+                anchor.bufno, self.extmark_namespace, self.virt_text_id
+            )
             self.virt_text_id = None
 
         win = self.nvim.current.window
@@ -179,7 +181,7 @@ class OutputBuffer:
             0,
             {
                 "virt_lines": [[(line, self.options.hl.virtual_text)] for line in lines],
-            }
+            },
         )
         self.canvas.present()
 
