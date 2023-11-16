@@ -43,8 +43,8 @@ class OutputBuffer:
         self.nvim.exec_lua("_ow = require('output_window')")
         self.lua = self.nvim.lua._ow
 
-    def _buffer_to_window_lineno(self, lineno: int, bufno: int) -> int:
-        return self.lua.calculate_window_position(bufno, lineno)
+    def _buffer_to_window_lineno(self, lineno: int) -> int:
+        return self.lua.calculate_window_position(lineno)
 
     def _get_header_text(self, output: Output) -> str:
         if output.execution_count is None:
@@ -182,7 +182,7 @@ class OutputBuffer:
     def show_floating_win(self, anchor: Position) -> None:
         win = self.nvim.current.window
         win_col = win.col
-        win_row = self._buffer_to_window_lineno(anchor.lineno + 1, anchor.bufno)
+        win_row = self._buffer_to_window_lineno(anchor.lineno + 1)
         win_width = win.width
         win_height = win.height
 
@@ -207,7 +207,9 @@ class OutputBuffer:
         )
         lines, real_height = self.build_output_text(shape, False)
 
-        self.display_buf.append(lines)
+        # You can't append lines normally, there will be a blank line at the top
+        self.display_buf[0] = lines[0]
+        self.display_buf.append(lines[1:])
         self.nvim.api.set_option_value(
             "filetype", "molten_output", {"buf": self.display_buf.handle}
         )

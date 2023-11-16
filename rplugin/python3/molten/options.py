@@ -26,7 +26,7 @@ class HL:
         win_nc: win,
         foot: "FloatFooter",
         cell: "CursorLine",
-        virtual_text: "Type",
+        virtual_text: "Comment",
     }
 
 
@@ -73,7 +73,7 @@ class MoltenOptions:
             ("molten_output_win_style", False),
             # TODO: default to false
             ("molten_output_as_virtual_text", True),
-            ("molten_virtual_text_max_lines", 15),
+            ("molten_virtual_text_max_lines", 12),
             ("molten_output_virt_lines", False),
             ("molten_save_path", os.path.join(nvim.funcs.stdpath("data"), "molten")),
             ("molten_show_mimetype_debug", False),
