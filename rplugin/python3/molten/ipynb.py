@@ -56,11 +56,12 @@ def export_outputs(nvim: Nvim, kernel: MoltenKernel, buffer: Buffer, filepath: s
     if overwrite:
         nbformat.write(nb, filepath)
     else:
-        nbformat.write(nb, f"copy-of-{filepath}")
+        head, tail = os.path.split(filepath)
+        nbformat.write(nb, f"{head}/copy-of-{tail}")
 
 
 def compare_contents(nvim: Nvim, nb_cell, code_cell: CodeCell, buffer: Buffer, lang: str) -> bool:
-    molten_contents = buffer.api.get_lines(code_cell.begin.lineno, code_cell.end.lineno + 1, True)
+    molten_contents = buffer.api.get_lines(code_cell.begin.lineno, code_cell.end.lineno + 1, False)
     nvim.exec_lua("_remove_comments = require('remove_comments').remove_comments")
     clean_nb = nvim.lua._remove_comments(nb_cell["source"], lang)
     clean_molten = nvim.lua._remove_comments("\n".join(molten_contents) + "\n", lang)

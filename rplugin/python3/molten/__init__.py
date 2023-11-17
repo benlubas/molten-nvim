@@ -612,7 +612,7 @@ class Molten:
 
     @pynvim.command("MoltenRestart", nargs="*", sync=True, bang=True)  # type: ignore
     @nvimui  # type: ignore
-    def command_restart(self, bang: bool, args) -> None:
+    def command_restart(self, args, bang) -> None:
         if len(args) > 0:
             kernel = args[0]
         else:
@@ -677,9 +677,9 @@ class Molten:
 
         self._update_interface()
 
-    @pynvim.command("MoltenExport", bang=True, nargs="*", sync=True)  # type: ignore
+    @pynvim.command("MoltenExport", nargs="*", sync=True, bang=True)  # type: ignore
     @nvimui  # type: ignore
-    def command_export(self, bang: bool, args: List[str]) -> None:
+    def command_export(self, args, bang: bool) -> None:
         self._initialize_if_necessary()
 
         buf = self.nvim.current.buffer
@@ -688,11 +688,10 @@ class Molten:
         else:
             path = get_default_export_file(self.nvim, buf)
 
-        self.nvim.out_write(f"path = {path}\n")
         if len(args) > 1:
             kernel = args[1]
         else:
-            self.kernel_check(f"MoltenExport", path, buf, kernel_last=True)
+            self.kernel_check(f"MoltenExport{'!' if bang else ''}", path, buf, kernel_last=True)
             return
 
         kernels = self._get_current_buf_kernels(True)

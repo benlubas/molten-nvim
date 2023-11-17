@@ -25,7 +25,7 @@ M.remove_comments = function(str, lang)
   lines = vim.tbl_filter(function(line) return line ~= '' end, lines)
   -- join lines
   local result = vim.fn.join(lines, '\n')
-  return P(result)
+  return result
 end
 
 return M
