@@ -115,7 +115,7 @@ kernel
 ## Keybindings
 
 The commands above should be mapped to keys for the best experience. There are more detailed setups
-in the [Wiki](https://github.com/benlubas/molten-nvim/wiki), but here are some example bindings.
+in the [Docs](./docs), but here are some example bindings.
 Pay attention to `MoltenEvaluateVisual` and `MoltenEnterOutput`, as they need to be run in...odd
 ways.
 
