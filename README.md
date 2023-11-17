@@ -6,7 +6,7 @@ to Magma. As they say, I stand on the shoulders of giants.
 
 https://github.com/benlubas/molten-nvim/assets/56943754/6266efa4-a6e4-46f1-8e15-96495a6b6fe8
 
-## Features
+## Feature Highlights
 
 - Send code to run asynchronously in the jupyter kernel
 - Supports any language with a Jupyter Kernel (in theory, they haven't all been tested)
@@ -16,14 +16,13 @@ https://github.com/benlubas/molten-nvim/assets/56943754/6266efa4-a6e4-46f1-8e15-
 - See output in real time, without flicker
 - Python virtual environment support
 - Renders images, plots, and LaTeX to the terminal
-- Very customizable
 
 ## Requirements
 
 - NeoVim 9.4+
 - Python 3.10+
 - [image.nvim](https://github.com/3rd/image.nvim) is only required if you want to render images
-- Required Python packages (can be installed in a venv. [read more](https://github.com/benlubas/molten-nvim/wiki/Virtual-Environments)):
+- Required Python packages (can be installed in a venv. [read more](./docs/Virtual-Environments.md)):
   - [`pynvim`](https://github.com/neovim/pynvim) (for the Remote Plugin API)
   - [`jupyter_client`](https://github.com/jupyter/jupyter_client) (for interacting with Jupyter)
 - Optional Python packages:
@@ -35,17 +34,19 @@ https://github.com/benlubas/molten-nvim/assets/56943754/6266efa4-a6e4-46f1-8e15-
 
 You can run `:checkhealth` to see what you have installed.
 
-**Note:** Python packages which are used only for the display of some specific kind of output are only imported when that output actually appears.
+**Note:** Python packages which are used only for the display of some specific kind of output are
+only imported when that output actually appears.
 
 ## Quick-start
 
-I still recommend reading at least the Usage section of this README before getting started.
+Configuration information is located in this README, there is more information about getting started
+in these places:
 
-[Probably Too Quick Start Guide](https://www.github.com/benlubas/molten-nvim/wiki/Probably-Too-Quick-Start-Guide)
+[Probably Too Quick Start Guide](./docs/Probably-Too-Quick-Start-Guide.md)
 or
-[Not So Quick Start Guide](https://www.github.com/benlubas/molten-nvim/wiki/Not-So-Quick-Start-Guide)
+[Not So Quick Start Guide](./docs/Not-So-Quick-Start-Guide.md)
 
-The Wiki also contains more in depth setup information/guides.
+The `docs/` folder also contains more in depth information about different ways to use the plugin.
 
 ## Usage
 
@@ -310,7 +311,9 @@ vim.fn.MoltenDefineCell(5, 10, 'python3')
 
 ### Output Chunks
 
-In the Jupyter protocol, most output-related messages provide a dictionary of mime-types which can be used to display the data. Theoretically, a `text/plain` field (i.e., plain text) is always present, so we (theoretically) always have that fallback.
+In the Jupyter protocol, most output-related messages provide a dictionary of mime-types which can
+be used to display the data. Theoretically, a `text/plain` field (i.e., plain text) is always
+present, so we (theoretically) always have that fallback.
 
 Here is a list of the currently handled mime-types:
 
@@ -318,7 +321,10 @@ Here is a list of the currently handled mime-types:
 - `image/*`: Molten attempts to render any `image` mimetype by sending it to image.nvim. In theory,
 this means that Molten can handle any image format that ImageMagick supports, though I've only
 tested common formats
-- `application/vnd.plotly.v1+json`: A Plotly figure. Rendered into a PNG with [Plotly](https://plotly.com/python/) + [Kaleido](https://github.com/plotly/Kaleido)
-- `text/latex`: A LaTeX formula. Rendered into a PNG with [pnglatex](https://pypi.org/project/pnglatex/)
+- `application/vnd.plotly.v1+json`: A Plotly figure. Rendered into a PNG with
+[Plotly](https://plotly.com/python/) + [Kaleido](https://github.com/plotly/Kaleido)
+- `text/latex`: A LaTeX formula. Rendered into a PNG with
+[pnglatex](https://pypi.org/project/pnglatex/)
 
-This already provides quite a bit of basic functionality, but if you find a use case for a mime-type that isn't currently supported, feel free to open an issue and/or PR!
+This already provides quite a bit of basic functionality, but if you find a use case for a mime-type
+that isn't currently supported, feel free to open an issue and/or PR!

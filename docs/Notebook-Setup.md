@@ -24,14 +24,11 @@ neovim.
 
 ### Alternatives
 
-_I've never used these tools, and cannot provide the best support for using them with Molten. That
-said, always happy to try and help if you have issues._
-
 There are other ways to edit Jupyter notebook files in Neovim. Most notably
 [Jupytext](https://github.com/mwouts/jupytext) with
 [jupytext.vim](https://github.com/goerz/jupytext.vim). This will let you open a normal `.ipynb`
 file, convert it automatically to plain-text and display it in a temporary buffer, and then convert
-it back again when you write.
+it back again when you write. This has worked very well for me the few times that I've used it.
 
 
 There is also the [NotebookNavigator](https://github.com/GCBallesteros/NotebookNavigator.nvim)

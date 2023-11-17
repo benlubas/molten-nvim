@@ -60,7 +60,7 @@ manager's documentation if you don't use Lazy.
 > [!NOTE]
 > Note that I will always use the latest version of image.nvim, and will try to keep this doc up to
 > date with the last working version. But if you're having issues with the version listed here,
-> please first try the latest image.nvim version, and then open an issue or wiki pr.
+> please first try the latest image.nvim version, and then open an issue or pr.
 
 ```lua
 version = "1.1.0",
@@ -78,16 +78,16 @@ the [venv guide](Virtual-Environments)
 **Packages only required for their specific image support:**
 - [`cairosvg`](https://cairosvg.org/) (for displaying transparent SVG images)
     - If you don't have cariosvg installed, we fallback to image.nvim's svg support, which uses the
-      ImageMagic library. From what I've gathered, this library has differing levels of support for
-      SVGs with transparent backgrounds. So I'd recommend trying to get away without cairo, and only
-      installing it if you notice an issue.
+    ImageMagic library. From what I've gathered, this library has differing levels of support for
+    SVGs with transparent backgrounds. So I'd recommend trying to get away without cairo, and only
+    installing it if you notice an issue.
 - [`pnglatex`](https://pypi.org/project/pnglatex/) (for displaying TeX formulas)
     - Note that this has additional, non-pip, dependencies. You need a TeX distribution installed on
     your machine as well as the following executables: `pdftopnm`, `pnmtopng`, `pdfcrop` which you
     can find through your system package manager.
 - `plotly` and `kaleido` (for displaying Plotly figures)
-    - In order to render plotly figures I've also needed `nbformat` installed in the project venv,
-    unfortunately installing it in the neovim venv did not work (see [venv
+    - In order to render plotly figures you might also needed `nbformat` installed in the project
+    venv, unfortunately installing it in the neovim venv did not work (see [venv
     guide](Virtual-Environments))
 - `pyperclip` if you want to use `molten_copy_output`
 
@@ -106,6 +106,7 @@ the [venv guide](Virtual-Environments)
 return {
     {
         "benlubas/molten-nvim",
+        version = "^1.0.0", -- use version <2.0.0 to avoid breaking changes
         dependencies = { "3rd/image.nvim" },
         build = ":UpdateRemotePlugins",
         init = function()
