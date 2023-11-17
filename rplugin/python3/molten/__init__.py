@@ -648,7 +648,7 @@ class Molten:
 
         for molten in molten_kernels:
             if molten.current_output is not None:
-                molten.should_show_display_window = True
+                molten.should_show_floating_win = True
                 self._update_interface()
                 return
 
@@ -672,7 +672,7 @@ class Molten:
             return
 
         for molten in molten_kernels:
-            molten.should_show_display_window = False
+            molten.should_show_floating_win = False
 
         self._update_interface()
 

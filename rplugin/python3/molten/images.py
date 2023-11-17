@@ -1,7 +1,9 @@
 from typing import Dict, Set
 from abc import ABC, abstractmethod
 
-from pynvim import Nvim, logging
+from pynvim import Nvim
+
+from molten.utils import notify_warn
 
 
 class Canvas(ABC):
@@ -101,8 +103,6 @@ class NoCanvas(Canvas):
         pass
 
 
-# I think this class will end up being calls to equivalent lua functions in some lua file
-# somewhere
 class ImageNvimCanvas(Canvas):
     nvim: Nvim
     to_make_visible: Set[str]
@@ -180,9 +180,5 @@ def get_canvas_given_provider(name: str, nvim: Nvim) -> Canvas:
     elif name == "image.nvim":
         return ImageNvimCanvas(nvim)
     else:
-        nvim.api.notify(
-            f"[Molten] unknown image provider: `{name}`",
-            logging.ERROR,
-            {"title": "Molten"},
-        )
+        notify_warn(nvim, f"unknown image provider: `{name}`")
         return NoCanvas()

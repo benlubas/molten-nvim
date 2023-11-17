@@ -1,4 +1,4 @@
-from typing import Any, List, Optional, Union
+from typing import Any, List, Optional, Tuple, Union
 
 from pynvim import Nvim
 from pynvim.api import Buffer, Window
@@ -20,6 +20,8 @@ class OutputBuffer:
     display_win: Optional[Window]
     display_virt_lines: Optional[DynamicPosition]
     extmark_namespace: int
+    virt_text_id: Optional[int]
+    displayed_status: OutputStatus
 
     options: MoltenOptions
     lua: Any
@@ -34,13 +36,15 @@ class OutputBuffer:
         self.display_win = None
         self.display_virt_lines = None
         self.extmark_namespace = extmark_namespace
+        self.virt_text_id = None
+        self.displayed_status = OutputStatus.HOLD
 
         self.options = options
         self.nvim.exec_lua("_ow = require('output_window')")
         self.lua = self.nvim.lua._ow
 
-    def _buffer_to_window_lineno(self, lineno: int, bufno: int) -> int:
-        return self.lua.calculate_window_position(bufno, lineno)
+    def _buffer_to_window_lineno(self, lineno: int) -> int:
+        return self.lua.calculate_window_position(lineno)
 
     def _get_header_text(self, output: Output) -> str:
         if output.execution_count is None:
@@ -71,9 +75,9 @@ class OutputBuffer:
         entered = False
         if self.display_win is None:
             if self.options.enter_output_behavior == "open_then_enter":
-                self.show(anchor)
+                self.show_floating_win(anchor)
             elif self.options.enter_output_behavior == "open_and_enter":
-                self.show(anchor)
+                self.show_floating_win(anchor)
                 entered = True
                 self.nvim.funcs.nvim_set_current_win(self.display_win)
         elif self.options.enter_output_behavior != "no_open":
@@ -86,7 +90,7 @@ class OutputBuffer:
                 return False
         return True
 
-    def clear_interface(self) -> None:
+    def clear_float_win(self) -> None:
         if self.display_win is not None:
             self.nvim.funcs.nvim_win_close(self.display_win, True)
             self.canvas.clear()
@@ -94,6 +98,10 @@ class OutputBuffer:
         if self.display_virt_lines is not None:
             del self.display_virt_lines
             self.display_virt_lines = None
+
+    def clear_virt_output(self, bufnr: int) -> None:
+        if self.virt_text_id is not None:
+            self.nvim.funcs.nvim_buf_del_extmark(bufnr, self.extmark_namespace, self.virt_text_id)
 
     def set_win_option(self, option: str, value) -> None:
         if self.display_win:
@@ -103,10 +111,86 @@ class OutputBuffer:
                 {"scope": "local", "win": self.display_win.handle},
             )
 
-    def show(self, anchor: Position) -> None:
+    def build_output_text(self, shape, buf: int, virtual: bool) -> Tuple[List[str], int]:
+        lineno = 0
+        lines_str = ""
+        # images are rendered with virtual lines by image.nvim
+        virtual_lines = 0
+        if len(self.output.chunks) > 0:
+            for chunk in self.output.chunks:
+                y = lineno
+                if virtual:
+                    y += shape[1]
+                chunktext, virt_lines = chunk.place(
+                    buf,
+                    self.options,
+                    y,
+                    shape,
+                    self.canvas,
+                    virtual,
+                )
+                lines_str += chunktext
+                lineno += chunktext.count("\n")
+                virtual_lines += virt_lines
+
+            lines = handle_progress_bars(lines_str)
+            lineno = len(lines) + virtual_lines
+        else:
+            lines = []
+
+        lines.insert(0, self._get_header_text(self.output))
+        return lines, lineno + virtual_lines
+
+    def show_virtual_output(self, anchor: Position) -> None:
+        if self.displayed_status == OutputStatus.DONE and self.virt_text_id is not None:
+            return
+
+        self.displayed_status = self.output.status
+
+        # clear the existing virtual text
+        if self.virt_text_id is not None:
+            self.nvim.funcs.nvim_buf_del_extmark(
+                anchor.bufno, self.extmark_namespace, self.virt_text_id
+            )
+            self.virt_text_id = None
+
         win = self.nvim.current.window
         win_col = win.col
-        win_row = self._buffer_to_window_lineno(anchor.lineno + 1, anchor.bufno)
+        win_row = anchor.lineno
+        win_width = win.width
+        win_height = win.height
+
+        if self.options.virt_lines_off_by_1:
+            win_row += 1
+
+        shape = (
+            win_col,
+            win_row,
+            win_width,
+            win_height,
+        )
+        lines, _ = self.build_output_text(shape, anchor.bufno, True)
+        l = len(lines)
+        if l > self.options.virt_text_max_lines:
+            lines = lines[: self.options.virt_text_max_lines - 1]
+            lines.append(f"󰁅 {l - self.options.virt_text_max_lines} More Lines ")
+
+        self.virt_text_id = self.nvim.current.buffer.api.set_extmark(
+            self.extmark_namespace,
+            win_row,
+            0,
+            {
+                "virt_lines": [[(line, self.options.hl.virtual_text)] for line in lines],
+            },
+        )
+        self.canvas.present()
+
+    def show_floating_win(self, anchor: Position) -> None:
+        win = self.nvim.current.window
+        win_col = win.col
+        win_row = self._buffer_to_window_lineno(anchor.lineno + 1)
+        if win_row == 0: # anchor position is off screen
+            return
         win_width = win.width
         win_height = win.height
 
@@ -117,11 +201,6 @@ class OutputBuffer:
 
         # Clear buffer:
         self.nvim.funcs.deletebufline(self.display_buf.number, 1, "$")
-        # Add output chunks to buffer
-        lines_str = ""
-        lineno = 0
-        # images are rendered with virtual lines by image.nvim
-        virtual_lines = 0
 
         sign_col_width = 0
         text_off = self.nvim.funcs.getwininfo(win.handle)[0]["textoff"]
@@ -134,26 +213,11 @@ class OutputBuffer:
             win_width - sign_col_width,
             win_height,
         )
-        if len(self.output.chunks) > 0:
-            for chunk in self.output.chunks:
-                chunktext, virt_lines = chunk.place(
-                    self.display_buf.number,
-                    self.options,
-                    lineno,
-                    shape,
-                    self.canvas,
-                )
-                lines_str += chunktext
-                lineno += chunktext.count("\n")
-                virtual_lines += virt_lines
+        lines, real_height = self.build_output_text(shape, self.display_buf.number, False)
 
-            lines = handle_progress_bars(lines_str)
-            lineno = len(lines)
-        else:
-            lines = []
-
-        self.display_buf[0] = self._get_header_text(self.output)
-        self.display_buf.append(lines)
+        # You can't append lines normally, there will be a blank line at the top
+        self.display_buf[0] = lines[0]
+        self.display_buf.append(lines[1:])
         self.nvim.api.set_option_value(
             "filetype", "molten_output", {"buf": self.display_buf.handle}
         )
@@ -162,7 +226,7 @@ class OutputBuffer:
         # assert self.display_window is None
         if win_row < win_height:
             border = self.options.output_win_border
-            max_height = min(virtual_lines + lineno + 1, self.options.output_win_max_height)
+            max_height = min(real_height + 1, self.options.output_win_max_height)
             height = min(win_height - win_row, max_height)
 
             cropped = False
