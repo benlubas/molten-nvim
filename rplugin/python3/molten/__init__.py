@@ -677,9 +677,9 @@ class Molten:
 
         self._update_interface()
 
-    @pynvim.command("MoltenExport", nargs="*", sync=True)  # type: ignore
+    @pynvim.command("MoltenExport", bang=True, nargs="*", sync=True)  # type: ignore
     @nvimui  # type: ignore
-    def command_export(self, args) -> None:
+    def command_export(self, bang: bool, args: List[str]) -> None:
         self._initialize_if_necessary()
 
         buf = self.nvim.current.buffer
@@ -699,7 +699,7 @@ class Molten:
         assert kernels is not None
         for molten in kernels:
             if molten.kernel_id == kernel:
-                export_outputs(self.nvim, molten, buf, path)
+                export_outputs(self.nvim, molten, buf, path, bang)
                 break
 
     @pynvim.command("MoltenSave", nargs="*", sync=True)  # type: ignore

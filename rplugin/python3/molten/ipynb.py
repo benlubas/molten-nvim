@@ -3,7 +3,6 @@ from molten.code_cell import CodeCell
 from molten.moltenbuffer import MoltenKernel
 import os
 import nbformat
-from molten.outputbuffer import OutputBuffer
 
 from molten.utils import MoltenException, notify_warn
 
@@ -21,7 +20,7 @@ def get_default_export_file(nvim: Nvim, buffer: Buffer) -> str:
     return f"{os.path.splitext(full_path)[0]}.ipynb"
 
 
-def export_outputs(nvim: Nvim, kernel: MoltenKernel, buffer: Buffer, filepath: str):
+def export_outputs(nvim: Nvim, kernel: MoltenKernel, buffer: Buffer, filepath: str, overwrite: bool):
     """Export outputs of the current file/kernel to a .ipynb file with the given name."""
 
     if not filepath.endswith(".ipynb"):
@@ -41,11 +40,9 @@ def export_outputs(nvim: Nvim, kernel: MoltenKernel, buffer: Buffer, filepath: s
     for mcell in molten_cells:
         while nb_index < len(nb_cells):
             code_cell, output = mcell
-            nb_cell = nb_cells[nb_index]  # comment
+            nb_cell = nb_cells[nb_index]
             nb_index += 1
-            # comment
 
-            nvim.out_write("\n")
             if compare_contents(nvim, nb_cell, code_cell, buffer, lang):
                 outputs = [
                     nbformat.v4.new_output(
@@ -55,7 +52,11 @@ def export_outputs(nvim: Nvim, kernel: MoltenKernel, buffer: Buffer, filepath: s
                 ]
                 nb_cell["outputs"] = outputs
                 break  # break out of the while loop
-    nbformat.write(nb, f"copy-of-{filepath}")
+
+    if overwrite:
+        nbformat.write(nb, filepath)
+    else:
+        nbformat.write(nb, f"copy-of-{filepath}")
 
 
 def compare_contents(nvim: Nvim, nb_cell, code_cell: CodeCell, buffer: Buffer, lang: str) -> bool:

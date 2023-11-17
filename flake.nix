@@ -25,6 +25,7 @@
               cairosvg
               plotly
               matplotlib
+              nbformat
               svgwrite
               sympy
               tqdm

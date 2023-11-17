@@ -53,9 +53,6 @@ class TextOutputChunk(OutputChunk):
     def __init__(self, text: str):
         self.text = text
 
-    def _cleanup_text(self, text: str) -> str:
-        return clean_up_text(text)
-
     def place(
         self,
         _bufnr: int,
@@ -65,7 +62,7 @@ class TextOutputChunk(OutputChunk):
         _canvas: Canvas,
         hard_wrap: bool,
     ) -> Tuple[str, int]:
-        text = self._cleanup_text(self.text)
+        text = clean_up_text(self.text)
         extra_lines = 0
         if options.wrap_output:  # count the number of extra lines this will need when wrapped
             win_width = shape[2]
