@@ -42,7 +42,6 @@ def get_default_save_file(options: MoltenOptions, buffer: Buffer) -> str:
 def load(nvim: Nvim, moltenbuffer: MoltenKernel, nvim_buffer: Buffer, data: Dict[str, Any]) -> None:
     MoltenIOError.assert_has_key(data, "content_checksum", str)
 
-    # checksums are being calculated differently?
     if moltenbuffer._get_content_checksum() != data["content_checksum"]:
         raise MoltenIOError("Buffer contents' checksum does not match!")
 
@@ -107,12 +106,12 @@ def load(nvim: Nvim, moltenbuffer: MoltenKernel, nvim_buffer: Buffer, data: Dict
         moltenbuffer.outputs[span].output = output
 
 
-def save(moltenbuffer: MoltenKernel, nvim_buffer: int) -> Dict[str, Any]:
+def save(molten_kernel: MoltenKernel, nvim_buffer: int) -> Dict[str, Any]:
     """Save the current kernel state for the given buffer."""
     return {
         "version": 1,
-        "kernel": moltenbuffer.runtime.kernel_name,
-        "content_checksum": moltenbuffer._get_content_checksum(),
+        "kernel": molten_kernel.runtime.kernel_name,
+        "content_checksum": molten_kernel._get_content_checksum(),
         "cells": [
             {
                 "span": {
@@ -137,7 +136,7 @@ def save(moltenbuffer: MoltenKernel, nvim_buffer: int) -> Dict[str, Any]:
                     if chunk.jupyter_data is not None and chunk.jupyter_metadata is not None
                 ],
             }
-            for span, output in moltenbuffer.outputs.items()
+            for span, output in molten_kernel.outputs.items()
             if span.begin.bufno == nvim_buffer
         ],
     }
