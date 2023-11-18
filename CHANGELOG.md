@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/benlubas/molten-nvim/compare/v1.1.1...v1.1.2) (2023-11-18)
+
+
+### Bug Fixes
+
+* enter float destroying virt output ([#46](https://github.com/benlubas/molten-nvim/issues/46)) ([49ac223](https://github.com/benlubas/molten-nvim/commit/49ac223b5486eb751fadfd627c7618c3b65ad8c4))
+
 ## [1.1.1](https://github.com/benlubas/molten-nvim/compare/v1.1.0...v1.1.1) (2023-11-18)
 
 
