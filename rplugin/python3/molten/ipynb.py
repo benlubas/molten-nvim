@@ -4,7 +4,7 @@ from molten.moltenbuffer import MoltenKernel
 import os
 import nbformat
 
-from molten.utils import MoltenException, notify_warn
+from molten.utils import MoltenException, notify_error, notify_info, notify_warn
 
 NOTEBOOK_VERSION = 4
 
@@ -20,7 +20,9 @@ def get_default_export_file(nvim: Nvim, buffer: Buffer) -> str:
     return f"{os.path.splitext(full_path)[0]}.ipynb"
 
 
-def export_outputs(nvim: Nvim, kernel: MoltenKernel, buffer: Buffer, filepath: str, overwrite: bool):
+def export_outputs(
+    nvim: Nvim, kernel: MoltenKernel, buffer: Buffer, filepath: str, overwrite: bool
+):
     """Export outputs of the current file/kernel to a .ipynb file with the given name."""
 
     if not filepath.endswith(".ipynb"):
@@ -38,12 +40,14 @@ def export_outputs(nvim: Nvim, kernel: MoltenKernel, buffer: Buffer, filepath: s
     nb_index = 0
     lang = kernel.runtime.kernel_manager.kernel_spec.language  # type: ignore
     for mcell in molten_cells:
+        matched = False
         while nb_index < len(nb_cells):
             code_cell, output = mcell
             nb_cell = nb_cells[nb_index]
             nb_index += 1
 
             if compare_contents(nvim, nb_cell, code_cell, buffer, lang):
+                matched = True
                 outputs = [
                     nbformat.v4.new_output(
                         "execute_result", chunk.jupyter_data, metadata=chunk.jupyter_metadata
@@ -53,12 +57,20 @@ def export_outputs(nvim: Nvim, kernel: MoltenKernel, buffer: Buffer, filepath: s
                 nb_cell["outputs"] = outputs
                 break  # break out of the while loop
 
+        if not matched:
+            notify_error(
+                nvim,
+                f"No cell matching cell at line: {mcell[0].begin.lineno + 1} in notebook: {filepath}. Bailing.",
+            )
+
     if overwrite:
-        nbformat.write(nb, filepath)
+        write_to = filepath
     else:
         head, tail = os.path.split(filepath)
-        nbformat.write(nb, f"{head}/copy-of-{tail}")
+        write_to = f"{head}/copy-of-{tail}"
 
+    notify_info(nvim, f"Exporting {len(molten_cells)} cell output(s) to {write_to}")
+    nbformat.write(nb, write_to)
 
 def compare_contents(nvim: Nvim, nb_cell, code_cell: CodeCell, buffer: Buffer, lang: str) -> bool:
     molten_contents = buffer.api.get_lines(code_cell.begin.lineno, code_cell.end.lineno + 1, False)
