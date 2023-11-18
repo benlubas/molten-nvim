@@ -677,7 +677,7 @@ class Molten:
 
         self._update_interface()
 
-    @pynvim.command("MoltenExport", nargs="*", sync=True, bang=True)  # type: ignore
+    @pynvim.command("MoltenExportOutput", nargs="*", sync=True, bang=True)  # type: ignore
     @nvimui  # type: ignore
     def command_export(self, args, bang: bool) -> None:
         self._initialize_if_necessary()
@@ -691,7 +691,7 @@ class Molten:
         if len(args) > 1:
             kernel = args[1]
         else:
-            self.kernel_check(f"MoltenExport{'!' if bang else ''}", path, buf, kernel_last=True)
+            self.kernel_check(f"MoltenExportOutput{'!' if bang else ''}", path, buf, kernel_last=True)
             return
 
         kernels = self._get_current_buf_kernels(True)

@@ -60,7 +60,11 @@ And finally run `:MoltenInit /tmp/remote-julia.json` in neovim.
 
 ## Exporting Outputs
 
-With the `:MoltenExport` command, you can export cell outputs to a Jupyter Notebook (`.ipynb` file).
+> [!NOTE]
+> This command is considered experimental, and while it works well enough to be used. There are
+> likely still bugs. So if you find them, don't hesitate to create an issue.
+
+With the `:MoltenExportOutput` command, you can export cell outputs to a Jupyter Notebook (`.ipynb` file).
 **This does not create the notebook.**
 
 This command is intended for use with tools like Quarto, or Jupytext, which convert notebooks to
@@ -69,13 +73,13 @@ long as the code contents of the cells matches up.
 
 ### Usage
 
-`:MoltenExport` will create a copy of the notebook, prepended with "copy-of-", while
-`:MoltenExport!` will overwrite the existing notebook (with an identical one that just has new
+`:MoltenExportOutput` will create a copy of the notebook, prepended with "copy-of-", while
+`:MoltenExportOutput!` will overwrite the existing notebook (with an identical one that just has new
 outputs). Existing outputs are deleted.
 
 You can specify a file path as the first argument. By default, Molten looks for an existing notebook
 with the same name in the same spot. For example: `/path/to/file.md` exports to
-`/path/to/file.ipynb` by default. If you call `:MoltenExport! /some/other/path/other_file.ipynb`
+`/path/to/file.ipynb` by default. If you call `:MoltenExportOutput! /some/other/path/other_file.ipynb`
 then Molten will add outputs to `/some/other/path/other_file.ipynb`.
 
 If there are multiple kernels attached to the buffer when the command is called, you will be
