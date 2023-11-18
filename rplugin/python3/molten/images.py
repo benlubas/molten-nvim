@@ -56,6 +56,7 @@ class Canvas(ABC):
     ) -> str:
         """
         Add an image to the canvas.
+        Takes effect after a call to present()
 
         Parameters
         - path: str
@@ -71,6 +72,17 @@ class Canvas(ABC):
 
         Returns:
         str the identifier for the image
+        """
+
+    @abstractmethod
+    def remove_image(self, identifier: str) -> None:
+        """
+        Remove an image from the canvas. In practice this is just hiding the image
+        Takes effect after a call to present()
+
+        Parameters
+        - identifier: str
+          The identifier for the image to remove.
         """
 
 
@@ -100,6 +112,9 @@ class NoCanvas(Canvas):
         _y: int,
         _window: int,
     ) -> None:
+        pass
+
+    def remove_image(self, _identifier: str) -> None:
         pass
 
 
@@ -172,6 +187,9 @@ class ImageNvimCanvas(Canvas):
             self.to_make_visible.add(img)
             return img
         return path
+
+    def remove_image(self, identifier: str) -> None:
+        self.to_make_invisible.add(identifier)
 
 
 def get_canvas_given_provider(name: str, nvim: Nvim) -> Canvas:

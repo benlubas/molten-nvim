@@ -120,8 +120,10 @@ class Molten:
             for molten_kernel in molten_kernels:
                 molten_kernel.clear_interface()
                 molten_kernel.clear_open_output_windows()
+                molten_kernel.clear_virt_outputs()
 
         assert self.canvas is not None
+        self.canvas.clear()
         self.canvas.present()
 
     def _update_interface(self) -> None:

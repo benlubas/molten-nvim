@@ -91,6 +91,7 @@ class MoltenKernel:
             self.outputs = {}
             self.clear_interface()
             self.clear_open_output_windows()
+            self.clear_virt_outputs()
 
         self.runtime.restart()
 
@@ -173,6 +174,10 @@ class MoltenKernel:
         for output in self.outputs.values():
             output.clear_float_win()
 
+    def clear_virt_outputs(self) -> None:
+        for cell, output in self.outputs.items():
+            output.clear_virt_output(cell.bufno)
+
     def _get_selected_span(self) -> Optional[CodeCell]:
         current_position = self._get_cursor_position()
         selected = None
@@ -200,6 +205,7 @@ class MoltenKernel:
             return
 
         self.outputs[self.selected_cell].clear_float_win()
+        self.outputs[self.selected_cell].clear_virt_output(self.selected_cell.bufno)
         self.selected_cell.clear_interface(self.highlight_namespace)
         del self.outputs[self.selected_cell]
         self.selected_cell = None
