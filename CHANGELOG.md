@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.0](https://github.com/benlubas/molten-nvim/compare/v1.0.0...v1.1.0) (2023-11-18)
+
+
+### Features
+
+* export cell output to ipynb file ([#40](https://github.com/benlubas/molten-nvim/issues/40)) ([ef9cb41](https://github.com/benlubas/molten-nvim/commit/ef9cb41381926878ee832b9c96d74accbb4fabdf))
+* Output as Virtual Text ([#33](https://github.com/benlubas/molten-nvim/issues/33)) ([820463d](https://github.com/benlubas/molten-nvim/commit/820463df259d2c77d080e8106f1ad48ed4e8c7b7))
+
 ## 1.0.0 (2023-11-17)
 
 ### Features From Magma
