@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/benlubas/molten-nvim/compare/v1.1.0...v1.1.1) (2023-11-18)
+
+
+### Bug Fixes
+
+* hide images when appropriate ([#44](https://github.com/benlubas/molten-nvim/issues/44)) ([f431035](https://github.com/benlubas/molten-nvim/commit/f4310356c6028b29da596888e0804655243f5db8))
+
 ## [1.1.0](https://github.com/benlubas/molten-nvim/compare/v1.0.0...v1.1.0) (2023-11-18)
 
 
