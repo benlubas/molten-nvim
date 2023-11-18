@@ -23,6 +23,9 @@ from molten.utils import notify_error
 class OutputChunk(ABC):
     jupyter_data: Optional[Dict[str, Any]] = None
     jupyter_metadata: Optional[Dict[str, Any]] = None
+    # extra keys that are used to write data to jupyter notebook files (ie. for error outputs)
+    extras: Dict[str, Any] = {}
+    output_type: str
 
     @abstractmethod
     def place(
@@ -52,6 +55,7 @@ class TextOutputChunk(OutputChunk):
 
     def __init__(self, text: str):
         self.text = text
+        self.output_type = "display_data"
 
     def place(
         self,
@@ -110,6 +114,7 @@ class ErrorOutputChunk(TextLnOutputChunk):
                 + traceback
             )
         )
+        self.output_type = "error"
 
 
 class AbortedOutputChunk(TextLnOutputChunk):
@@ -120,6 +125,7 @@ class AbortedOutputChunk(TextLnOutputChunk):
 class ImageOutputChunk(OutputChunk):
     def __init__(self, img_path: str):
         self.img_path = img_path
+        self.output_type = "display_data"
 
     def place(
         self,

@@ -698,7 +698,7 @@ class Molten:
         assert kernels is not None
         for molten in kernels:
             if molten.kernel_id == kernel:
-                export_outputs(self.nvim, molten, buf, path, bang)
+                export_outputs(self.nvim, molten, path, bang)
                 break
 
     @pynvim.command("MoltenSave", nargs="*", sync=True)  # type: ignore

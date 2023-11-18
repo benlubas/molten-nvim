@@ -20,9 +20,7 @@ def get_default_export_file(nvim: Nvim, buffer: Buffer) -> str:
     return f"{os.path.splitext(full_path)[0]}.ipynb"
 
 
-def export_outputs(
-    nvim: Nvim, kernel: MoltenKernel, buffer: Buffer, filepath: str, overwrite: bool
-):
+def export_outputs(nvim: Nvim, kernel: MoltenKernel, filepath: str, overwrite: bool):
     """Export outputs of the current file/kernel to a .ipynb file with the given name."""
 
     if not filepath.endswith(".ipynb"):
@@ -46,11 +44,20 @@ def export_outputs(
             nb_cell = nb_cells[nb_index]
             nb_index += 1
 
-            if compare_contents(nvim, nb_cell, code_cell, buffer, lang):
+            if compare_contents(nvim, nb_cell, code_cell, lang):
                 matched = True
                 outputs = [
                     nbformat.v4.new_output(
-                        "execute_result", chunk.jupyter_data, metadata=chunk.jupyter_metadata
+                        chunk.output_type,
+                        chunk.jupyter_data,
+                        **chunk.extras,
+                    )
+                    if chunk.jupyter_metadata is None
+                    else nbformat.v4.new_output(
+                        chunk.output_type,
+                        chunk.jupyter_data,
+                        metadata=chunk.jupyter_metadata,
+                        **chunk.extras,
                     )
                     for chunk in output.output.chunks
                 ]
@@ -62,6 +69,7 @@ def export_outputs(
                 nvim,
                 f"No cell matching cell at line: {mcell[0].begin.lineno + 1} in notebook: {filepath}. Bailing.",
             )
+            return
 
     if overwrite:
         write_to = filepath
@@ -72,9 +80,10 @@ def export_outputs(
     notify_info(nvim, f"Exporting {len(molten_cells)} cell output(s) to {write_to}")
     nbformat.write(nb, write_to)
 
-def compare_contents(nvim: Nvim, nb_cell, code_cell: CodeCell, buffer: Buffer, lang: str) -> bool:
-    molten_contents = buffer.api.get_lines(code_cell.begin.lineno, code_cell.end.lineno + 1, False)
+
+def compare_contents(nvim: Nvim, nb_cell, code_cell: CodeCell, lang: str) -> bool:
+    molten_contents = code_cell.get_text(nvim)
     nvim.exec_lua("_remove_comments = require('remove_comments').remove_comments")
     clean_nb = nvim.lua._remove_comments(nb_cell["source"], lang)
-    clean_molten = nvim.lua._remove_comments("\n".join(molten_contents) + "\n", lang)
+    clean_molten = nvim.lua._remove_comments(molten_contents + "\n", lang)
     return clean_nb == clean_molten
