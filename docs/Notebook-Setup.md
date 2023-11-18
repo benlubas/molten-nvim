@@ -1,11 +1,14 @@
 # Notebook Setup
 
-There are a few different ways to use this plugin. This file will focus on the main way that I use
-it: To edit Jupyter Notebook Files...kind of.
+There are many ways to use Molten, but I'd guess the most common will be to edit "notebooks" in
+neovim. When I say notebooks I mean Jupyter notebooks (`ipynb` files), as well as other formats,
+like simple markdown notebooks, or Quarto notebooks.
 
-I don't need to edit and share `ipynb` file very often. I only have to submit a homework assignment
-once in a while. So I pull down a notebook file, convert it to markdown, work on it for a week or
-two, and then convert it back right before submitting.
+This file will go over some common setups that involve molten. Personally, I use quarto for my own
+notebooks, and jupytext (with it's plugin) when I need to quickly edit an `ipynb` file.
+
+Note that these plugins are not mutually exclusive. You could use none or all of them depending on
+your needs.
 
 ## Quarto
 
@@ -17,61 +20,48 @@ render markdown to pdf, html, or any format that Pandoc supports.
 markdown" file, which is a nice plain-text format that you can work with in neovim.
 
 Quarto also has its own neovim plugin: [quarto-nvim](https://github.com/quarto-dev/quarto-nvim).
-I use this plugin primarily for its integration with
-[otter.nvim](https://github.com/jmbuhr/otter.nvim), which enables LSP features in the markdown
-document, but this is also a very easy way to render markdown files that you're working on in
-neovim.
+The quarto-nvim plugin provides:
+- LSP Autocomplete, formatting, diagnostics, go to definition, and others
+- A code running integration with molten to easy run code cells
+- A convenient way to render the file you're working on
 
-### Alternatives
+All of that in a normal markdown document too! (Just run `:QuartoActivate` in the markdown doc)
 
-There are other ways to edit Jupyter notebook files in Neovim. Most notably
+## Jupytext
+
+This is the most convenient way to open an `ipynb` file, make a change to a code cell, run it, and
+save both the file and the output (with `:MoltenExportOutput`).
+
 [Jupytext](https://github.com/mwouts/jupytext) with
-[jupytext.vim](https://github.com/goerz/jupytext.vim). This will let you open a normal `.ipynb`
-file, convert it automatically to plain-text and display it in a temporary buffer, and then convert
-it back again when you write. This has worked very well for me the few times that I've used it.
+[jupytext.vim](https://github.com/goerz/jupytext.vim) will let you open a normal `.ipynb`
+file with neovim. It's automatically converted to plain-text where you can edit it like normal. On
+save, it converts back to `ipynb` and writes the file.
 
+If you use Jupytext to produce a markdown output (recommended), you can use this in conjunction with
+the quarto-nvim plugin mentioned above to get get LSP features and convenient code running binds.
 
-There is also the [NotebookNavigator](https://github.com/GCBallesteros/NotebookNavigator.nvim)
-plugin, which allows you to turn python files into notebooks with comment delimiters. The plugin
-comes with a few qol features, and while molten support isn't officially part of the plugin at the
-time of writing, it's being worked on, and there's nothing stopping you from just using molten's
-builtin run methods.
+If you don't want to use the quarto plugin, running a code cell is made easier with a treesitter
+text object that selects text inside a code block. Then you cane use `:MoltenEvaluateOperator` with
+a keybinding to easily run the code.
 
-## Code Running
-
-Obviously we're going to use Molten for this, but there is some extra setup we can do to get more of
-a Notebook experience. The concept of "Code Cell" still exists in Markdown documents, and often
-you'll want to run an entire cell or all the cells above the current one. The easiest way to do this
-is with a little bit of lua scripting.
-
-### Quarto Code Runner
-
-[quarto_code_runner.lua](https://github.com/benlubas/.dotfiles/blob/d6c540b6c9fe740c18876b2e43cbfcc6aa70fcf9/nvim/lua/benlubas/quarto_code_runner.lua)
-is a small script that I've written to help easily run code in a `qmd` document.
-
-It uses Molten to send code from a quarto buffer to a running kernel.
-
-
-For now, this is just a very quick script that I threw together, I plan to improve it in the
-future. Anyone is welcome to take and modify this code for their own purposes, so if you would like
-to have a similar setup, just grab the file above, and throw it into your config.
-
-#### Run mappings
-
-Using the functions from the file above, we can setup mappings like this:
-
-```lua
-vim.keymap.set("n", "<localleader>rc", M.run_cell,
-    { desc = "run code cell", buffer = true })
-vim.keymap.set("n", "<localleader>ra", M.run_all_above,
-    { desc = "run all code cells above the cursor", buffer = true })
-vim.keymap.set("n", "<localleader>rl", M.run_line,
-    { desc = "run line", buffer = true })
+``` lua
+--- other treesitter text objects config ...
+select = {
+    enable = true,
+    lookahead = true,
+    keymaps = {
+        -- refers to the code inside a markdown code block (as well as other things)
+        ["ib"] = { query = "@block.inner", desc = "in block" },
+        --- other mappings ...
+    },
+},
+--- other config ...
 ```
 
-_These mappings only work inside of code blocks in quarto documents_
+## NotebookNavigator
 
-We get two mappings for running code by the cell, and another mapping for running code by line. Note
-that Molten ships with a command `:MoltenEvaluateLine` which also runs a line of code. The
-difference here is that `quarto_code_runner.run_line` is aware of code cells, and will not try to
-run lines outside of a code cell.
+The [NotebookNavigator](https://github.com/GCBallesteros/NotebookNavigator.nvim) plugin, which
+allows you to turn python files into notebooks with comment delimiters. The plugin comes with a few
+quality of life features, and while molten support isn't officially part of the plugin at the time
+of writing, it's being worked on, and there's nothing stopping you from just using molten's builtin
+run methods.
