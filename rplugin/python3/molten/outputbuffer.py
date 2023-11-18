@@ -4,7 +4,7 @@ from pynvim import Nvim
 from pynvim.api import Buffer, Window
 
 from molten.images import Canvas
-from molten.outputchunks import Output, OutputStatus
+from molten.outputchunks import ImageOutputChunk, Output, OutputStatus
 from molten.options import MoltenOptions
 from molten.position import DynamicPosition, Position
 from molten.utils import notify_error
@@ -93,7 +93,6 @@ class OutputBuffer:
     def clear_float_win(self) -> None:
         if self.display_win is not None:
             self.nvim.funcs.nvim_win_close(self.display_win, True)
-            self.canvas.clear()
             self.display_win = None
         if self.display_virt_lines is not None:
             del self.display_virt_lines
@@ -102,6 +101,14 @@ class OutputBuffer:
     def clear_virt_output(self, bufnr: int) -> None:
         if self.virt_text_id is not None:
             self.nvim.funcs.nvim_buf_del_extmark(bufnr, self.extmark_namespace, self.virt_text_id)
+        # clear the image too
+        redraw = False
+        for chunk in self.output.chunks:
+            if isinstance(chunk, ImageOutputChunk) and chunk.img_identifier is not None:
+                self.canvas.remove_image(chunk.img_identifier)
+                redraw = True
+        if redraw:
+            self.canvas.present()
 
     def set_win_option(self, option: str, value) -> None:
         if self.display_win:
@@ -189,7 +196,7 @@ class OutputBuffer:
         win = self.nvim.current.window
         win_col = win.col
         win_row = self._buffer_to_window_lineno(anchor.lineno + 1)
-        if win_row == 0: # anchor position is off screen
+        if win_row == 0:  # anchor position is off screen
             return
         win_width = win.width
         win_height = win.height

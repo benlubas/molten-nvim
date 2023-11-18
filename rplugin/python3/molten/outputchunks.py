@@ -126,6 +126,7 @@ class ImageOutputChunk(OutputChunk):
     def __init__(self, img_path: str):
         self.img_path = img_path
         self.output_type = "display_data"
+        self.img_identifier = None
 
     def place(
         self,
@@ -136,13 +137,13 @@ class ImageOutputChunk(OutputChunk):
         canvas: Canvas,
         _hard_wrap: bool,
     ) -> Tuple[str, int]:
-        img = canvas.add_image(
+        self.img_identifier = canvas.add_image(
             self.img_path,
             x=0,
             y=lineno + 1,
             bufnr=bufnr,
         )
-        return "", canvas.img_size(img)["height"]
+        return "", canvas.img_size(self.img_identifier)["height"]
 
 
 class OutputStatus(Enum):
