@@ -34,6 +34,10 @@ def export_outputs(nvim: Nvim, kernel: MoltenKernel, filepath: str, overwrite: b
 
     molten_cells = sorted(kernel.outputs.items(), key=lambda x: x[0])
 
+    if len(molten_cells) == 0:
+        notify_warn(nvim, "No cell outputs to export")
+        return
+
     nb_cells = list(filter(lambda x: x["cell_type"] == "code", nb["cells"]))
     nb_index = 0
     lang = kernel.runtime.kernel_manager.kernel_spec.language  # type: ignore
