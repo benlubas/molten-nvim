@@ -94,6 +94,13 @@ class OutputBuffer:
         if self.display_win is not None:
             self.nvim.funcs.nvim_win_close(self.display_win, True)
             self.display_win = None
+            redraw = False
+            for chunk in self.output.chunks:
+                if isinstance(chunk, ImageOutputChunk) and chunk.img_identifier is not None:
+                    self.canvas.remove_image(chunk.img_identifier)
+                    redraw = True
+            if redraw:
+                self.canvas.present()
         if self.display_virt_lines is not None:
             del self.display_virt_lines
             self.display_virt_lines = None
@@ -154,6 +161,8 @@ class OutputBuffer:
 
         self.displayed_status = self.output.status
 
+        buf = self.nvim.buffers[anchor.bufno]
+
         # clear the existing virtual text
         if self.virt_text_id is not None:
             self.nvim.funcs.nvim_buf_del_extmark(
@@ -180,9 +189,9 @@ class OutputBuffer:
         l = len(lines)
         if l > self.options.virt_text_max_lines:
             lines = lines[: self.options.virt_text_max_lines - 1]
-            lines.append(f"󰁅 {l - self.options.virt_text_max_lines} More Lines ")
+            lines.append(f"󰁅 {l - self.options.virt_text_max_lines + 1} More Lines ")
 
-        self.virt_text_id = self.nvim.current.buffer.api.set_extmark(
+        self.virt_text_id = buf.api.set_extmark(
             self.extmark_namespace,
             win_row,
             0,
