@@ -26,9 +26,11 @@ connect to that kernel. You can then run code on this kernel like normal. When y
 kernel will remain running.
 
 You can also start the server with
+
 ```bash
 jupyter console --kernel=python3 -f /tmp/your_path_here.json
 ```
+
 in order to avoid having to copy paste the file path. But this requires jupyter-console to be
 installed.
 
@@ -40,15 +42,65 @@ installed.
 It's also possible to use this method to connect to remove jupyter kernels.
 
 On the remote machine run:
+
 ```bash
 jupyter console --kernel julia-1.7 --ip 1.2.3.4 -f /tmp/remote-julia.json
 ```
+
 Again, you can also use `jupyter kernel --kernel=<kernel_name>` but the file path will be a lot
 longer
 
 Locally run:
+
 ```bash
 scp 1.2.3.4:/tmp/remote-julia.json /tmp/remote-julia.json
 ```
 
 And finally run `:MoltenInit /tmp/remote-julia.json` in neovim.
+
+## Exporting Outputs
+
+> [!NOTE]
+> This command is considered experimental, and while it works well enough to be used. There are
+> likely still bugs. So if you find them, don't hesitate to create an issue.
+
+With the `:MoltenExportOutput` command, you can export cell outputs to a Jupyter Notebook (`.ipynb` file).
+**This does not create the notebook.**
+
+This command is intended for use with tools like Quarto, or Jupytext, which convert notebooks to
+plaintext, but it's implemented in such a way that the plaintext file format shouldn't matter, as
+long as the code contents of the cells matches up.
+
+### Usage
+
+`:MoltenExportOutput` will create a copy of the notebook, prepended with "copy-of-", while
+`:MoltenExportOutput!` will overwrite the existing notebook (with an identical one that just has new
+outputs). Existing outputs are deleted.
+
+You can specify a file path as the first argument. By default, Molten looks for an existing notebook
+with the same name in the same spot. For example: `/path/to/file.md` exports to
+`/path/to/file.ipynb` by default. If you call `:MoltenExportOutput! /some/other/path/other_file.ipynb`
+then Molten will add outputs to `/some/other/path/other_file.ipynb`.
+
+If there are multiple kernels attached to the buffer when the command is called, you will be
+prompted for which kernel's outputs to export. There is nothing stopping you from exporting outputs
+from multiple kernels to the same notebook if you would like. That might be confusing, so it's not
+the default behavior.
+
+### Bailing
+
+The export will bail if there is a Molten cell with output that doesn't have a corresponding cell in
+the notebook. **Cells are searched for in order.**
+
+If your export is failing, it's probably b/c your notebook and plaintext representation got out of
+sync with each other.
+
+### Shortcomings
+
+#### cell matching
+Cells are matched by code content (comments are ignored). As a result, **if you have two or more
+code cells that have the same code content, and only the second one has output, molten will export
+that output to the first cell in the notebook**.
+
+To avoid this, just don't create cells that are identical. If you must, just execute both before
+exporting, they will be correctly lined up.

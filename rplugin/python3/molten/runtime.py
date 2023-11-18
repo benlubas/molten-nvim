@@ -159,9 +159,10 @@ class JupyterRuntime:
             return True
         elif message_type == "error":
             output.success = False
-            output.chunks.append(
-                ErrorOutputChunk(content["ename"], content["evalue"], content["traceback"])
-            )
+            chunk = ErrorOutputChunk(content["ename"], content["evalue"], content["traceback"])
+            chunk.extras = content
+            output.chunks.append(chunk)
+
             copy_on_demand(lambda: "\n\n".join(map(clean_up_text, content["traceback"])))
             return True
         elif message_type == "stream":
