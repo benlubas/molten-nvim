@@ -4,7 +4,9 @@ Molten is a fork of [Magma](https://www.github.com/dccsillag/magma-nvim), a plug
 interactively with the jupyter kernel. I owe a _large_ portion of the functionality of this plugin
 to Magma. As they say, I stand on the shoulders of giants.
 
-https://github.com/benlubas/molten-nvim/assets/56943754/6266efa4-a6e4-46f1-8e15-96495a6b6fe8
+
+https://github.com/benlubas/molten-nvim/assets/56943754/17ae81c0-306f-4496-bce8-99286e7f21ed
+
 
 ## Feature Highlights
 
