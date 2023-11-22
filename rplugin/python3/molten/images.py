@@ -50,6 +50,7 @@ class Canvas(ABC):
     def add_image(
         self,
         path: str,
+        identifier: str,
         x: int,
         y: int,
         bufnr: int,
@@ -108,6 +109,7 @@ class NoCanvas(Canvas):
     def add_image(
         self,
         _path: str,
+        _identifier: str,
         _x: int,
         _y: int,
         _window: int,
@@ -169,6 +171,7 @@ class ImageNvimCanvas(Canvas):
     def add_image(
         self,
         path: str,
+        identifier: str,
         x: int,
         y: int,
         bufnr: int,
@@ -177,7 +180,7 @@ class ImageNvimCanvas(Canvas):
             img = self.image_api.from_file(
                 path,
                 {
-                    "id": path,
+                    "id": identifier,
                     "buffer": bufnr,
                     "with_virtual_padding": True,
                     "x": x,

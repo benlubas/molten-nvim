@@ -234,11 +234,12 @@ class MoltenKernel:
 
         if self.selected_cell is not None:
             self._show_selected(self.selected_cell)
-        self.canvas.present()
 
         if self.options.virt_text_output:
             for span, output in self.outputs.items():
                 output.show_virtual_output(span.end)
+
+        self.canvas.present()
 
         self.updating_interface = False
 
