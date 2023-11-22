@@ -134,7 +134,7 @@ class OutputBuffer:
             for chunk in self.output.chunks:
                 y = lineno
                 if virtual:
-                    y += shape[1]
+                    y = shape[1]
                 chunktext, virt_lines = chunk.place(
                     buf,
                     self.options,
