@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.3](https://github.com/benlubas/molten-nvim/compare/v1.1.2...v1.1.3) (2023-11-22)
+
+
+### Bug Fixes
+
+* images being pushed down doubly by virt text ([#53](https://github.com/benlubas/molten-nvim/issues/53)) ([909f6f8](https://github.com/benlubas/molten-nvim/commit/909f6f890b6c607ee802ff8662892880dd78baec))
+
 ## [1.1.2](https://github.com/benlubas/molten-nvim/compare/v1.1.1...v1.1.2) (2023-11-18)
 
 
