@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.4](https://github.com/benlubas/molten-nvim/compare/v1.1.3...v1.1.4) (2023-11-26)
+
+
+### Bug Fixes
+
+* images in output windows with virt text ([#55](https://github.com/benlubas/molten-nvim/issues/55)) ([18b6b9a](https://github.com/benlubas/molten-nvim/commit/18b6b9a680cbce2b037409df79e81e7fdc10c155))
+
 ## [1.1.3](https://github.com/benlubas/molten-nvim/compare/v1.1.2...v1.1.3) (2023-11-22)
 
 
