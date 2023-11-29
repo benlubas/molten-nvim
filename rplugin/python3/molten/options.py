@@ -35,6 +35,7 @@ class MoltenOptions:
     copy_output: bool
     enter_output_behavior: str
     image_provider: str
+    limit_output_chars: int
     output_crop_border: bool
     output_show_more: bool
     output_virt_lines: bool
@@ -68,6 +69,7 @@ class MoltenOptions:
             ("molten_output_virt_lines", False),
             ("molten_output_win_border", [ "", "━", "", "" ]),
             ("molten_output_win_cover_gutter", True),
+            ("molten_limit_output_chars", 1000000),
             ("molten_output_win_hide_on_leave", True),
             ("molten_output_win_max_height", 999999),
             ("molten_output_win_max_width", 999999),

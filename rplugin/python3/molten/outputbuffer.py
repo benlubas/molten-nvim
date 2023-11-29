@@ -147,6 +147,11 @@ class OutputBuffer:
                 lineno += chunktext.count("\n")
                 virtual_lines += virt_lines
 
+            limit = self.options.limit_output_chars
+            if limit and len(lines_str) > limit:
+                lines_str = lines_str[:limit]
+                lines_str += f"\n...truncated to {limit} chars\n"
+
             lines = handle_progress_bars(lines_str)
             lineno = len(lines) + virtual_lines
         else:
