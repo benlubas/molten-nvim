@@ -7,11 +7,13 @@ import pynvim
 from pynvim.api import Buffer
 from molten.code_cell import CodeCell
 from molten.images import Canvas, get_canvas_given_provider
-from molten.io import MoltenIOError, get_default_save_file, load, save
+from molten.info_window import create_info_window
+from molten.ipynb import export_outputs, get_default_export_file
+from molten.save_load import MoltenIOError, get_default_save_file, load, save
 from molten.moltenbuffer import MoltenKernel
 from molten.options import MoltenOptions
 from molten.outputbuffer import OutputBuffer
-from molten.position import DynamicPosition
+from molten.position import DynamicPosition, Position
 from molten.runtime import get_available_kernels
 from molten.utils import MoltenException, notify_error, notify_info, notify_warn, nvimui
 from pynvim import Nvim
@@ -77,7 +79,7 @@ class Molten:
         self.nvim.command("autocmd CursorMovedI * call MoltenOnCursorMoved()")
         self.nvim.command("autocmd WinScrolled  * call MoltenOnWinScrolled()")
         self.nvim.command("autocmd BufEnter     * call MoltenUpdateInterface()")
-        self.nvim.command("autocmd BufLeave     * call MoltenClearInterface()")
+        self.nvim.command("autocmd BufLeave     * call MoltenBufLeave()")
         self.nvim.command("autocmd BufUnload    * call MoltenOnBufferUnload()")
         self.nvim.command("autocmd ExitPre      * call MoltenOnExitPre()")
         self.nvim.command("augroup END")
@@ -110,7 +112,7 @@ class Molten:
             raise MoltenException("Molten is not initialized; run `:MoltenInit` to initialize.")
         return maybe_molten
 
-    def _clear_interface(self) -> None:
+    def _clear_on_buf_leave(self) -> None:
         if not self.initialized:
             return
 
@@ -120,7 +122,17 @@ class Molten:
                 molten_kernel.clear_open_output_windows()
 
         assert self.canvas is not None
+        self.canvas.clear()
         self.canvas.present()
+
+    def _clear_interface(self) -> None:
+        if not self.initialized:
+            return
+
+        for molten_kernels in self.buffers.values():
+            for molten_kernel in molten_kernels:
+                molten_kernel.clear_virt_outputs()
+        self._clear_on_buf_leave()
 
     def _update_interface(self) -> None:
         """Called on load, show_output/hide_output and buf enter"""
@@ -252,6 +264,32 @@ class Molten:
                     del self.buffers[buf.number]
             del self.molten_kernels[kernel.kernel_id]
 
+    def _do_evaluate_expr(self, kernel_name: str, expr):
+        self._initialize_if_necessary()
+
+        kernels = self._get_current_buf_kernels(True)
+        assert kernels is not None
+
+        kernel = None
+        for kernel in kernels:
+            if kernel.kernel_id == kernel_name:
+                kernel = kernel
+                break
+        if kernel is None:
+            raise MoltenException(f"Kernel {kernel_name} not found")
+
+        bufno = self.nvim.current.buffer.number
+        cell = CodeCell(
+            self.nvim,
+            DynamicPosition(self.nvim, self.extmark_namespace, bufno, 0, 0),
+            DynamicPosition(self.nvim, self.extmark_namespace, bufno, 0, 0),
+        )
+
+        kernel.run_code(expr, cell)
+
+    def _get_sorted_buf_cells(self, kernels: List[MoltenKernel], bufnr: int) -> List[CodeCell]:
+        return sorted([x for x in chain(*[k.outputs.keys() for k in kernels]) if x.bufno == bufnr])
+
     @pynvim.command("MoltenDeinit", nargs=0, sync=True)  # type: ignore
     @nvimui  # type: ignore
     def command_deinit(self) -> None:
@@ -263,6 +301,11 @@ class Molten:
         self._clear_interface()
 
         self._deinit_buffer(kernels)
+
+    @pynvim.command("MoltenInfo", nargs=0, sync=True)  # type: ignore
+    @nvimui  # type: ignore
+    def command_info(self) -> None:
+        create_info_window(self.nvim, self.molten_kernels, self.buffers, self.initialized)
 
     def _do_evaluate(self, kernel_name: str, pos: Tuple[Tuple[int, int], Tuple[int, int]]) -> None:
         self._initialize_if_necessary()
@@ -294,29 +337,6 @@ class Molten:
             if k.kernel_id != kernel.kernel_id:
                 k.delete_overlapping_cells(span)
 
-    def _do_evaluate_expr(self, kernel_name: str, expr):
-        self._initialize_if_necessary()
-
-        kernels = self._get_current_buf_kernels(True)
-        assert kernels is not None
-
-        kernel = None
-        for kernel in kernels:
-            if kernel.kernel_id == kernel_name:
-                kernel = kernel
-                break
-        if kernel is None:
-            raise MoltenException(f"Kernel {kernel_name} not found")
-
-        bufno = self.nvim.current.buffer.number
-        cell = CodeCell(
-            self.nvim,
-            DynamicPosition(self.nvim, self.extmark_namespace, bufno, 0, 0),
-            DynamicPosition(self.nvim, self.extmark_namespace, bufno, 0, 0),
-        )
-
-        kernel.run_code(expr, cell)
-
     @pynvim.function("MoltenUpdateOption", sync=True)  # type: ignore
     @nvimui  # type: ignore
     def function_update_option(self, args) -> None:
@@ -330,6 +350,101 @@ class Molten:
                 self.nvim,
                 f"Wrong number of arguments passed to :MoltenUpdateOption, expected 2, given {len(args)}",
             )
+
+    @pynvim.function("MoltenRunningKernels", sync=True)  # type: ignore
+    def function_list_running_kernels(self, args: List[Optional[bool]]) -> List[str]:
+        """List all the running kernels. When passed [True], returns only buf local kernels"""
+        if not self.initialized:
+            return []
+        if len(args) > 0 and args[0]:
+            buf = self.nvim.current.buffer.number
+            return [x.kernel_id for x in self.buffers[buf]]
+        return list(self.molten_kernels.keys())
+
+    @pynvim.function("MoltenStatusLineKernels", sync=True)  # type: ignore
+    def function_status_line_kernels(self, args) -> str:
+        kernels = self.function_list_running_kernels(args)
+        return " ".join(kernels)
+
+    @pynvim.function("MoltenStatusLineInit", sync=True)  # type: ignore
+    def function_status_line_init(self, _) -> str:
+        if self.initialized:
+            return "Molten"
+        return ""
+
+    @pynvim.command("MoltenNext", sync=True, nargs="*")  # type: ignore
+    @nvimui
+    def command_next(self, args: List[str]) -> None:
+        count = 1
+        if len(args) > 0:
+            try:
+                count = int(args[0])
+            except ValueError:
+                count = 1
+
+        c = self.nvim.api.win_get_cursor(0)
+        bufnr = self.nvim.current.buffer.number
+        pos = Position(bufnr, c[0] - 1, c[1])
+        kernels = self._get_current_buf_kernels(True)
+        assert kernels is not None
+
+        all_cells = self._get_sorted_buf_cells(kernels, bufnr)
+
+        starting_index = None
+        match all_cells:
+            case [first, *_] if pos < first.begin:
+                starting_index = 0
+                if count > 0:
+                    count -= 1
+            case [*_, last] if last.end < pos:
+                starting_index = len(all_cells) - 1
+                if count < 0:
+                    count += 1
+            case _:
+                for i, cell in enumerate(all_cells):
+                    if pos in cell or (
+                        i <= len(all_cells) - 2 and pos < all_cells[i + 1].begin and cell.end < pos
+                    ):
+                        starting_index = i
+
+        if starting_index is not None:
+            target_idx = (starting_index + count) % len(all_cells)
+            target_pos = all_cells[target_idx].begin
+            self.nvim.api.win_set_cursor(0, (target_pos.lineno + 1, target_pos.colno))
+        else:
+            notify_warn(self.nvim, "No cells to jump to")
+
+    @pynvim.command("MoltenGoto", sync=True, nargs="*")  # type: ignore
+    @nvimui
+    def command_goto(self, args: List[str]) -> None:
+        count = 1
+        if len(args) > 0:
+            try:
+                count = int(args[0])
+            except ValueError:
+                count = 1
+
+        kernels = self._get_current_buf_kernels(True)
+        assert kernels is not None
+
+        all_cells = self._get_sorted_buf_cells(kernels, self.nvim.current.buffer.number)
+        if len(all_cells) == 0:
+            notify_warn(self.nvim, "No cells to jump to")
+            return
+
+        target_pos = all_cells[(count - 1) % len(all_cells)].begin
+        self.nvim.api.win_set_cursor(0, (target_pos.lineno + 1, target_pos.colno))
+
+    @pynvim.command("MoltenPrev", sync=True, nargs="*")  # type: ignore
+    @nvimui
+    def command_prev(self, args: List[str]) -> None:
+        count = -1
+        if len(args) > 0:
+            try:
+                count = -int(args[0])
+            except ValueError:
+                count = -1
+        self.command_next([str(count)])
 
     @pynvim.command("MoltenEnterOutput", sync=True)  # type: ignore
     @nvimui  # type: ignore
@@ -507,7 +622,7 @@ class Molten:
 
     @pynvim.command("MoltenRestart", nargs="*", sync=True, bang=True)  # type: ignore
     @nvimui  # type: ignore
-    def command_restart(self, bang: bool, args) -> None:
+    def command_restart(self, args, bang) -> None:
         if len(args) > 0:
             kernel = args[0]
         else:
@@ -544,7 +659,7 @@ class Molten:
 
         for molten in molten_kernels:
             if molten.current_output is not None:
-                molten.should_show_display_window = True
+                molten.should_show_floating_win = True
                 self._update_interface()
                 return
 
@@ -568,9 +683,33 @@ class Molten:
             return
 
         for molten in molten_kernels:
-            molten.should_show_display_window = False
+            molten.should_show_floating_win = False
 
         self._update_interface()
+
+    @pynvim.command("MoltenExportOutput", nargs="*", sync=True, bang=True)  # type: ignore
+    @nvimui  # type: ignore
+    def command_export(self, args, bang: bool) -> None:
+        self._initialize_if_necessary()
+
+        buf = self.nvim.current.buffer
+        if len(args) > 0:
+            path = args[0]
+        else:
+            path = get_default_export_file(self.nvim, buf)
+
+        if len(args) > 1:
+            kernel = args[1]
+        else:
+            self.kernel_check(f"MoltenExportOutput{'!' if bang else ''}", path, buf, kernel_last=True)
+            return
+
+        kernels = self._get_current_buf_kernels(True)
+        assert kernels is not None
+        for molten in kernels:
+            if molten.kernel_id == kernel:
+                export_outputs(self.nvim, molten, path, bang)
+                break
 
     @pynvim.command("MoltenSave", nargs="*", sync=True)  # type: ignore
     @nvimui  # type: ignore
@@ -651,10 +790,10 @@ class Molten:
 
     # Internal functions which are exposed to VimScript
 
-    @pynvim.function("MoltenClearInterface", sync=True)  # type: ignore
+    @pynvim.function("MoltenBufLeave", sync=True)  # type: ignore
     @nvimui  # type: ignore
     def function_clear_interface(self, _: List[Any]) -> None:
-        self._clear_interface()
+        self._clear_on_buf_leave()
 
     @pynvim.function("MoltenOnBufferUnload", sync=True)  # type: ignore
     @nvimui  # type: ignore
@@ -718,7 +857,7 @@ class Molten:
         elif kind == "char":
             pass
             colno_begin = min(colno_begin, len(self.nvim.funcs.getline(lineno_begin)))
-            colno_end = min(colno_end, len(self.nvim.funcs.getline(lineno_end)))
+            colno_end = min(colno_end, len(self.nvim.funcs.getline(lineno_end))) + 1
         else:
             raise MoltenException(f"this kind of selection is not supported: '{kind}'")
 

@@ -23,6 +23,9 @@ from molten.utils import notify_error
 class OutputChunk(ABC):
     jupyter_data: Optional[Dict[str, Any]] = None
     jupyter_metadata: Optional[Dict[str, Any]] = None
+    # extra keys that are used to write data to jupyter notebook files (ie. for error outputs)
+    extras: Dict[str, Any] = {}
+    output_type: str
 
     @abstractmethod
     def place(
@@ -32,6 +35,7 @@ class OutputChunk(ABC):
         lineno: int,
         shape: Tuple[int, int, int, int],
         canvas: Canvas,
+        hard_wrap: bool,
     ) -> Tuple[str, int]:
         pass
 
@@ -51,9 +55,7 @@ class TextOutputChunk(OutputChunk):
 
     def __init__(self, text: str):
         self.text = text
-
-    def _cleanup_text(self, text: str) -> str:
-        return clean_up_text(text)
+        self.output_type = "display_data"
 
     def place(
         self,
@@ -62,14 +64,27 @@ class TextOutputChunk(OutputChunk):
         _: int,
         shape: Tuple[int, int, int, int],
         _canvas: Canvas,
+        hard_wrap: bool,
     ) -> Tuple[str, int]:
-        text = self._cleanup_text(self.text)
+        text = clean_up_text(self.text)
         extra_lines = 0
         if options.wrap_output:  # count the number of extra lines this will need when wrapped
             win_width = shape[2]
-            for line in text.split("\n"):
-                if len(line) > win_width:
-                    extra_lines += len(line) // win_width
+            if hard_wrap:
+                lines = []
+                splits = []
+                for line in text.split("\n"):
+                    for i in range(len(line) // win_width):
+                        splits.append(line[i * win_width : win_width])
+                    else:
+                        splits.append(line)
+                lines.extend(splits)
+                text = "\n".join(lines)
+            else:
+                for line in text.split("\n"):
+                    if len(line) > win_width:
+                        extra_lines += len(line) // win_width
+
         return text, extra_lines
 
 
@@ -99,6 +114,7 @@ class ErrorOutputChunk(TextLnOutputChunk):
                 + traceback
             )
         )
+        self.output_type = "error"
 
 
 class AbortedOutputChunk(TextLnOutputChunk):
@@ -109,6 +125,8 @@ class AbortedOutputChunk(TextLnOutputChunk):
 class ImageOutputChunk(OutputChunk):
     def __init__(self, img_path: str):
         self.img_path = img_path
+        self.output_type = "display_data"
+        self.img_identifier = None
 
     def place(
         self,
@@ -117,15 +135,16 @@ class ImageOutputChunk(OutputChunk):
         lineno: int,
         _shape: Tuple[int, int, int, int],
         canvas: Canvas,
+        virtual: bool,
     ) -> Tuple[str, int]:
-        # _x, _y, win_w, win_h = shape
-        img = canvas.add_image(
+        self.img_identifier = canvas.add_image(
             self.img_path,
+            f"{'virt-' if virtual else ''}{self.img_path}",
             x=0,
             y=lineno + 1,
             bufnr=bufnr,
         )
-        return "", canvas.img_size(img)["height"]
+        return "", canvas.img_size(self.img_identifier)["height"]
 
 
 class OutputStatus(Enum):
@@ -177,6 +196,7 @@ def to_outputchunk(
     def _from_image_svgxml(svg: str) -> OutputChunk:
         try:
             import cairosvg
+
             with alloc_file("png", "wb") as (path, file):
                 cairosvg.svg2png(svg, write_to=file)
             return _to_image_chunk(path)

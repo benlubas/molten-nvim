@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 from molten.utils import notify_error
 
+
 @dataclass
 class HL:
     border_norm = "MoltenOutputBorder"
@@ -15,6 +16,7 @@ class HL:
     win_nc = "MoltenOutputWinNC"
     foot = "MoltenOutputFooter"
     cell = "MoltenCell"
+    virtual_text = "MoltenVirtualText"
 
     defaults = {
         border_norm: "FloatBorder",
@@ -24,7 +26,9 @@ class HL:
         win_nc: win,
         foot: "FloatFooter",
         cell: "CursorLine",
+        virtual_text: "Comment",
     }
+
 
 class MoltenOptions:
     auto_open_output: bool
@@ -33,17 +37,19 @@ class MoltenOptions:
     image_provider: str
     output_crop_border: bool
     output_show_more: bool
+    output_virt_lines: bool
     output_win_border: Union[str, List[str]]
     output_win_cover_gutter: bool
     output_win_hide_on_leave: bool
     output_win_max_height: int
     output_win_max_width: int
     output_win_style: Optional[str]
-    output_virt_lines: bool
     save_path: str
     show_mimetype_debug: bool
     use_border_highlights: bool
     virt_lines_off_by_1: bool
+    virt_text_max_lines: int
+    virt_text_output: bool
     wrap_output: bool
     nvim: Nvim
     hl: HL
@@ -59,17 +65,19 @@ class MoltenOptions:
             ("molten_image_provider", "none"),
             ("molten_output_crop_border", True),
             ("molten_output_show_more", False),
+            ("molten_output_virt_lines", False),
             ("molten_output_win_border", [ "", "━", "", "" ]),
             ("molten_output_win_cover_gutter", True),
             ("molten_output_win_hide_on_leave", True),
             ("molten_output_win_max_height", 999999),
             ("molten_output_win_max_width", 999999),
             ("molten_output_win_style", False),
-            ("molten_output_virt_lines", False),
             ("molten_save_path", os.path.join(nvim.funcs.stdpath("data"), "molten")),
             ("molten_show_mimetype_debug", False),
             ("molten_use_border_highlights", False),
             ("molten_virt_lines_off_by_1", False),
+            ("molten_virt_text_max_lines", 12),
+            ("molten_virt_text_output", False),
             ("molten_wrap_output", False),
         ]
         # fmt: on

@@ -2,11 +2,13 @@
 
 Molten is a fork of [Magma](https://www.github.com/dccsillag/magma-nvim), a plugin for running code
 interactively with the jupyter kernel. I owe a _large_ portion of the functionality of this plugin
-to Magma. As they say, I stand on the shoulders of giants.
+to Magma. Standing on the shoulders of giants here.
 
-https://github.com/benlubas/molten-nvim/assets/56943754/6266efa4-a6e4-46f1-8e15-96495a6b6fe8
 
-## Features
+https://github.com/benlubas/molten-nvim/assets/56943754/17ae81c0-306f-4496-bce8-99286e7f21ed
+
+
+## Feature Highlights
 
 - Send code to run asynchronously in the jupyter kernel
 - Supports any language with a Jupyter Kernel (in theory, they haven't all been tested)
@@ -16,14 +18,13 @@ https://github.com/benlubas/molten-nvim/assets/56943754/6266efa4-a6e4-46f1-8e15-
 - See output in real time, without flicker
 - Python virtual environment support
 - Renders images, plots, and LaTeX to the terminal
-- Very customizable
 
 ## Requirements
 
-- NeoVim 9.4+, nightly recommended
+- NeoVim 9.4+
 - Python 3.10+
 - [image.nvim](https://github.com/3rd/image.nvim) is only required if you want to render images
-- Required Python packages (can be installed in a venv. [read more](https://github.com/benlubas/molten-nvim/wiki/Virtual-Environments)):
+- Required Python packages (can be installed in a venv. [read more](./docs/Virtual-Environments.md)):
   - [`pynvim`](https://github.com/neovim/pynvim) (for the Remote Plugin API)
   - [`jupyter_client`](https://github.com/jupyter/jupyter_client) (for interacting with Jupyter)
 - Optional Python packages:
@@ -35,13 +36,19 @@ https://github.com/benlubas/molten-nvim/assets/56943754/6266efa4-a6e4-46f1-8e15-
 
 You can run `:checkhealth` to see what you have installed.
 
-**Note:** Python packages which are used only for the display of some specific kind of output are only imported when that output actually appears.
+**Note:** Python packages which are used only for the display of some specific kind of output are
+only imported when that output actually appears.
 
 ## Quick-start
 
-See the [Wiki Quick-start Guide](https://www.github.com/benlubas/molten-nvim/wiki/Quick-Start-Guide)
+Configuration information is located in this README, there is more information about getting started
+in these places:
 
-The Wiki also contains more in depth setup information/guides.
+[Probably Too Quick Start Guide](./docs/Probably-Too-Quick-Start-Guide.md)
+or
+[Not So Quick Start Guide](./docs/Not-So-Quick-Start-Guide.md)
+
+The `docs/` folder also contains more in depth information about different ways to use the plugin.
 
 ## Usage
 
@@ -88,26 +95,31 @@ kernel
 
 | Command                   | Arguments             | Description                        |
 |---------------------------|-----------------------|------------------------------------|
+| `MoltenInfo`              | none                  | Show information about the state of the plugin, initialization status, available kernels, and running kernels |
 | `MoltenInit`              | `["shared"] [kernel]` | Initialize a kernel for the current buffer. If `shared` is passed as the first value, this buffer will use an already running kernel. If no kernel is given, prompts the user. |
 | `MoltenDeinit`            | none                  | De-initialize the current buffer's runtime and molten instance. (called automatically on vim close/buffer unload) |
+| `MoltenGoto`              | `[n]`                 | Go to the `n`th code cell `n` defaults to 1 (1 indexed) |
+| `MoltenNext`              | `[n]`                 | Go to the next code cell, or jump `n` code cells `n` defaults to 1. Values wrap. Negative values move backwards |
+| `MoltenPrev`              | `[n]`                 | like `Next` but backwards |
 | `MoltenEvaluateLine`      | `[kernel]`            | Evaluate the current line |
 | `MoltenEvaluateVisual`    | `[kernel]`            | Evaluate the visual selection (**cannot be called with a range!**) |
-| `MoltenEvaluateOperator`  | `[kernel]`            | Evaluate text selected by the following operator. see [keymaps](#keymaps) for useage |
+| `MoltenEvaluateOperator`  | `[kernel]`            | Evaluate text selected by the following operator. see [Keybindings](#keybindings) for useage |
 | `MoltenEvaluateArgument`  | `[kernel] code`       | Evaluate given code in the given kernel |
 | `MoltenReevaluateCell`    | none                  | Re-evaluate the active cell (including new code) with the same kernel that it was originally evaluated with |
 | `MoltenDelete`            | none                  | Delete the active cell (does nothing if there is no active cell) |
 | `MoltenShowOutput`        | none                  | Shows the output window for the active cell |
 | `MoltenHideOutput`        | none                  | Hide currently open output window |
-| `MoltenEnterOutput`       | none                  | Move into the active cell's output window. Opens but does not enter the output if it's not open. **must be called with `noautocmd`** (see [keymaps](#keymaps) for example) |
+| `MoltenEnterOutput`       | none                  | Move into the active cell's output window. Opens but does not enter the output if it's not open. **must be called with `noautocmd`** (see [Keybindings](#keybindings) for example) |
 | `MoltenInterrupt`         | `[kernel]`            | Sends a keyboard interrupt to the kernel which stops any currently running code. (does nothing if there's no current output) |
 | `MoltenRestart`           | `[!] [kernel]`        | Shuts down a restarts the kernel. Deletes all outputs if used with a bang |
 | `MoltenSave`              | `[path] [kernel]`     | Save the current cells and evaluated outputs into a JSON file. When path is specified, save the file to `path`, otherwise save to `g:molten_save_path`. _currently only saves one kernel per file_ |
 | `MoltenLoad`              | `["shared"] [path]`   | Loads cell locations and output from a JSON file generated by `MoltenSave`. path functions the same as `MoltenSave`. If `shared` is specified, the buffer shares an already running kernel. |
+| `MoltenExportOutput`      | `[!] [path] [kernel]` | Export outputs from the current buffer and kernel to a jupyter notebook `.ipynb` at the given path. [read more](./docs/Advanced-Functionality.md) |
 
 ## Keybindings
 
 The commands above should be mapped to keys for the best experience. There are more detailed setups
-in the [Wiki](https://github.com/benlubas/molten-nvim/wiki), but here are some example bindings.
+in the [Docs](./docs), but here are some example bindings.
 Pay attention to `MoltenEvaluateVisual` and `MoltenEnterOutput`, as they need to be run in...odd
 ways.
 
@@ -159,30 +171,46 @@ variable, their values, and a brief description.
 | `g:molten_output_win_style`                   | (`false`) \| `"minimal"`                                    | Value passed to the `style` option in `:h nvim_open_win()` |
 | `g:molten_save_path`                          | (`stdpath("data").."/molten"`) \| any path to a folder      | Where to save/load data with `:MoltenSave` and `:MoltenLoad` |
 | `g:molten_use_border_highlights`              | `true` \| (`false`)                                         | When true, uses different highlights for output border depending on the state of the cell (running, done, error). see [highlights](#highlights) |
-| `g:molten_virt_lines_off_by_1`                | `true` \| (`false`)                                         | _only has effect when `output_virt_lines` is true_ Allows the output window to cover exactly one line of the regular buffer. (useful for running code in a markdown file where that covered line will just be \`\`\`) |
+| `g:molten_virt_lines_off_by_1`                | `true` \| (`false`)                                         | Allows the output window to cover exactly one line of the regular buffer when `output_virt_lines` is true, also effects `virt_text_output`. (useful for running code in a markdown file where that covered line will just be \`\`\`) |
+| `g:molten_virt_text_output`                   | `true` \| (`false`)                                         | When true, show output as virtual text below the cell. When true, output window doesn't open automatically on run. Effected by `virt_lines_off_by_1` |
+| `g:molten_virt_text_max_lines`                | (`12`) \| int                                               | Max height of the virtual text |
 | `g:molten_wrap_output`                        | `true` \| (`false`)                                         | Wrap text in output windows |
 | [DEBUG] `g:molten_show_mimetype_debug`        | `true` \| (`false`)                                         | Before any non-iostream output chunk, the mime-type for that output chunk is shown. Meant for debugging/plugin devlopment |
 
+### Status Line
 
-## Highlights
+Molten provides a few functions that you can use to see information in your status line. These are
+listed below:
+
+```lua
+require('molten.status').initialized() -- "Molten" or "" based on initialization information
+require('molten.status').kernels() -- "kernel1 kernel2" list of kernels attached to buffer or ""
+require('molten.status').all_kernels() -- same as kernels, but will show all kernels
+```
+
+The way these are used will vary based on status line plugin. So please refer to your status line
+plugin to figure out how to use these.
+
+### Highlights
 
 You can change highlights like so:
 
 ```lua
 -- see :h nvim_set_hl for the values of opts
--- I would recommend using `link` to link the values to colors from your color scheme
+-- I would recommend using the `link` option to link the values to colors from your color scheme
 vim.api.nvim_set_hl(0, "MoltenOutputBorder", { opts })
 ```
 
 Here is a complete list of the highlight groups that Molten uses, and their default values
 
-- `MoltenOutputBorder` = `FloatBorder`: default border
+- `MoltenOutputBorder` = `FloatBorder`: default output window border
 - `MoltenOutputBorderFail` = `MoltenOutputBorder`: border of a failed output window
 - `MoltenOutputBorderSuccess` = `MoltenOutputBorder`: border of a successfully run output window
 - `MoltenOutputWin` = `NormalFloat`: the innards of the output window
 - `MoltenOutputWinNC` = `MoltenOutputWin`: a "Non-Current" output window
 - `MoltenOutputFooter` = `FloatFooter`: the "x more lines" text
 - `MoltenCell` = `CursorLine`: applied to code that makes up a cell
+- `MoltenVirtualText` = `Comment`: output that is rendered as virtual text
 
 ## Autocommands
 
@@ -216,32 +244,50 @@ Similarly, you could remove these mappings on `MoltenDeinitPost`
 
 ## Functions
 
-### MoltenEvaluateRange
-
-There is a provided function `MoltenEvaluateRange(start_line, end_line)` which evaluates the code
-between the given line numbers (inclusive). This is intended for use in scripts.
+Molten exposes some functionality through vim functions.
 
 <details>
-  <summary>Example Usage</summary>
+  <summary>MoltenEvaluateRange</summary>
+
+There is a provided function `MoltenEvaluateRange(start_line, end_line, [start_col, end_col])` which
+evaluates the code between the given line numbers (inclusive). This is intended for use in scripts.
 
 ```lua
+-- run lines 1 through 23 (inclusive):
 vim.fn.MoltenEvaluateRange(1, 23)
+
+-- run code starting with col 4 on line 1, and ending with col 20 on line 3
+vim.fn.MoltenEvaluateRange(1, 3, 4, 20)
 ```
+
+Additionally, this function can take a string as the first argument. When a string is specified,
+it's assumed to be a `kernel_id`.
+
+```lua
+-- run lines 1 through 23 (inclusive) with the python3 kernel
+vim.fn.MoltenEvaluateRange("python3", 1, 23)
+
+-- run code starting with col 4 on line 1, and ending with col 20 on line 3 with the R kernel
+vim.fn.MoltenEvaluateRange("ir", 1, 3, 4, 20)
+```
+
+When there are multiple kernels attached to the buffer, and this function is called without
+a `kernel_id`, the user will be prompted for a kernel with vim.ui.select
 
 </details>
 
-### MoltenUpdateOption
+<details>
+  <summary>MoltenUpdateOption</summary>
 
 Because Molten is a remote plugin, options are loaded and cached at initialization. This avoids
 making an unnecessary number of RPC calls if we were to fetch configuration values every time we
 needed to use them. This comes with the trade-off of not being able to update config values on the
-fly... can you see where this is going
+fly... can you see where this is going.
 
 This function lets you update a configuration value after initialization, and the new value will
 take effect immediately.
 
-<details>
-  <summary>Example Usage</summary>
+You can specify option names with or without the "molten" prefix.
 
 ```lua
 -- these are the same!
@@ -251,7 +297,8 @@ vim.fn.MoltenUpdateOption("molten_auto_open_output", true)
 
 </details>
 
-### MoltenDefineCell
+<details>
+  <summary>MoltenDefineCell</summary>
 
 Takes in a start line, and end line, and a kernel and creates a code cell in the current buffer
 associated with that kernel. Does not run the code or create/open an output window.
@@ -259,20 +306,20 @@ associated with that kernel. Does not run the code or create/open an output wind
 _for compatibility reasons, if there is only one active kernel, you do not need to pass the kernel
 argument_
 
-<details>
-  <summary>Example Usage</summary>
-
 ```lua
 -- Creates a cell from line 5 to line 10 associated with the python3 kernel
 vim.fn.MoltenDefineCell(5, 10, 'python3')
 ```
+
 </details>
 
 ## Extras
 
 ### Output Chunks
 
-In the Jupyter protocol, most output-related messages provide a dictionary of mime-types which can be used to display the data. Theoretically, a `text/plain` field (i.e., plain text) is always present, so we (theoretically) always have that fallback.
+In the Jupyter protocol, most output-related messages provide a dictionary of mime-types which can
+be used to display the data. Theoretically, a `text/plain` field (i.e., plain text) is always
+present, so we (theoretically) always have that fallback.
 
 Here is a list of the currently handled mime-types:
 
@@ -280,7 +327,10 @@ Here is a list of the currently handled mime-types:
 - `image/*`: Molten attempts to render any `image` mimetype by sending it to image.nvim. In theory,
 this means that Molten can handle any image format that ImageMagick supports, though I've only
 tested common formats
-- `application/vnd.plotly.v1+json`: A Plotly figure. Rendered into a PNG with [Plotly](https://plotly.com/python/) + [Kaleido](https://github.com/plotly/Kaleido)
-- `text/latex`: A LaTeX formula. Rendered into a PNG with [pnglatex](https://pypi.org/project/pnglatex/)
+- `application/vnd.plotly.v1+json`: A Plotly figure. Rendered into a PNG with
+[Plotly](https://plotly.com/python/) + [Kaleido](https://github.com/plotly/Kaleido)
+- `text/latex`: A LaTeX formula. Rendered into a PNG with
+[pnglatex](https://pypi.org/project/pnglatex/)
 
-This already provides quite a bit of basic functionality, but if you find a use case for a mime-type that isn't currently supported, feel free to open an issue and/or PR!
+This already provides quite a bit of basic functionality, but if you find a use case for a mime-type
+that isn't currently supported, feel free to open an issue and/or PR!

@@ -1,7 +1,9 @@
 from typing import Dict, Set
 from abc import ABC, abstractmethod
 
-from pynvim import Nvim, logging
+from pynvim import Nvim
+
+from molten.utils import notify_warn
 
 
 class Canvas(ABC):
@@ -48,12 +50,14 @@ class Canvas(ABC):
     def add_image(
         self,
         path: str,
+        identifier: str,
         x: int,
         y: int,
         bufnr: int,
     ) -> str:
         """
         Add an image to the canvas.
+        Takes effect after a call to present()
 
         Parameters
         - path: str
@@ -69,6 +73,17 @@ class Canvas(ABC):
 
         Returns:
         str the identifier for the image
+        """
+
+    @abstractmethod
+    def remove_image(self, identifier: str) -> None:
+        """
+        Remove an image from the canvas. In practice this is just hiding the image
+        Takes effect after a call to present()
+
+        Parameters
+        - identifier: str
+          The identifier for the image to remove.
         """
 
 
@@ -94,15 +109,17 @@ class NoCanvas(Canvas):
     def add_image(
         self,
         _path: str,
+        _identifier: str,
         _x: int,
         _y: int,
         _window: int,
     ) -> None:
         pass
 
+    def remove_image(self, _identifier: str) -> None:
+        pass
 
-# I think this class will end up being calls to equivalent lua functions in some lua file
-# somewhere
+
 class ImageNvimCanvas(Canvas):
     nvim: Nvim
     to_make_visible: Set[str]
@@ -154,6 +171,7 @@ class ImageNvimCanvas(Canvas):
     def add_image(
         self,
         path: str,
+        identifier: str,
         x: int,
         y: int,
         bufnr: int,
@@ -162,7 +180,7 @@ class ImageNvimCanvas(Canvas):
             img = self.image_api.from_file(
                 path,
                 {
-                    "id": path,
+                    "id": identifier,
                     "buffer": bufnr,
                     "with_virtual_padding": True,
                     "x": x,
@@ -173,6 +191,9 @@ class ImageNvimCanvas(Canvas):
             return img
         return path
 
+    def remove_image(self, identifier: str) -> None:
+        self.to_make_invisible.add(identifier)
+
 
 def get_canvas_given_provider(name: str, nvim: Nvim) -> Canvas:
     if name == "none":
@@ -180,9 +201,5 @@ def get_canvas_given_provider(name: str, nvim: Nvim) -> Canvas:
     elif name == "image.nvim":
         return ImageNvimCanvas(nvim)
     else:
-        nvim.api.notify(
-            f"[Molten] unknown image provider: `{name}`",
-            logging.ERROR,
-            {"title": "Molten"},
-        )
+        notify_warn(nvim, f"unknown image provider: `{name}`")
         return NoCanvas()

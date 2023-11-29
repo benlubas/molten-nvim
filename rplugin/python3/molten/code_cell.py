@@ -1,9 +1,11 @@
+from functools import total_ordering
 from typing import List, Union
 
 from pynvim import Nvim
 from molten.position import DynamicPosition, Position
 
 
+@total_ordering
 class CodeCell:
     nvim: Nvim
     begin: Union[Position, DynamicPosition]
@@ -24,6 +26,12 @@ class CodeCell:
 
     def __contains__(self, pos: Union[Position, DynamicPosition]) -> bool:
         return self.bufno == pos.bufno and self.begin <= pos and pos < self.end
+
+    def __lt__(self, other: "CodeCell") -> bool:
+        return self.begin < other.begin
+
+    def __gt__(self, other: "CodeCell") -> bool:
+        return self.begin > other.begin
 
     def overlaps(self, other: "CodeCell") -> bool:
         return self.bufno == other.bufno and self.begin < other.end and other.begin < self.end
