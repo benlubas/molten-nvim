@@ -68,16 +68,19 @@ class TextOutputChunk(OutputChunk):
     ) -> Tuple[str, int]:
         text = clean_up_text(self.text)
         extra_lines = 0
+        ## TODO: this wrapping logic needs to happen AFTER all the chunks are combined.
         if options.wrap_output:  # count the number of extra lines this will need when wrapped
             win_width = shape[2]
             if hard_wrap:
                 lines = []
                 splits = []
                 for line in text.split("\n"):
-                    for i in range(len(line) // win_width):
-                        splits.append(line[i * win_width : win_width])
+                    index = 0
+                    for _ in range(len(line) // win_width):
+                        splits.append(line[index * win_width : (index+1)*win_width])
+                        index += 1
                     else:
-                        splits.append(line)
+                        splits.append(line[index * win_width :])
                 lines.extend(splits)
                 text = "\n".join(lines)
             else:

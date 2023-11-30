@@ -144,6 +144,7 @@ class OutputBuffer:
                     virtual,
                 )
                 lines_str += chunktext
+                self.nvim.out_write(f"chunktext: {chunktext}")
                 lineno += chunktext.count("\n")
                 virtual_lines += virt_lines
 
@@ -176,10 +177,12 @@ class OutputBuffer:
             self.virt_text_id = None
 
         win = self.nvim.current.window
-        win_col = win.col
+        win_info = self.nvim.funcs.getwininfo(win.handle)[0]
+        # self.nvim.out_write(f"win_info: {win_info}\n")
+        win_col = win_info["wincol"]
         win_row = anchor.lineno
-        win_width = win.width
-        win_height = win.height
+        win_width = win_info["width"] - win_info["textoff"]
+        win_height = win_info["height"]
 
         if self.options.virt_lines_off_by_1:
             win_row += 1
@@ -191,6 +194,7 @@ class OutputBuffer:
             win_height,
         )
         lines, _ = self.build_output_text(shape, anchor.bufno, True)
+        self.nvim.out_write(f"lines: {lines}\n")
         l = len(lines)
         if l > self.options.virt_text_max_lines:
             lines = lines[: self.options.virt_text_max_lines - 1]
