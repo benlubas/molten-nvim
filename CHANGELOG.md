@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.1.5](https://github.com/benlubas/molten-nvim/compare/v1.1.4...v1.1.5) (2023-11-30)
+
+
+### Bug Fixes
+
+* duplicate virt text/virt text wrap ([#70](https://github.com/benlubas/molten-nvim/issues/70)) ([71faa0d](https://github.com/benlubas/molten-nvim/commit/71faa0d98ee6aea2167f69d9c6c67ccab1571c14))
+* healthcheck on python 3.11+ ([#65](https://github.com/benlubas/molten-nvim/issues/65)) ([523d0ec](https://github.com/benlubas/molten-nvim/commit/523d0eceb3349c8deb798f52c2d827fbfdd44668))
+* truncate output text ([#67](https://github.com/benlubas/molten-nvim/issues/67)) ([3141b93](https://github.com/benlubas/molten-nvim/commit/3141b936ee69f15f3a926b122d110b0940e152e0))
+
 ## [1.1.4](https://github.com/benlubas/molten-nvim/compare/v1.1.3...v1.1.4) (2023-11-26)
 
 
