@@ -70,7 +70,6 @@ class TextOutputChunk(OutputChunk):
     ) -> Tuple[str, int]:
         text = clean_up_text(self.text)
         extra_lines = 0
-        ## TODO: this wrapping logic needs to happen AFTER all the chunks are combined.
         if options.wrap_output:  # count the number of extra lines this will need when wrapped
             win_width = shape[2]
             if hard_wrap:
