@@ -131,6 +131,7 @@ class OutputBuffer:
         # images are rendered with virtual lines by image.nvim
         virtual_lines = 0
         if len(self.output.chunks) > 0:
+            x = 0
             for chunk in self.output.chunks:
                 y = lineno
                 if virtual:
@@ -138,6 +139,7 @@ class OutputBuffer:
                 chunktext, virt_lines = chunk.place(
                     buf,
                     self.options,
+                    x,
                     y,
                     shape,
                     self.canvas,
@@ -146,6 +148,12 @@ class OutputBuffer:
                 lines_str += chunktext
                 lineno += chunktext.count("\n")
                 virtual_lines += virt_lines
+                x = len(lines_str) - lines_str.rfind("\n")
+
+            limit = self.options.limit_output_chars
+            if limit and len(lines_str) > limit:
+                lines_str = lines_str[:limit]
+                lines_str += f"\n...truncated to {limit} chars\n"
 
             lines = handle_progress_bars(lines_str)
             lineno = len(lines) + virtual_lines
@@ -171,10 +179,11 @@ class OutputBuffer:
             self.virt_text_id = None
 
         win = self.nvim.current.window
-        win_col = win.col
+        win_info = self.nvim.funcs.getwininfo(win.handle)[0]
+        win_col = win_info["wincol"]
         win_row = anchor.lineno
-        win_width = win.width
-        win_height = win.height
+        win_width = win_info["width"] - win_info["textoff"]
+        win_height = win_info["height"]
 
         if self.options.virt_lines_off_by_1:
             win_row += 1

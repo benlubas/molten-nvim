@@ -1,6 +1,7 @@
 local M = {}
 
 local has_py_mod = function(mod)
+  vim.cmd("python3 import pkgutil")
   vim.cmd("python3 import importlib")
   return vim.fn.py3eval("importlib.util.find_spec('" .. mod .. "') is not None")
 end
