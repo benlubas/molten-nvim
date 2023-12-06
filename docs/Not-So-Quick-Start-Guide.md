@@ -131,61 +131,7 @@ return {
     }
 },
 ```
-### NixOS Installation
 
-There are several ways to get Molten working on NixOS. The easiest way is with Home Manager to manage your NeoVim environment.
-
-#### NixOS Home Manager Installation
-
-If you use home manager and have configure Neovim through it, you can set up the dependencies like so:
-
-```nix
-  # home.nix or wherever you configure neovim
-  { pkgs, ... }:
-  let
-    # the vimPlugins.molten-nvim package has not been merged into nixpkgs yet but for now you can use this
-    molten-nvim = pkgs.callPackage pkgs.vimUtils.buildVimPlugin {
-      pname = "molten-nvim";
-      version = "2023-10-21";
-      src = fetchFromGitHub {
-        owner = "benlubas";
-        repo = "molten-nvim";
-        rev = "f9c28efc13f7a262e27669b984f3839ff5c50c32";
-        sha256 = "1r8xf3jphgml0pax34p50d67rglnq5mazdlmma1jnfkm67acxaac";
-      };
-      meta.homepage = "https://github.com/benlubas/molten-nvim/";
-    };
-  in {
-    # ... other config
-    programs.neovim = {
-      # whatever other neovim configuration you have
-      plugins = with pkgs.vimPlugins; [
-        # ... other plugins
-        image-nvim
-        molten-nvim
-      ];
-      extraPackages = with pkgs; [
-        # ... other packages
-        imagemagick
-      ];
-      extraLuaPackages = ps: [
-        # ... other lua packages
-        magick
-      ];
-      extraPython3Packages = ps: with ps; [
-        # ... other python packages
-        pynvim
-        jupyter-client
-        cairosvg
-        pnglatex
-        plotly
-        pyperclip
-      ];
-    };
-  }
-```
-
-There are multiple ways to manage your Lua configuration so follow the instructions for setting up `Image.nvim` and `molten-nvim` for your specific setup.
 ### A Note on Remote Plugins
 
 Molten is a remote plugin. This means that the first time you install, and after you update Molten
@@ -193,6 +139,9 @@ you need to run the `:UpdateRemotePlugins` command in Neovim. This can be done w
 mangers (like Lazy for example) automatically.
 
 But if things aren't working, make sure that you run that command and then restart your editor.
+
+> [!WARNING]
+> Windows users see [the windows page](./Windows.md)
 
 ### Customize
 

@@ -16,9 +16,8 @@ trouble)
     version = "^1.0.0", -- use version <2.0.0 to avoid breaking changes
     build = ":UpdateRemotePlugins",
     init = function()
-        -- these are examples, not defaults. Please see the readme
-        vim.g.molten_output_win_max_height = 20
-        vim.g.molten_auto_open_output = false
+        -- this is an example, not a default. Please see the readme for more configuration options
+        vim.g.molten_output_win_max_height = 12
     end,
 },
 ```
@@ -35,3 +34,6 @@ Congrats! You've run some code with Molten!
 See the README for more information about how to configure and use the plugin. See the [venv
 guide](Virtual-Environments) if you don't want to install python packages globally, and see the [not
 so quick start guide](Not-So-Quick-Start-Guide) for information about setting up image rendering.
+
+> [!WARNING]
+> Windows users see [the windows page](./Windows.md)
