@@ -15,9 +15,10 @@ from molten.outputchunks import OutputStatus
 from molten.runtime import JupyterRuntime
 
 
-# Handles a Single Kernel that can be attached to multiple buffers
-# Other MoltenKernels can be attached to the same buffers
 class MoltenKernel:
+    """Handles a Single Kernel that can be attached to multiple buffers
+    Other MoltenKernels can be attached to the same buffers"""
+
     nvim: Nvim
     canvas: Canvas
     highlight_namespace: int
@@ -26,8 +27,8 @@ class MoltenKernel:
 
     runtime: JupyterRuntime
 
-    # name unique to this specific jupyter runtime. Only used within Molten. Human Readable
     kernel_id: str
+    """name unique to this specific jupyter runtime. Only used within Molten. Human Readable"""
 
     outputs: Dict[CodeCell, OutputBuffer]
     current_output: Optional[CodeCell]
@@ -210,6 +211,14 @@ class MoltenKernel:
         del self.outputs[self.selected_cell]
         self.selected_cell = None
 
+    def clear_empty_spans(self) -> None:
+        for span in list(self.outputs.keys()):
+            if span.empty():
+                self.outputs[span].clear_float_win()
+                self.outputs[span].clear_virt_output(span.bufno)
+                del self.outputs[span]
+                span.clear_interface(self.highlight_namespace)
+
     def update_interface(self) -> None:
         buffer_numbers = [buf.number for buf in self.buffers]
         if self.nvim.current.buffer.number not in buffer_numbers:
@@ -219,6 +228,7 @@ class MoltenKernel:
             return
 
         self.updating_interface = True
+        self.clear_empty_spans()
         new_selected_cell = self._get_selected_span()
 
         # Clear the cell we just left

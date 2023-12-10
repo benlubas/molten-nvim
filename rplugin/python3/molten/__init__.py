@@ -701,7 +701,9 @@ class Molten:
         if len(args) > 1:
             kernel = args[1]
         else:
-            self.kernel_check(f"MoltenExportOutput{'!' if bang else ''}", path, buf, kernel_last=True)
+            self.kernel_check(
+                f"MoltenExportOutput{'!' if bang else ''}", path, buf, kernel_last=True
+            )
             return
 
         kernels = self._get_current_buf_kernels(True)
