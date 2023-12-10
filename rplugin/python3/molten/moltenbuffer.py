@@ -9,7 +9,7 @@ from molten.code_cell import CodeCell
 from molten.options import MoltenOptions
 from molten.images import Canvas
 from molten.position import Position
-from molten.utils import notify_info
+from molten.utils import notify_info, notify_warn
 from molten.outputbuffer import OutputBuffer
 from molten.outputchunks import OutputStatus
 from molten.runtime import JupyterRuntime
@@ -97,7 +97,8 @@ class MoltenKernel:
         self.runtime.restart()
 
     def run_code(self, code: str, span: CodeCell) -> None:
-        self.delete_overlapping_cells(span)
+        if not self.try_delete_overlapping_cells(span):
+            return
         self.runtime.run_code(code)
 
         self.outputs[span] = OutputBuffer(
@@ -189,35 +190,49 @@ class MoltenKernel:
 
         return selected
 
-    def delete_overlapping_cells(self, span: CodeCell) -> None:
-        """Delete the code cells in this kernel that overlap with the given span"""
+    def try_delete_overlapping_cells(self, span: CodeCell) -> bool:
+        """Delete the code cells in this kernel that overlap with the given span, if overlapping
+        a currently running cell, return False
+        Returns:
+            False if the span overlaps with a currently running cell, True otherwise
+        """
         for output_span in list(self.outputs.keys()):
             if output_span.overlaps(span):
-                if self.current_output == output_span:
-                    self.current_output = None
-                self.outputs[output_span].clear_float_win()
-                self.outputs[output_span].clear_virt_output(span.bufno)
-                del self.outputs[output_span]
-                output_span.clear_interface(self.highlight_namespace)
+                if not self._delete_cell(output_span):
+                    return False
+        return True
 
-    def delete_cell(self) -> None:
+    def _delete_cell(self, cell: CodeCell, quiet=False) -> bool:
+        """Delete the given cell if it exists _and_ isn't running. If the cell is running, display
+        an error and return False, otherwise return True"""
+        if cell in self.outputs and self.outputs[cell].output.status == OutputStatus.RUNNING:
+            if not quiet:
+                notify_warn(
+                    self.nvim,
+                    "Cannot delete a running cell. Wait for it to finish or use :MoltenInterrupt before creating an overlapping cell.",
+                )
+            return False
+        self.outputs[cell].clear_float_win()
+        self.outputs[cell].clear_virt_output(cell.bufno)
+        cell.clear_interface(self.highlight_namespace)
+        del self.outputs[cell]
+        if self.current_output == cell:
+            self.current_output = None
+        if self.selected_cell == cell:
+            self.selected_cell = None
+        return True
+
+    def delete_current_cell(self) -> None:
         self.selected_cell = self._get_selected_span()
         if self.selected_cell is None:
             return
-
-        self.outputs[self.selected_cell].clear_float_win()
-        self.outputs[self.selected_cell].clear_virt_output(self.selected_cell.bufno)
-        self.selected_cell.clear_interface(self.highlight_namespace)
-        del self.outputs[self.selected_cell]
+        self._delete_cell(self.selected_cell)
         self.selected_cell = None
 
     def clear_empty_spans(self) -> None:
         for span in list(self.outputs.keys()):
             if span.empty():
-                self.outputs[span].clear_float_win()
-                self.outputs[span].clear_virt_output(span.bufno)
-                del self.outputs[span]
-                span.clear_interface(self.highlight_namespace)
+                self._delete_cell(span, quiet=True)
 
     def update_interface(self) -> None:
         buffer_numbers = [buf.number for buf in self.buffers]
