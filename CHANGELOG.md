@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.1.6](https://github.com/benlubas/molten-nvim/compare/v1.1.5...v1.1.6) (2023-12-10)
+
+
+### Bug Fixes
+
+* don't delete running cells ([#75](https://github.com/benlubas/molten-nvim/issues/75)) ([6b2660d](https://github.com/benlubas/molten-nvim/commit/6b2660d790696dc41238b3bca19541e347e27bf2))
+* progress bars in virtual text ([#77](https://github.com/benlubas/molten-nvim/issues/77)) ([3b886c1](https://github.com/benlubas/molten-nvim/commit/3b886c1e987ee9d2654e31f9d0a1234fce8bcb92))
+* remove orphaned cells ([#73](https://github.com/benlubas/molten-nvim/issues/73)) ([b500515](https://github.com/benlubas/molten-nvim/commit/b5005158ddb16fd9c864de957eef92eca9ab1d72))
+
 ## [1.1.5](https://github.com/benlubas/molten-nvim/compare/v1.1.4...v1.1.5) (2023-11-30)
 
 
