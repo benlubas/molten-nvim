@@ -48,6 +48,9 @@ class CodeCell:
             self.end.lineno + 1,
         )
 
+    def empty(self) -> bool:
+        return self.end <= self.begin
+
     def get_text(self, nvim: Nvim) -> str:
         assert self.begin.bufno == self.end.bufno
 
