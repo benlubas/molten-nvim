@@ -366,7 +366,6 @@ def handle_progress_bars(line_str: str) -> List[str]:
         last = parts[-1]
         if last != "":
             actual_lines.append(last)
-            lines = actual_lines
 
     return actual_lines
 
