@@ -202,14 +202,15 @@ class MoltenKernel:
                     return False
         return True
 
-    def _delete_cell(self, cell: CodeCell) -> bool:
+    def _delete_cell(self, cell: CodeCell, quiet=False) -> bool:
         """Delete the given cell if it exists _and_ isn't running. If the cell is running, display
         an error and return False, otherwise return True"""
         if cell in self.outputs and self.outputs[cell].output.status == OutputStatus.RUNNING:
-            notify_warn(
-                self.nvim,
-                "Cannot delete a running cell. Wait for it to finish or use :MoltenInterrupt before creating an overlapping cell.",
-            )
+            if not quiet:
+                notify_warn(
+                    self.nvim,
+                    "Cannot delete a running cell. Wait for it to finish or use :MoltenInterrupt before creating an overlapping cell.",
+                )
             return False
         self.outputs[cell].clear_float_win()
         self.outputs[cell].clear_virt_output(cell.bufno)
@@ -231,10 +232,7 @@ class MoltenKernel:
     def clear_empty_spans(self) -> None:
         for span in list(self.outputs.keys()):
             if span.empty():
-                self.outputs[span].clear_float_win()
-                self.outputs[span].clear_virt_output(span.bufno)
-                del self.outputs[span]
-                span.clear_interface(self.highlight_namespace)
+                self._delete_cell(span, quiet=True)
 
     def update_interface(self) -> None:
         buffer_numbers = [buf.number for buf in self.buffers]
