@@ -75,6 +75,9 @@ class TextOutputChunk(OutputChunk):
             if hard_wrap:
                 lines = []
                 splits = []
+                # Assume this is a progress bar, or similar, we shouldn't try to wrap it
+                if text.find("\r") != -1:
+                    return text, 0
                 for line in text.split("\n"):
                     index = 0
                     if len(line) + col > win_width:
@@ -82,7 +85,7 @@ class TextOutputChunk(OutputChunk):
                         line = line[win_width - col :]
 
                     for _ in range(len(line) // win_width):
-                        splits.append(line[index * win_width : (index+1)*win_width])
+                        splits.append(line[index * win_width : (index + 1) * win_width])
                         index += 1
                     else:
                         splits.append(line[index * win_width :])
