@@ -282,7 +282,7 @@ class Molten:
         cell = CodeCell(
             self.nvim,
             DynamicPosition(self.nvim, self.extmark_namespace, bufno, 0, 0),
-            DynamicPosition(self.nvim, self.extmark_namespace, bufno, 0, 0),
+            DynamicPosition(self.nvim, self.extmark_namespace, bufno, 0, 0, right_gravity=True),
         )
 
         kernel.run_code(expr, cell)
@@ -325,7 +325,7 @@ class Molten:
         span = CodeCell(
             self.nvim,
             DynamicPosition(self.nvim, self.extmark_namespace, bufno, *pos[0]),
-            DynamicPosition(self.nvim, self.extmark_namespace, bufno, *pos[1]),
+            DynamicPosition(self.nvim, self.extmark_namespace, bufno, *pos[1], right_gravity=True),
         )
 
         code = span.get_text(self.nvim)
@@ -902,7 +902,9 @@ class Molten:
         span = CodeCell(
             self.nvim,
             DynamicPosition(self.nvim, self.extmark_namespace, bufno, start - 1, 0),
-            DynamicPosition(self.nvim, self.extmark_namespace, bufno, end - 1, -1),
+            DynamicPosition(
+                self.nvim, self.extmark_namespace, bufno, end - 1, -1, right_gravity=True
+            ),
         )
 
         for molten in molten_kernels:
