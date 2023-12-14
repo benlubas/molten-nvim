@@ -188,6 +188,9 @@ class OutputBuffer:
         if self.options.virt_lines_off_by_1:
             win_row += 1
 
+        if win_row > (last := self.nvim.funcs.line("$")):
+            win_row = last
+
         shape = (
             win_col,
             win_row,

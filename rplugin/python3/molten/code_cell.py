@@ -55,7 +55,7 @@ class CodeCell:
         assert self.begin.bufno == self.end.bufno
 
         lines: List[str] = nvim.funcs.nvim_buf_get_lines(
-            self.bufno, self.begin.lineno, self.end.lineno + 1, True
+            self.bufno, self.begin.lineno, self.end.lineno + 1, False
         )
 
         if len(lines) == 1:

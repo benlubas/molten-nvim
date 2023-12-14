@@ -33,13 +33,18 @@ class DynamicPosition(Position):
         bufno: int,
         lineno: int,
         colno: int,
+        right_gravity: bool = False,
     ):
         self.nvim = nvim
         self.extmark_namespace = extmark_namespace
 
         self.bufno = bufno
         self.extmark_id = self.nvim.funcs.nvim_buf_set_extmark(
-            self.bufno, extmark_namespace, lineno, colno, {}
+            self.bufno,
+            extmark_namespace,
+            lineno,
+            colno,
+            {"right_gravity": right_gravity, "strict": False},
         )
 
     def set_height(self, height: int) -> None:
