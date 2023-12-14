@@ -115,6 +115,11 @@ class MoltenKernel:
 
         self._check_if_done_running()
 
+    def reevaluate_all(self) -> None:
+        for span in sorted(self.outputs.keys(), key=lambda s: s.begin):
+            code = span.get_text(self.nvim)
+            self.run_code(code, span)
+
     def reevaluate_cell(self) -> bool:
         self.selected_cell = self._get_selected_span()
         if self.selected_cell is None:
