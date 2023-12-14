@@ -587,6 +587,17 @@ class Molten:
             """
             self.nvim.exec_lua(lua, async_=False)
 
+    @pynvim.command("MoltenReevaluateAll", nargs=0, sync=True)  # type: ignore
+    @nvimui  # type: ignore
+    def command_reevaluate_all(self) -> None:
+        self._initialize_if_necessary()
+
+        molten_kernels = self._get_current_buf_kernels(True)
+        assert molten_kernels is not None
+
+        for kernel in molten_kernels:
+            kernel.reevaluate_all()
+
     @pynvim.command("MoltenReevaluateCell", nargs=0, sync=True)  # type: ignore
     @nvimui  # type: ignore
     def command_evaluate_cell(self) -> None:
