@@ -1,4 +1,5 @@
-from typing import List, Optional, Dict
+from contextlib import AbstractContextManager
+from typing import IO, Callable, List, Optional, Dict, Tuple
 from queue import Queue
 import hashlib
 
@@ -11,7 +12,7 @@ from molten.images import Canvas
 from molten.position import Position
 from molten.utils import notify_info, notify_warn
 from molten.outputbuffer import OutputBuffer
-from molten.outputchunks import OutputStatus
+from molten.outputchunks import OutputChunk, OutputStatus
 from molten.runtime import JupyterRuntime
 
 
@@ -130,6 +131,42 @@ class MoltenKernel:
         self.run_code(code, self.selected_cell)
         return True
 
+    def open_in_browser(self, silent=False) -> bool:
+        """Open the HTML output of the currently selected cell in the browser.
+        Returns: True if we're in a cell, False otherwise"""
+        self.selected_cell = self._get_selected_span()
+        if self.selected_cell is None:
+            return False
+
+        filepath = write_html_from_chunks(
+            self.outputs[self.selected_cell].output.chunks, self.runtime._alloc_file
+        )
+        if filepath is None:
+            if not silent:
+                notify_warn(self.nvim, "No HTML output to open.")
+            return True
+
+        opencmd = self.options.open_cmd
+        import platform
+
+        if opencmd is None:
+            match platform.system():
+                case "Darwin":
+                    opencmd = "open"
+                case "Linux":
+                    opencmd = "xdg-open"
+                case "Windows":
+                    opencmd = "start"
+
+        if opencmd is None:
+            notify_warn(self.nvim, f"Can't open in browser, OS unsupported: {platform.system()}")
+        else:
+            import subprocess
+
+            subprocess.run([opencmd, filepath])
+
+        return True
+
     def _check_if_done_running(self) -> None:
         # TODO: refactor
         is_idle = (self.current_output is None or not self.current_output in self.outputs) or (
@@ -147,7 +184,16 @@ class MoltenKernel:
         if self.current_output is None or not self.current_output in self.outputs:
             did_stuff = self.runtime.tick(None)
         else:
-            did_stuff = self.runtime.tick(self.outputs[self.current_output].output)
+            output = self.outputs[self.current_output].output
+            starting_status = output.status
+            did_stuff = self.runtime.tick(output)
+
+            if (
+                self.options.auto_open_html_in_browser
+                and starting_status != OutputStatus.DONE
+                and output.status == OutputStatus.DONE
+            ):
+                self.open_in_browser(silent=True)
         if did_stuff:
             self.update_interface()
         if not was_ready and self.runtime.is_ready():
@@ -345,3 +391,29 @@ class MoltenKernel:
         return hashlib.md5(
             "\n".join(self.nvim.current.buffer.api.get_lines(0, -1, True)).encode("utf-8")
         ).hexdigest()
+
+
+def write_html_from_chunks(
+    chunks: List[OutputChunk],
+    alloc_file: Callable[
+        [str, str],
+        "AbstractContextManager[Tuple[str, IO[bytes]]]",
+    ],
+) -> Optional[str]:
+    """Build an HTML file from the given chunks.
+    Returns: the filepath of the HTML file, or none if there is no HTML output in the chunks
+    """
+    html = ""
+    for chunk in chunks:
+        if (
+            chunk.output_type == "display_data"
+            and chunk.jupyter_data
+            and "text/html" in chunk.jupyter_data
+        ):
+            html += chunk.jupyter_data["text/html"]
+
+    if html != "":
+        with alloc_file("html", "w") as (path, file):
+            file.write(html)  # type: ignore
+        return path
+    return None

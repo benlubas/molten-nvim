@@ -458,6 +458,17 @@ class Molten:
         for kernel in molten_kernels:
             kernel.enter_output()
 
+    @pynvim.command("MoltenOpenInBrowser", sync=True)  # type: ignore
+    @nvimui  # type: ignore
+    def command_open_in_browser(self) -> None:
+        molten_kernels = self._get_current_buf_kernels(True)
+        assert molten_kernels is not None
+
+        for kernel in molten_kernels:
+            if kernel.open_in_browser():
+                notify_info(self.nvim, "Opened in browser")
+                return
+
     @pynvim.command("MoltenEvaluateArgument", nargs="*", sync=True)  # type: ignore
     @nvimui
     def commnand_molten_evaluate_argument(self, args: List[str]) -> None:

@@ -31,8 +31,8 @@ class JupyterRuntime:
     state: RuntimeState
     kernel_name: str
 
-    kernel_manager: jupyter_client.KernelManager
-    kernel_client: jupyter_client.KernelClient
+    kernel_manager: jupyter_client.KernelManager  # type: ignore
+    kernel_client: jupyter_client.KernelClient  # type: ignore
 
     allocated_files: List[str]
 
@@ -228,4 +228,4 @@ class JupyterRuntime:
 
 
 def get_available_kernels() -> List[str]:
-    return list(jupyter_client.kernelspec.find_kernel_specs().keys())
+    return list(jupyter_client.kernelspec.find_kernel_specs().keys())  # type: ignore
