@@ -32,10 +32,12 @@ class HL:
 
 class MoltenOptions:
     auto_open_output: bool
+    auto_open_html_in_browser: bool
     copy_output: bool
     enter_output_behavior: str
     image_provider: str
     limit_output_chars: int
+    open_cmd: Optional[str]
     output_crop_border: bool
     output_show_more: bool
     output_virt_lines: bool
@@ -60,10 +62,12 @@ class MoltenOptions:
         self.hl = HL()
         # fmt: off
         CONFIG_VARS = [
+            ("molten_auto_open_html_in_browser", False),
             ("molten_auto_open_output", True),
             ("molten_copy_output", False),
             ("molten_enter_output_behavior", "open_then_enter"),
             ("molten_image_provider", "none"),
+            ("molten_open_cmd", None),
             ("molten_output_crop_border", True),
             ("molten_output_show_more", False),
             ("molten_output_virt_lines", False),
