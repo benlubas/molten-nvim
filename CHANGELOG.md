@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.2.0](https://github.com/benlubas/molten-nvim/compare/v1.1.6...v1.2.0) (2023-12-16)
+
+
+### Features
+
+* :ReevaluateAllCells command ([#85](https://github.com/benlubas/molten-nvim/issues/85)) ([6da3d19](https://github.com/benlubas/molten-nvim/commit/6da3d1934922bfde5ba6ccf27b465a23e6190115))
+* cache output text for floats ([#84](https://github.com/benlubas/molten-nvim/issues/84)) ([1ba4023](https://github.com/benlubas/molten-nvim/commit/1ba4023319c23a49f575d5b6a6d37239a4d3312f))
+* MoltenEvaluateRange non-strict indexing ([#81](https://github.com/benlubas/molten-nvim/issues/81)) ([955b0e8](https://github.com/benlubas/molten-nvim/commit/955b0e8d1beecce0e78b4a7b5b70037a16daa94d))
+* MoltenOpenInBrowser command ([#87](https://github.com/benlubas/molten-nvim/issues/87)) ([ebf2bda](https://github.com/benlubas/molten-nvim/commit/ebf2bda74e8b903222ad0378ffda57c9afb5cc84))
+
+
+### Bug Fixes
+
+* account for windows not at the top of screen ([#82](https://github.com/benlubas/molten-nvim/issues/82)) ([900441a](https://github.com/benlubas/molten-nvim/commit/900441aa5d39e1847d180b7aead7b538c4678176))
+* window positioning logic (again) ([#89](https://github.com/benlubas/molten-nvim/issues/89)) ([aa45835](https://github.com/benlubas/molten-nvim/commit/aa45835f2830b1040568f32060e4b5ecb2e003f6))
+
 ## [1.1.6](https://github.com/benlubas/molten-nvim/compare/v1.1.5...v1.1.6) (2023-12-10)
 
 
