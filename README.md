@@ -335,6 +335,7 @@ tested common formats
 [Plotly](https://plotly.com/python/) + [Kaleido](https://github.com/plotly/Kaleido)
 - `text/latex`: A LaTeX formula. Rendered into a PNG with
 [pnglatex](https://pypi.org/project/pnglatex/)
+- `text/html`: via the `:MoltenOpenInBrowser` command.
 
 This already provides quite a bit of basic functionality, but if you find a use case for a mime-type
 that isn't currently supported, feel free to open an issue and/or PR!
