@@ -9,7 +9,7 @@ from molten.utils import MoltenException, notify_error, notify_info, notify_warn
 NOTEBOOK_VERSION = 4
 
 
-def get_default_export_file(nvim: Nvim, buffer: Buffer) -> str:
+def get_default_import_export_file(nvim: Nvim, buffer: Buffer) -> str:
     # WARN: this is string containment checking, not array containment checking.
     if "nofile" in buffer.options["buftype"]:
         raise MoltenException("Buffer does not correspond to a file")
@@ -19,6 +19,30 @@ def get_default_export_file(nvim: Nvim, buffer: Buffer) -> str:
     full_path = os.path.join(cwd, file_name)
     return f"{os.path.splitext(full_path)[0]}.ipynb"
 
+
+def import_outputs(nvim: Nvim, kernel: MoltenKernel, filepath: str):
+    """Import outputs from an .ipynb file with the given name"""
+    if not filepath.endswith(".ipynb"):
+        filepath += ".ipynb"
+
+    if not os.path.exists(filepath):
+        notify_warn(nvim, f"Cannot import from file: {filepath} because it does not exist.")
+        return
+
+    buffer_contents = nvim.current.buffer[:]
+    nvim.out_write(str(buffer_contents) + '\n')
+    nb = nbformat.read(filepath, as_version=NOTEBOOK_VERSION)
+    # for each code cell in the notebook, find text that matches in the molten buffer. Once we find
+    # text that matches in the buffer:
+    # - adjust the start of the molten buffer search to the end of the matched text.
+    # - add the cell output from the notebook to a list of outputs that we'll potentially add at the
+    # end
+
+    # Error handling. If we make it to the end of the molten buffer and we haven't matched all the
+    # cells in the notebook, error.
+
+    # Success Condition. If we make it through all the cells in the notebook, we can add the
+    # outputs, and display them.
 
 def export_outputs(nvim: Nvim, kernel: MoltenKernel, filepath: str, overwrite: bool):
     """Export outputs of the current file/kernel to a .ipynb file with the given name."""
