@@ -181,6 +181,6 @@ def export_outputs(nvim: Nvim, kernel: MoltenKernel, filepath: str, overwrite: b
 def compare_contents(nvim: Nvim, nb_cell, code_cell: CodeCell, lang: str) -> bool:
     molten_contents = code_cell.get_text(nvim)
     nvim.exec_lua("_remove_comments = require('remove_comments').remove_comments")
-    clean_nb = nvim.lua._remove_comments(nb_cell["source"], lang)
+    clean_nb = nvim.lua._remove_comments(nb_cell["source"] + "\n", lang)
     clean_molten = nvim.lua._remove_comments(molten_contents + "\n", lang)
     return clean_nb == clean_molten
