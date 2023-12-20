@@ -1,8 +1,12 @@
+from typing import Dict
 from pynvim.api import Buffer, Nvim
 from molten.code_cell import CodeCell
 from molten.moltenbuffer import MoltenKernel
 import os
 import nbformat
+from molten.outputbuffer import OutputBuffer
+from molten.outputchunks import Output, to_outputchunk
+from molten.position import DynamicPosition
 
 from molten.utils import MoltenException, notify_error, notify_info, notify_warn
 
@@ -29,20 +33,83 @@ def import_outputs(nvim: Nvim, kernel: MoltenKernel, filepath: str):
         notify_warn(nvim, f"Cannot import from file: {filepath} because it does not exist.")
         return
 
-    buffer_contents = nvim.current.buffer[:]
-    nvim.out_write(str(buffer_contents) + '\n')
+    buf_line = 0
+    buf = nvim.current.buffer
+    buffer_contents = buf[:]
     nb = nbformat.read(filepath, as_version=NOTEBOOK_VERSION)
-    # for each code cell in the notebook, find text that matches in the molten buffer. Once we find
-    # text that matches in the buffer:
-    # - adjust the start of the molten buffer search to the end of the matched text.
-    # - add the cell output from the notebook to a list of outputs that we'll potentially add at the
-    # end
 
-    # Error handling. If we make it to the end of the molten buffer and we haven't matched all the
-    # cells in the notebook, error.
+    molten_outputs: Dict[CodeCell, Output] = {}
 
-    # Success Condition. If we make it through all the cells in the notebook, we can add the
-    # outputs, and display them.
+    for cell in nb["cells"]:
+        if cell["cell_type"] != "code" or "outputs" not in cell:
+            continue
+
+        nb_contents = cell["source"].split("\n")
+        nb_line = 0
+        while buf_line < len(buffer_contents):
+            if len(nb_contents) == 0:
+                break  # out of while loop
+            if nb_contents[nb_line] != buffer_contents[buf_line]:
+                # move on to the next buffer line, but reset the nb_line
+                nb_line = 0
+                buf_line += 1
+                continue
+
+            if nb_line >= len(nb_contents) - 1:
+                # we're done. This is a match, we'll create the output
+                output = Output(cell["execution_count"])
+                output.old = True
+                for output_data in cell["outputs"]:
+                    output.chunks.append(
+                        to_outputchunk(
+                            nvim,
+                            kernel.runtime._alloc_file,
+                            output_data["data"],
+                            output_data["metadata"],
+                            kernel.options,
+                        )
+                    )
+                start = DynamicPosition(
+                    nvim,
+                    kernel.extmark_namespace,
+                    buf.number,
+                    buf_line - (len(nb_contents) - 1),
+                    0,
+                )
+                end = DynamicPosition(
+                    nvim, kernel.extmark_namespace, buf.number, buf_line, len(buf[buf_line])
+                )
+                code_cell = CodeCell(nvim, start, end)
+                molten_outputs[code_cell] = output
+                nb_line = 0
+                buf_line += 1
+                break  # out of the while loop
+
+            buf_line += 1
+            nb_line += 1
+
+    # TODO: There's probably some error handling to be done here
+    failed = 0
+    for span, output in molten_outputs.items():
+        if kernel.try_delete_overlapping_cells(span):
+            kernel.outputs[span] = OutputBuffer(
+                kernel.nvim,
+                kernel.canvas,
+                kernel.extmark_namespace,
+                kernel.options,
+            )
+            kernel.outputs[span].output = output
+            kernel.update_interface()
+        else:
+            failed += 1
+
+    notify_info(nvim, f"Successfully loaded {len(molten_outputs) - failed} outputs cells")
+
+    if failed > 0:
+        notify_error(
+            nvim, f"Failed to load output for {failed} running cell that would be overridden"
+        )
+
 
 def export_outputs(nvim: Nvim, kernel: MoltenKernel, filepath: str, overwrite: bool):
     """Export outputs of the current file/kernel to a .ipynb file with the given name."""
@@ -90,6 +157,7 @@ def export_outputs(nvim: Nvim, kernel: MoltenKernel, filepath: str, overwrite: b
                     for chunk in output.output.chunks
                 ]
                 nb_cell["outputs"] = outputs
+                nb_cell["execution_count"] = output.output.execution_count
                 break  # break out of the while loop
 
         if not matched:
