@@ -3,7 +3,6 @@ from pynvim.api import Buffer, Nvim
 from molten.code_cell import CodeCell
 from molten.moltenbuffer import MoltenKernel
 import os
-import nbformat
 from molten.outputbuffer import OutputBuffer
 from molten.outputchunks import Output, to_outputchunk
 from molten.position import DynamicPosition
@@ -26,6 +25,7 @@ def get_default_import_export_file(nvim: Nvim, buffer: Buffer) -> str:
 
 def import_outputs(nvim: Nvim, kernel: MoltenKernel, filepath: str):
     """Import outputs from an .ipynb file with the given name"""
+    import nbformat
     if not filepath.endswith(".ipynb"):
         filepath += ".ipynb"
 
@@ -113,6 +113,7 @@ def import_outputs(nvim: Nvim, kernel: MoltenKernel, filepath: str):
 
 def export_outputs(nvim: Nvim, kernel: MoltenKernel, filepath: str, overwrite: bool):
     """Export outputs of the current file/kernel to a .ipynb file with the given name."""
+    import nbformat
 
     if not filepath.endswith(".ipynb"):
         filepath += ".ipynb"
