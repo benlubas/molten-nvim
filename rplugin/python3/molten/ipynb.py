@@ -2,7 +2,6 @@ from pynvim.api import Buffer, Nvim
 from molten.code_cell import CodeCell
 from molten.moltenbuffer import MoltenKernel
 import os
-import nbformat
 
 from molten.utils import MoltenException, notify_error, notify_info, notify_warn
 
@@ -22,6 +21,7 @@ def get_default_export_file(nvim: Nvim, buffer: Buffer) -> str:
 
 def export_outputs(nvim: Nvim, kernel: MoltenKernel, filepath: str, overwrite: bool):
     """Export outputs of the current file/kernel to a .ipynb file with the given name."""
+    import nbformat
 
     if not filepath.endswith(".ipynb"):
         filepath += ".ipynb"
