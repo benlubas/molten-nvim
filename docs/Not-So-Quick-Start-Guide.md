@@ -69,7 +69,7 @@ version = "1.1.0",
 #### Python Deps
 
 **Note**: It's recommended that you install python packages in a virtual environment as outlined in
-the [venv guide](Virtual-Environments)
+the [venv guide](./Virtual-Environments.md)
 
 **Absolutely necessary python packages:**
 - [`pynvim`](https://github.com/neovim/pynvim) (for the Remote Plugin API)
@@ -88,7 +88,7 @@ the [venv guide](Virtual-Environments)
 - `plotly` and `kaleido` (for displaying Plotly figures)
     - In order to render plotly figures you might also needed `nbformat` installed in the project
     venv, unfortunately installing it in the neovim venv did not work (see [venv
-    guide](Virtual-Environments))
+    guide](./Virtual-Environments.md))
 - `pyperclip` if you want to use `molten_copy_output`
 
 #### .NET Deps
