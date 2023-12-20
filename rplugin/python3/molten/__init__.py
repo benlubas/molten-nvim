@@ -360,6 +360,8 @@ class Molten:
             return []
         if len(args) > 0 and args[0]:
             buf = self.nvim.current.buffer.number
+            if buf not in self.buffers:
+                return []
             return [x.kernel_id for x in self.buffers[buf]]
         return list(self.molten_kernels.keys())
 
