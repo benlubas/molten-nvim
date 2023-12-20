@@ -22,7 +22,6 @@ class OutputBuffer:
     extmark_namespace: int
     virt_text_id: Optional[int]
     displayed_status: OutputStatus
-    float_win_real_height: int
 
     options: MoltenOptions
     lua: Any
@@ -39,7 +38,6 @@ class OutputBuffer:
         self.extmark_namespace = extmark_namespace
         self.virt_text_id = None
         self.displayed_status = OutputStatus.HOLD
-        self.float_win_real_height = 0
 
         self.options = options
         self.nvim.exec_lua("_ow = require('output_window')")
@@ -229,6 +227,9 @@ class OutputBuffer:
         win_height -= border_h
         win_width -= border_w
 
+        # Clear buffer:
+        self.nvim.funcs.deletebufline(self.display_buf.number, 1, "$")
+
         sign_col_width = 0
         text_off = self.nvim.funcs.getwininfo(win.handle)[0]["textoff"]
         if not self.options.output_win_cover_gutter:
@@ -240,27 +241,20 @@ class OutputBuffer:
             win_width - sign_col_width,
             win_height,
         )
+        lines, real_height = self.build_output_text(shape, self.display_buf.number, False)
 
-        if not self.displayed_status == OutputStatus.DONE or len(self.display_buf[0]) == 0:
-            lines, real_height = self.build_output_text(shape, self.display_buf.number, False)
-            self.float_win_real_height = real_height
-            # Clear buffer:
-            self.nvim.funcs.deletebufline(self.display_buf.number, 1, "$")
-
-            # You can't append lines normally, there will be a blank line at the top
-            self.display_buf[0] = lines[0]
-            self.display_buf.append(lines[1:])
-            self.nvim.api.set_option_value(
-                "filetype", "molten_output", {"buf": self.display_buf.handle}
-            )
-
-        self.displayed_status = self.output.status
+        # You can't append lines normally, there will be a blank line at the top
+        self.display_buf[0] = lines[0]
+        self.display_buf.append(lines[1:])
+        self.nvim.api.set_option_value(
+            "filetype", "molten_output", {"buf": self.display_buf.handle}
+        )
 
         # Open output window
         # assert self.display_window is None
         if win_row < win_height:
             border = self.options.output_win_border
-            max_height = min(self.float_win_real_height + 1, self.options.output_win_max_height)
+            max_height = min(real_height + 1, self.options.output_win_max_height)
             height = min(win_height - win_row, max_height)
 
             cropped = False
