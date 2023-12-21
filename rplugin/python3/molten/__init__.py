@@ -8,7 +8,7 @@ from pynvim.api import Buffer
 from molten.code_cell import CodeCell
 from molten.images import Canvas, get_canvas_given_provider
 from molten.info_window import create_info_window
-from molten.ipynb import export_outputs, get_default_export_file
+from molten.ipynb import export_outputs, get_default_import_export_file, import_outputs
 from molten.save_load import MoltenIOError, get_default_save_file, load, save
 from molten.moltenbuffer import MoltenKernel
 from molten.options import MoltenOptions
@@ -713,6 +713,30 @@ class Molten:
 
         self._update_interface()
 
+    @pynvim.command("MoltenImportOutput", nargs="*", sync=True)  # type: ignore
+    @nvimui  # type: ignore
+    def command_import(self, args) -> None:
+        self._initialize_if_necessary()
+
+        buf = self.nvim.current.buffer
+        if len(args) > 0:
+            path = args[0]
+        else:
+            path = get_default_import_export_file(self.nvim, buf)
+
+        if len(args) > 1:
+            kernel = args[1]
+        else:
+            self.kernel_check(f"MoltenImportOutput", path, buf, kernel_last=True)
+            return
+
+        kernels = self._get_current_buf_kernels(True)
+        assert kernels is not None
+        for molten in kernels:
+            if molten.kernel_id == kernel:
+                import_outputs(self.nvim, molten, path)
+                break
+
     @pynvim.command("MoltenExportOutput", nargs="*", sync=True, bang=True)  # type: ignore
     @nvimui  # type: ignore
     def command_export(self, args, bang: bool) -> None:
@@ -722,7 +746,7 @@ class Molten:
         if len(args) > 0:
             path = args[0]
         else:
-            path = get_default_export_file(self.nvim, buf)
+            path = get_default_import_export_file(self.nvim, buf)
 
         if len(args) > 1:
             kernel = args[1]

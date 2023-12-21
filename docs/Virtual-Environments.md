@@ -80,5 +80,5 @@ vim.keymap.set("n", "<localleader>ip", function()
   else
     vim.cmd("MoltenInit python3")
   end
-end, { desc = "Initialize Molten for python3", silent = true, noremap = true })
+end, { desc = "Initialize Molten for python3", silent = true })
 ```
