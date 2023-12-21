@@ -8,11 +8,11 @@ end
 
 local py_mod_check = function(mod, pip, required)
   if has_py_mod(mod) then
-    vim.health.ok("Python package " .. pip .. " found")
+    vim.health.ok("Python module " .. pip .. " found")
   elseif required then
-    vim.health.error("Python package " .. pip .. " not found", "pip install " .. pip)
+    vim.health.error("Required python module " .. pip .. " not found", "pip install " .. pip)
   else
-    vim.health.warn("Python package " .. pip .. " not found", "pip install " .. pip)
+    vim.health.warn("Optional python module " .. pip .. " not found", "pip install " .. pip)
   end
 end
 
@@ -44,6 +44,7 @@ M.check = function()
   py_mod_check("plotly", "plotly", false)
   py_mod_check("kaleido", "kaleido", false)
   py_mod_check("pyperclip", "pyperclip", false)
+  py_mod_check("nbformat", "nbformat", false)
 end
 
 return M
