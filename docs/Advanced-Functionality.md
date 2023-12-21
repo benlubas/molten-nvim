@@ -98,9 +98,52 @@ sync with each other.
 ### Shortcomings
 
 #### cell matching
+
 Cells are matched by code content (comments are ignored). As a result, **if you have two or more
 code cells that have the same code content, and only the second one has output, molten will export
 that output to the first cell in the notebook**.
 
 To avoid this, just don't create cells that are identical. If you must, just execute both before
 exporting, they will be correctly lined up.
+
+## Importing Outputs
+
+> [!NOTE]
+> This command is considered experimental, and while it works well enough to be used. There are
+> likely still bugs. So if you find them, don't hesitate to create an issue.
+
+With the `:MoltenImportOutput` command, you can 'import' cell outputs from a Jupyter Notebook
+(`.ipynb` file).
+
+Like `:MoltenExportOutput`, this command is intended for use with tools like Quarto, or Jupytext,
+which convert notebooks to plaintext, but it's implemented in such a way that the plaintext file
+format shouldn't matter, as long as the code contents of the cells matches up.
+
+### Usage
+
+**Unlike `:MoltenLoad`, you need to have a kernel running for this command to work.**
+
+`:MoltenImportOutput` will look for a matching file name to import outputs from (ie, if you're
+editing `/foo/bar/notebook.md`, molten looks for `/foo/bar/notebook.ipynb`). If this file exists,
+molten reads through the file, comparing lines of code cells from the notebook with lines from the
+buffer to determine where cells are. Comments are ignored.
+
+You can specify a file path as the first argument. `:MoltenImportOutput
+/some/other/path/other_file.ipynb` then Molten will import output from
+`/some/other/path/other_file.ipynb`.
+
+If there are multiple kernels attached to the buffer when the command is called, you will be
+prompted for which kernel the outputs should be defined on. This effects the behavior of
+`:MoltenReevaluateCell` and `:MoltenReevaluateAll`).
+
+### Error cases
+
+Because of the generally harmless nature of loading outputs and displaying them, this command
+doesn't care as much about matching every single cell in the notebook. You will not be able to
+import output for a cell that is running, empty outputs are ignored, non matching code cells are
+skipped over because molten has no concept of cells in a new neovim buffer.
+### Shortcomings
+
+#### Plaintext cell matching
+If, for some reason you have markdown text that is exactly the same as a code cell, and the markdown
+comes before the code cell, molten will attach the output to the markdown text.

@@ -26,6 +26,7 @@ def get_default_import_export_file(nvim: Nvim, buffer: Buffer) -> str:
 def import_outputs(nvim: Nvim, kernel: MoltenKernel, filepath: str):
     """Import outputs from an .ipynb file with the given name"""
     import nbformat
+
     if not filepath.endswith(".ipynb"):
         filepath += ".ipynb"
 
@@ -56,6 +57,9 @@ def import_outputs(nvim: Nvim, kernel: MoltenKernel, filepath: str):
                 continue
 
             if nb_line >= len(nb_contents) - 1:
+                if len(cell["outputs"]) == 0:
+                    buf_line += 1
+                    break
                 # we're done. This is a match, we'll create the output
                 output = Output(cell["execution_count"])
                 output.old = True
@@ -88,7 +92,6 @@ def import_outputs(nvim: Nvim, kernel: MoltenKernel, filepath: str):
             buf_line += 1
             nb_line += 1
 
-    # TODO: There's probably some error handling to be done here
     failed = 0
     for span, output in molten_outputs.items():
         if kernel.try_delete_overlapping_cells(span):
@@ -103,8 +106,12 @@ def import_outputs(nvim: Nvim, kernel: MoltenKernel, filepath: str):
         else:
             failed += 1
 
-    notify_info(nvim, f"Successfully loaded {len(molten_outputs) - failed} outputs cells")
+    loaded = len(molten_outputs) - failed
 
+    if len(molten_outputs) == 0:
+        notify_warn(nvim, "No cell outputs to import")
+    elif loaded > 0:
+        notify_info(nvim, f"Successfully loaded {loaded} outputs cells")
     if failed > 0:
         notify_error(
             nvim, f"Failed to load output for {failed} running cell that would be overridden"
