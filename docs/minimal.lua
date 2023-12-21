@@ -2,39 +2,56 @@
 package.path = package.path .. ";" .. vim.fn.expand("$HOME") .. "/.luarocks/share/lua/5.1/?/init.lua"
 package.path = package.path .. ";" .. vim.fn.expand("$HOME") .. "/.luarocks/share/lua/5.1/?.lua"
 
--- You should specify your python3 path here.
-vim.g.python3_host_prog = vim.fn.expand("$HOME") .. "YOUR PATH"
+--        You should specify your python3 path here \/.
+vim.g.python3_host_prog = vim.fn.expand("$HOME") .. "/.virtualenvs/neovim/bin/python3"
 
-local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
+local root = vim.fn.fnamemodify("./.repro", ":p")
+
+-- set stdpaths to use .repro
+for _, name in ipairs({ "config", "data", "state", "cache" }) do
+  vim.env[("XDG_%s_HOME"):format(name:upper())] = root .. "/" .. name
+end
+
+-- bootstrap lazy
+local lazypath = root .. "/plugins/lazy.nvim"
 if not vim.loop.fs_stat(lazypath) then
   vim.fn.system({
     "git",
     "clone",
     "--filter=blob:none",
+    "--single-branch",
     "https://github.com/folke/lazy.nvim.git",
-    "--branch=stable", -- latest stable release
     lazypath,
   })
 end
-vim.opt.rtp:prepend(lazypath)
+vim.opt.runtimepath:prepend(lazypath)
 
 -- install plugins
 local plugins = {
-  { "bluz71/vim-moonfly-colors" }, -- don't change the color scheme
+  {
+    "bluz71/vim-moonfly-colors",
+    lazy = false,
+    priority = 1000,
+    config = function()
+      vim.cmd.syntax("enable")
+      vim.cmd.colorscheme("moonfly")
+
+      vim.api.nvim_set_hl(0, "MoltenOutputBorder", { link = "Normal" })
+      vim.api.nvim_set_hl(0, "MoltenOutputBorderFail", { link = "MoonflyCrimson" })
+      vim.api.nvim_set_hl(0, "MoltenOutputBorderSuccess", { link = "MoonflyBlue" })
+    end,
+  },
   {
     "benlubas/molten-nvim",
     dependencies = { "3rd/image.nvim" },
     build = ":UpdateRemotePlugins",
     init = function()
-      -- Comment/uncomment config as you need to. Change as few defaults as possible to reproduce
-      -- the issue.
       vim.g.molten_image_provider = "image.nvim"
-      -- vim.g.molten_output_win_max_height = 12 -- these all have their default values currently
-      -- vim.g.molten_virt_text_output = false
-      -- vim.g.molten_output_win_border = { "", "━", "", "" }
-      -- vim.g.molten_wrap_output = false
+      vim.g.molten_use_border_highlights = true
+      -- add a few new things
 
-      -- don't change the mappings
+      -- don't change the mappings (unless it's related to your bug)
+      vim.keymap.set("n", "<localleader>mi", ":MoltenInit<CR>")
       vim.keymap.set("n", "<localleader>e", ":MoltenEvaluateOperator<CR>")
       vim.keymap.set("n", "<localleader>rr", ":MoltenReevaluateCell<CR>")
       vim.keymap.set("v", "<localleader>r", ":<C-u>MoltenEvaluateVisual<CR>gv")
@@ -65,16 +82,18 @@ local plugins = {
         ensure_installed = {
           "markdown",
           "markdown_inline",
+          "python",
+        },
+        highlight = {
+          enable = true,
+          additional_vim_regex_highlighing = false,
         },
       })
     end,
   },
+  -- add any additional plugins here
 }
 
-require("lazy").setup(plugins)
-
-vim.cmd.colorscheme("moonfly")
-
-vim.api.nvim_set_hl(0, "MoltenOutputBorder", { link = "Normal" })
-vim.api.nvim_set_hl(0, "MoltenOutputBorderFail", { link = "MoonflyCrimson" })
-vim.api.nvim_set_hl(0, "MoltenOutputBorderSuccess", { link = "MoonflyBlue" })
+require("lazy").setup(plugins, {
+  root = root .. "/plugins",
+})
