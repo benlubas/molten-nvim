@@ -71,6 +71,9 @@ class Molten:
         self._setup_highlights()
         self._set_autocommands()
 
+        self.nvim.exec_lua("_prompt_init = require('prompt').prompt_init")
+        self.nvim.exec_lua("_select_and_run = require('prompt').select_and_run")
+
         self.initialized = True
 
     def _set_autocommands(self) -> None:
@@ -218,41 +221,21 @@ class Molten:
             self._initialize_buffer(kernel_name, shared=shared)
         else:
             PROMPT = "Select the kernel to launch:"
-            available_kernels = get_available_kernels()
-
-            if len(available_kernels) == 0:
-                notify_error(self.nvim, "Unable to find any kernels to launch.")
-                return
+            available_kernels = [(x, False) for x in get_available_kernels()]
+            running_kernels = [(x, True) for x in self.molten_kernels.keys()]
 
             if shared:
-                # Only show kernels that are already tracked by Molten
-                available_kernels = list(
-                    filter(lambda x: x in self.molten_kernels.keys(), available_kernels)
-                )
+                # only show running kernels
+                available_kernels = []
 
-            if len(available_kernels) == 0:
+            kernels = available_kernels + running_kernels
+            if len(kernels) == 0:
                 notify_error(
-                    self.nvim,
-                    "No running kernels to share. Please use :MoltenInit without the shared option.",
+                    self.nvim, f"Unable to find any {'shared' if shared else ''}kernels to launch."
                 )
                 return
 
-            lua = f"""
-                vim.schedule_wrap(function()
-                    vim.ui.select(
-                        {{{", ".join(repr(x) for x in available_kernels)}}},
-                        {{prompt = "{PROMPT}"}},
-                        function(choice)
-                            if choice ~= nil then
-                                vim.schedule_wrap(function()
-                                    vim.cmd("MoltenInit {'shared ' if shared else ''}" .. choice)
-                                end)()
-                            end
-                        end
-                    )
-                end)()
-            """
-            self.nvim.exec_lua(lua, async_=False)
+            self.nvim.lua._prompt_init(kernels, PROMPT)
 
     def _deinit_buffer(self, molten_kernels: List[MoltenKernel]) -> None:
         # Have to copy this to get around reference issues
@@ -479,7 +462,9 @@ class Molten:
         ):
             self._do_evaluate_expr(args[0], " ".join(args[1:]))
         else:
-            self.kernel_check("MoltenEvaluateArgument", " ".join(args), self.nvim.current.buffer)
+            self.kernel_check(
+                f"MoltenEvaluateArgument %k {' '.join(args)}", self.nvim.current.buffer
+            )
 
     @pynvim.command("MoltenEvaluateVisual", nargs="*", sync=True)  # type: ignore
     @nvimui  # type: ignore
@@ -487,7 +472,7 @@ class Molten:
         if len(args) > 0:
             kernel = args[0]
         else:
-            self.kernel_check("MoltenEvaluateVisual", "", self.nvim.current.buffer)
+            self.kernel_check("MoltenEvaluateVisual %k", self.nvim.current.buffer)
             return
         _, lineno_begin, colno_begin, _ = self.nvim.funcs.getpos("'<")
         _, lineno_end, colno_end, _ = self.nvim.funcs.getpos("'>")
@@ -524,8 +509,7 @@ class Molten:
 
         if not kernel:
             self.kernel_check(
-                "call MoltenEvaluateRange('",
-                f"', {start_line}, {end_line}, {start_col}, {end_col})",
+                f"call MoltenEvaluateRange('%k', {start_line}, {end_line}, {start_col}, {end_col})",
                 self.nvim.current.buffer,
             )
             return
@@ -556,20 +540,13 @@ class Molten:
         if len(args) > 0 and args[0]:
             self._do_evaluate(args[0], span)
         else:
-            self.kernel_check("MoltenEvaluateLine", "", self.nvim.current.buffer)
+            self.kernel_check("MoltenEvaluateLine %k", self.nvim.current.buffer)
 
-    def kernel_check(
-        self, command: str, command_args: str, buffer: Buffer, kernel_last=False
-    ) -> None:
+    def kernel_check(self, command: str, buffer: Buffer) -> None:
         """Figure out if there is more than one kernel attached to the given buffer. If there is,
-        and there is prompt the user for the kernel name, and run the given command with the new
-        kernel, and arguments. If there is no kernel, throw an error. If there is one kernel, use
-        it"""
-
-        def cmd(kernel_id: str):
-            if kernel_last:
-                return f"{command} {command_args} {kernel_id}"
-            return f"{command} {kernel_id} {command_args}"
+        prompt the user for the kernel name, and run the given command with the new kernel subbed in
+        for %k. If there is no kernel, throw an error. If there is one kernel, use it
+        """
 
         kernels = self.buffers.get(buffer.number)
         if not kernels:
@@ -577,28 +554,12 @@ class Molten:
                 "Molten has not been initialized for this buffer. Please run :MoltenInit"
             )
         elif len(kernels) == 1:
-            c = cmd(kernels[0].kernel_id)
+            c = command.replace("%k", kernels[0].kernel_id)
             self.nvim.command(c)
         else:
             PROMPT = "Please select a kernel:"
             available_kernels = [kernel.kernel_id for kernel in kernels]
-
-            lua = f"""
-                vim.schedule_wrap(function()
-                    vim.ui.select(
-                        {{{", ".join(repr(x) for x in available_kernels)}}},
-                        {{prompt = "{PROMPT}"}},
-                        function(choice)
-                            if choice ~= nil then
-                                vim.schedule_wrap(function()
-                                    vim.cmd("{cmd('".. choice .."')}")
-                                end)()
-                            end
-                        end
-                    )
-                end)()
-            """
-            self.nvim.exec_lua(lua, async_=False)
+            self.nvim.lua._select_and_run(available_kernels, PROMPT, command)
 
     @pynvim.command("MoltenReevaluateAll", nargs=0, sync=True)  # type: ignore
     @nvimui  # type: ignore
@@ -634,7 +595,7 @@ class Molten:
         if len(args) > 0:
             kernel = args[0]
         else:
-            self.kernel_check("MoltenInterrupt", "", self.nvim.current.buffer)
+            self.kernel_check("MoltenInterrupt %k", self.nvim.current.buffer)
             return
 
         molten_kernels = self._get_current_buf_kernels(True)
@@ -652,7 +613,7 @@ class Molten:
         if len(args) > 0:
             kernel = args[0]
         else:
-            self.kernel_check(f"MoltenRestart{'!' if bang else ''}", "", self.nvim.current.buffer)
+            self.kernel_check(f"MoltenRestart{'!' if bang else ''} %k", self.nvim.current.buffer)
             return
 
         molten_kernels = self._get_current_buf_kernels(True)
@@ -671,7 +632,7 @@ class Molten:
         assert molten_kernels is not None
 
         for molten in molten_kernels:
-            if molten.current_output is not None:
+            if molten.selected_cell is not None:
                 molten.delete_current_cell()
                 return
 
@@ -727,7 +688,7 @@ class Molten:
         if len(args) > 1:
             kernel = args[1]
         else:
-            self.kernel_check(f"MoltenImportOutput", path, buf, kernel_last=True)
+            self.kernel_check(f"MoltenImportOutput {path} %k", buf)
             return
 
         kernels = self._get_current_buf_kernels(True)
@@ -751,9 +712,7 @@ class Molten:
         if len(args) > 1:
             kernel = args[1]
         else:
-            self.kernel_check(
-                f"MoltenExportOutput{'!' if bang else ''}", path, buf, kernel_last=True
-            )
+            self.kernel_check(f"MoltenExportOutput{'!' if bang else ''} {path} %k", buf)
             return
 
         kernels = self._get_current_buf_kernels(True)
@@ -777,7 +736,7 @@ class Molten:
         if len(args) > 1:
             kernel = args[1]
         else:
-            self.kernel_check(f"MoltenSave", path, buf, kernel_last=True)
+            self.kernel_check(f"MoltenSave {path} %k", buf)
             return
 
         dirname = os.path.dirname(path)
@@ -919,8 +878,7 @@ class Molten:
         )
 
         self.kernel_check(
-            "call MoltenEvaluateRange('",
-            f"', {span[0][0]}, {span[1][0]}, {span[0][1]}, {span[1][1]})",
+            f"call MoltenEvaluateRange('%k', {span[0][0]}, {span[1][0]}, {span[0][1]}, {span[1][1]})",
             self.nvim.current.buffer,
         )
 
