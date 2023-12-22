@@ -632,7 +632,7 @@ class Molten:
         assert molten_kernels is not None
 
         for molten in molten_kernels:
-            if molten.current_output is not None:
+            if molten.selected_cell is not None:
                 molten.delete_current_cell()
                 return
 
