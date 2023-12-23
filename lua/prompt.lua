@@ -29,19 +29,45 @@ M.prompt_init = function(kernels, prompt)
   end)()
 end
 
+---show the MoltenInit prompt with the given kernels
+---started as shared kernels.
+---@param kernels table<string> list of plain kernel names
+---@param prompt string
+---@param command string command, with %k substituted for the selected kernel name
+M.prompt_init_and_run = function(kernels, prompt, command)
+  vim.schedule_wrap(function()
+    vim.ui.select(kernels, {
+      prompt = prompt,
+    }, function(choice)
+      if choice ~= nil then
+        vim.api.nvim_create_autocmd("User", {
+          pattern = "MoltenKernelReady",
+          once = true,
+          callback = function(e)
+            vim.cmd(command:gsub("%%k", e.data))
+          end,
+        })
+        vim.schedule_wrap(function()
+          vim.cmd("MoltenInit " .. choice)
+        end)()
+      end
+    end)
+  end)()
+end
+
 ---prompt the user for a kernel, and then run the command with that kernel. %k in the command means
 ---the kernel name will be substituted in.
 ---@param kernels table<string> list of kernels
 ---@param prompt string
 ---@param command string command, with %k substituted for the selected kernel name
-M.select_and_run = function (kernels, prompt, command)
+M.select_and_run = function(kernels, prompt, command)
   vim.schedule_wrap(function()
     vim.ui.select(kernels, {
       prompt = prompt,
     }, function(choice)
       if choice ~= nil then
         vim.schedule_wrap(function()
-            vim.cmd(command:gsub("%%k", choice))
+          vim.cmd(command:gsub("%%k", choice))
         end)()
       end
     end)

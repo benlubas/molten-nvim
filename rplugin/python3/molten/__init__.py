@@ -73,6 +73,7 @@ class Molten:
 
         self.nvim.exec_lua("_prompt_init = require('prompt').prompt_init")
         self.nvim.exec_lua("_select_and_run = require('prompt').select_and_run")
+        self.nvim.exec_lua("_prompt_init_and_run = require('prompt').prompt_init_and_run")
 
         self.initialized = True
 
@@ -101,10 +102,6 @@ class Molten:
         if self.timer is not None:
             self.nvim.funcs.timer_stop(self.timer)
 
-    def guard_init(self) -> None:
-        if not self.initialized:
-            raise MoltenException("Molten is not initialized; run `:MoltenInit` to initialize.")
-
     def _initialize_if_necessary(self) -> None:
         if not self.initialized:
             self._initialize()
@@ -112,8 +109,17 @@ class Molten:
     def _get_current_buf_kernels(self, requires_instance: bool) -> Optional[List[MoltenKernel]]:
         maybe_molten = self.buffers.get(self.nvim.current.buffer.number)
         if requires_instance and (maybe_molten is None or len(maybe_molten) == 0):
-            raise MoltenException("Molten is not initialized; run `:MoltenInit` to initialize.")
+            self.handle_no_kernels()
         return maybe_molten
+
+    def handle_no_kernels(self) -> None:
+        self._initialize_if_necessary()
+        match self.options.auto_init_behavior:
+            case "raise":
+                raise MoltenException("Molten is not initialized; run `:MoltenInit` to initialize.")
+            case "init":
+                self.nvim.command("MoltenInit")
+                return
 
     def _clear_on_buf_leave(self) -> None:
         if not self.initialized:
@@ -254,9 +260,9 @@ class Molten:
         assert kernels is not None
 
         kernel = None
-        for kernel in kernels:
-            if kernel.kernel_id == kernel_name:
-                kernel = kernel
+        for k in kernels:
+            if k.kernel_id == kernel_name:
+                kernel = k
                 break
         if kernel is None:
             raise MoltenException(f"Kernel {kernel_name} not found")
@@ -325,7 +331,7 @@ class Molten:
     @pynvim.function("MoltenUpdateOption", sync=True)  # type: ignore
     @nvimui  # type: ignore
     def function_update_option(self, args) -> None:
-        self.guard_init()
+        self._initialize_if_necessary()
 
         if len(args) == 2:
             option, value = args
@@ -547,12 +553,15 @@ class Molten:
         prompt the user for the kernel name, and run the given command with the new kernel subbed in
         for %k. If there is no kernel, throw an error. If there is one kernel, use it
         """
+        self._initialize_if_necessary()
+        # self.nvim.out_write("kernel check\n")
 
         kernels = self.buffers.get(buffer.number)
         if not kernels:
-            raise MoltenException(
-                "Molten has not been initialized for this buffer. Please run :MoltenInit"
-            )
+            # self.nvim.out_write("no kernels \n")
+            available_kernels = get_available_kernels()
+            PROMPT = "You Need to Initialize a Kernel First:"
+            self.nvim.lua._prompt_init_and_run(available_kernels, PROMPT, command)
         elif len(kernels) == 1:
             c = command.replace("%k", kernels[0].kernel_id)
             self.nvim.command(c)
