@@ -107,19 +107,14 @@ class Molten:
             self._initialize()
 
     def _get_current_buf_kernels(self, requires_instance: bool) -> Optional[List[MoltenKernel]]:
+        self._initialize_if_necessary()
+
         maybe_molten = self.buffers.get(self.nvim.current.buffer.number)
         if requires_instance and (maybe_molten is None or len(maybe_molten) == 0):
-            self.handle_no_kernels()
+            raise MoltenException(
+                "Molten is not initialized in this buffer; run `:MoltenInit` to initialize."
+            )
         return maybe_molten
-
-    def handle_no_kernels(self) -> None:
-        self._initialize_if_necessary()
-        match self.options.auto_init_behavior:
-            case "raise":
-                raise MoltenException("Molten is not initialized; run `:MoltenInit` to initialize.")
-            case "init":
-                self.nvim.command("MoltenInit")
-                return
 
     def _clear_on_buf_leave(self) -> None:
         if not self.initialized:
@@ -554,14 +549,17 @@ class Molten:
         for %k. If there is no kernel, throw an error. If there is one kernel, use it
         """
         self._initialize_if_necessary()
-        # self.nvim.out_write("kernel check\n")
 
         kernels = self.buffers.get(buffer.number)
-        if not kernels:
-            # self.nvim.out_write("no kernels \n")
-            available_kernels = get_available_kernels()
+        if not kernels and self.options.auto_init_behavior != "raise":
+            available_kernels = [(x, False) for x in get_available_kernels()]
+            shared_kernels = [(x, True) for x in self.molten_kernels.keys()]
             PROMPT = "You Need to Initialize a Kernel First:"
-            self.nvim.lua._prompt_init_and_run(available_kernels, PROMPT, command)
+            self.nvim.lua._prompt_init_and_run(available_kernels + shared_kernels, PROMPT, command)
+        elif not kernels: # and auto_init_behavior == "raise"
+            raise MoltenException(
+                "Molten is not initialized in this buffer; run `:MoltenInit` to initialize."
+            )
         elif len(kernels) == 1:
             c = command.replace("%k", kernels[0].kernel_id)
             self.nvim.command(c)
@@ -573,8 +571,6 @@ class Molten:
     @pynvim.command("MoltenReevaluateAll", nargs=0, sync=True)  # type: ignore
     @nvimui  # type: ignore
     def command_reevaluate_all(self) -> None:
-        self._initialize_if_necessary()
-
         molten_kernels = self._get_current_buf_kernels(True)
         assert molten_kernels is not None
 
@@ -584,8 +580,6 @@ class Molten:
     @pynvim.command("MoltenReevaluateCell", nargs=0, sync=True)  # type: ignore
     @nvimui  # type: ignore
     def command_evaluate_cell(self) -> None:
-        self._initialize_if_necessary()
-
         molten_kernels = self._get_current_buf_kernels(True)
         assert molten_kernels is not None
 
@@ -601,14 +595,15 @@ class Molten:
     @pynvim.command("MoltenInterrupt", nargs="*", sync=True)  # type: ignore
     @nvimui  # type: ignore
     def command_interrupt(self, args) -> None:
+        molten_kernels = self._get_current_buf_kernels(True)
+        assert molten_kernels is not None
+
         if len(args) > 0:
             kernel = args[0]
         else:
             self.kernel_check("MoltenInterrupt %k", self.nvim.current.buffer)
             return
 
-        molten_kernels = self._get_current_buf_kernels(True)
-        assert molten_kernels is not None
         for molten in molten_kernels:
             if molten.kernel_id == kernel:
                 molten.interrupt()
@@ -619,14 +614,14 @@ class Molten:
     @pynvim.command("MoltenRestart", nargs="*", sync=True, bang=True)  # type: ignore
     @nvimui  # type: ignore
     def command_restart(self, args, bang) -> None:
+        molten_kernels = self._get_current_buf_kernels(True)
+        assert molten_kernels is not None
+
         if len(args) > 0:
             kernel = args[0]
         else:
             self.kernel_check(f"MoltenRestart{'!' if bang else ''} %k", self.nvim.current.buffer)
             return
-
-        molten_kernels = self._get_current_buf_kernels(True)
-        assert molten_kernels is not None
 
         for molten in molten_kernels:
             if molten.kernel_id == kernel:
@@ -710,7 +705,8 @@ class Molten:
     @pynvim.command("MoltenExportOutput", nargs="*", sync=True, bang=True)  # type: ignore
     @nvimui  # type: ignore
     def command_export(self, args, bang: bool) -> None:
-        self._initialize_if_necessary()
+        kernels = self._get_current_buf_kernels(True)
+        assert kernels is not None
 
         buf = self.nvim.current.buffer
         if len(args) > 0:
@@ -724,8 +720,6 @@ class Molten:
             self.kernel_check(f"MoltenExportOutput{'!' if bang else ''} {path} %k", buf)
             return
 
-        kernels = self._get_current_buf_kernels(True)
-        assert kernels is not None
         for molten in kernels:
             if molten.kernel_id == kernel:
                 export_outputs(self.nvim, molten, path, bang)
@@ -734,7 +728,8 @@ class Molten:
     @pynvim.command("MoltenSave", nargs="*", sync=True)  # type: ignore
     @nvimui  # type: ignore
     def command_save(self, args) -> None:
-        self._initialize_if_necessary()
+        kernels = self._get_current_buf_kernels(True)
+        assert kernels is not None
 
         buf = self.nvim.current.buffer
         if len(args) > 0:
@@ -752,8 +747,6 @@ class Molten:
         if not os.path.exists(dirname):
             os.makedirs(dirname)
 
-        kernels = self._get_current_buf_kernels(True)
-        assert kernels is not None
         for molten in kernels:
             if molten.kernel_id == kernel:
                 with open(path, "w") as file:
@@ -875,7 +868,6 @@ class Molten:
             colno_begin = 1
             colno_end = 0
         elif kind == "char":
-            pass
             colno_begin = min(colno_begin, len(self.nvim.funcs.getline(lineno_begin)))
             colno_end = min(colno_end, len(self.nvim.funcs.getline(lineno_end))) + 1
         else:
@@ -896,7 +888,6 @@ class Molten:
         if not args:
             return
 
-        self._initialize_if_necessary()
         molten_kernels = self._get_current_buf_kernels(True)
         assert molten_kernels is not None
         assert self.canvas is not None

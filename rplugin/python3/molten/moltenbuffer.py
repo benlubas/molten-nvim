@@ -202,7 +202,9 @@ class MoltenKernel:
             self._doautocmd(
                 "MoltenKernelReady",
                 opts={
-                    "data": self.kernel_id,
+                    "data": {
+                        "kernel_id": self.kernel_id,
+                    }
                 },
             )
             notify_info(
