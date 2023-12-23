@@ -63,7 +63,7 @@ class MoltenOptions:
         self.hl = HL()
         # fmt: off
         CONFIG_VARS = [
-            ("molten_auto_init_behavior", "raise"), # "raise" or "init"
+            ("molten_auto_init_behavior", "init"), # "raise" or "init"
             ("molten_auto_open_html_in_browser", False),
             ("molten_auto_open_output", True),
             ("molten_copy_output", False),
