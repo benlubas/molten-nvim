@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.3.0](https://github.com/benlubas/molten-nvim/compare/v1.2.0...v1.3.0) (2023-12-26)
+
+
+### Features
+
+* auto init ([#104](https://github.com/benlubas/molten-nvim/issues/104)) ([744be0d](https://github.com/benlubas/molten-nvim/commit/744be0df2d31fb007d0a05ddbe84e3c73024c86b))
+* import outputs from ipynb files ([#94](https://github.com/benlubas/molten-nvim/issues/94)) ([427ecea](https://github.com/benlubas/molten-nvim/commit/427eceac033544fbf1dc50db15918510a837536c))
+* MoltenInit revamp + bug fixes ([#103](https://github.com/benlubas/molten-nvim/issues/103)) ([b626f8d](https://github.com/benlubas/molten-nvim/commit/b626f8d848ed01d648357f5b3d223fddcc732dcf))
+
+
+### Bug Fixes
+
+* import nb format when needed ([#100](https://github.com/benlubas/molten-nvim/issues/100)) ([75ce8fe](https://github.com/benlubas/molten-nvim/commit/75ce8fe3cc8206f8fd3ecdc315e16c47f0ddb75c))
+* status methods in unfamiliar buffer ([#91](https://github.com/benlubas/molten-nvim/issues/91)) ([23e0c79](https://github.com/benlubas/molten-nvim/commit/23e0c79d190d861348733c526a40e7b8ce141c98))
+* trailing comments are removed for comparison ([#99](https://github.com/benlubas/molten-nvim/issues/99)) ([af86259](https://github.com/benlubas/molten-nvim/commit/af86259f22a2286c3ff4334acf5a6858c687418d))
+
 ## [1.2.0](https://github.com/benlubas/molten-nvim/compare/v1.1.6...v1.2.0) (2023-12-16)
 
 
