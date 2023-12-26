@@ -31,8 +31,9 @@ class HL:
 
 
 class MoltenOptions:
-    auto_open_output: bool
+    auto_init_behavior: str
     auto_open_html_in_browser: bool
+    auto_open_output: bool
     copy_output: bool
     enter_output_behavior: str
     image_provider: str
@@ -62,6 +63,7 @@ class MoltenOptions:
         self.hl = HL()
         # fmt: off
         CONFIG_VARS = [
+            ("molten_auto_init_behavior", "init"), # "raise" or "init"
             ("molten_auto_open_html_in_browser", False),
             ("molten_auto_open_output", True),
             ("molten_copy_output", False),

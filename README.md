@@ -96,6 +96,9 @@ When the `kernel` argument is specified as optional a command behaves in the fol
 - else if there is more than one active kernel for the current buffer, prompt the user for the
 kernel
 
+[some](./docs/Initialization.md) commands will prompt for a kernel when they require one but no
+kernel is attached to the buffer. This is configurable with the `molten_auto_init_behavior` option.
+
 | Command                   | Arguments             | Description                        |
 |---------------------------|-----------------------|------------------------------------|
 | `MoltenInfo`              | none                  | Show information about the state of the plugin, initialization status, available kernels, and running kernels |
@@ -161,6 +164,7 @@ variable, their values, and a brief description.
 
 | Variable                                      | Values                                                      | Description                                |
 |----------------------                         |-------------------                                          |--------------------------------------------|
+| `g:molten_auto_init_behavior`                 | `"raise"` \| (`"init"`)                                     | When set to "raise" commands which would otherwise ask for a kernel when they're run without a running kernel will instead raise an exception. Useful for other plugins that want to use `pcall` and do their own error handling |
 | `g:molten_auto_open_html_in_browser`          | `true` \| (`false`)                                         | Automatically open HTML outputs in a browser. related: `molten_open_cmd` |
 | `g:molten_auto_open_output`                   | (`true`) \| `false`                                         | Automatically open the output window when your cursor moves over a cell |
 | `g:molten_copy_output`                        | `true` \| (`false`)                                         | Copy evaluation output to clipboard automatically (requires [`pyperclip`](#requirements))|

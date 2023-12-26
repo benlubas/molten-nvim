@@ -73,9 +73,11 @@ class MoltenKernel:
 
         self.options = options
 
-    def _doautocmd(self, autocmd: str) -> None:
+    def _doautocmd(self, autocmd: str, opts: Dict = {}) -> None:
         assert " " not in autocmd
-        self.nvim.command(f"doautocmd User {autocmd}")
+        opts["pattern"] = autocmd
+        self.nvim.api.exec_autocmds("User", opts)
+        # self.nvim.command(f"doautocmd User {autocmd}")
 
     def add_nvim_buffer(self, buffer: Buffer) -> None:
         self.buffers.append(buffer)
@@ -197,7 +199,17 @@ class MoltenKernel:
         if did_stuff:
             self.update_interface()
         if not was_ready and self.runtime.is_ready():
-            notify_info(self.nvim, f"Kernel '{self.runtime.kernel_name}' is ready.")
+            self._doautocmd(
+                "MoltenKernelReady",
+                opts={
+                    "data": {
+                        "kernel_id": self.kernel_id,
+                    }
+                },
+            )
+            notify_info(
+                self.nvim, f"Kernel '{self.runtime.kernel_name}' (id: {self.kernel_id}) is ready."
+            )
 
     def enter_output(self) -> None:
         if self.selected_cell is not None:
