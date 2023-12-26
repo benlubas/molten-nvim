@@ -232,6 +232,7 @@ We provide some `User` autocommands (see `:help User`) for further customization
 - `MoltenInitPost`: runs right after `MoltenInit` initialization happens for a buffer
 - `MoltenDeinitPre`: runs right before `MoltenDeinit` de-initialization happens for a buffer
 - `MoltenDeinitPost`: runs right after `MoltenDeinit` de-initialization happens for a buffer
+- `MoltenKernelReady`: runs when a kernel is ready for the first time. `data` field has the `kernel_id`
 
 <details>
   <summary>Lua Usage</summary>
@@ -251,6 +252,18 @@ vim.api.nvim_create_autocmd("User", {
 ```
 
 Similarly, you could remove these mappings on `MoltenDeinitPost`
+
+---
+
+For `MoltenKernelReady` you can get the kernel id like this:
+
+```lua
+-- ...
+  callback = function(e)
+    print("Kernel id: " .. e.data.kernel_id)
+  end
+-- ...
+```
 
 </details>
 
