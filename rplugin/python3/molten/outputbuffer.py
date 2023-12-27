@@ -161,7 +161,7 @@ class OutputBuffer:
             lines = []
 
         lines.insert(0, self._get_header_text(self.output))
-        return lines, lineno + virtual_lines
+        return lines, lineno
 
     def show_virtual_output(self, anchor: Position) -> None:
         if self.displayed_status == OutputStatus.DONE and self.virt_text_id is not None:
