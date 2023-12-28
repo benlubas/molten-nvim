@@ -125,10 +125,6 @@ class Molten:
                 molten_kernel.clear_interface()
                 molten_kernel.clear_open_output_windows()
 
-        assert self.canvas is not None
-        self.canvas.clear()
-        self.canvas.present()
-
     def _clear_interface(self) -> None:
         if not self.initialized:
             return

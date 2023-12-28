@@ -37,6 +37,7 @@ class OutputChunk(ABC):
         shape: Tuple[int, int, int, int],
         canvas: Canvas,
         hard_wrap: bool,
+        winnr: int | None = None,
     ) -> Tuple[str, int]:
         pass
 
@@ -67,6 +68,7 @@ class TextOutputChunk(OutputChunk):
         shape: Tuple[int, int, int, int],
         _canvas: Canvas,
         hard_wrap: bool,
+        winnr: int | None = None,
     ) -> Tuple[str, int]:
         text = clean_up_text(self.text)
         extra_lines = 0
@@ -148,6 +150,7 @@ class ImageOutputChunk(OutputChunk):
         _shape: Tuple[int, int, int, int],
         canvas: Canvas,
         virtual: bool,
+        winnr: int | None = None,
     ) -> Tuple[str, int]:
         self.img_identifier = canvas.add_image(
             self.img_path,
@@ -155,6 +158,7 @@ class ImageOutputChunk(OutputChunk):
             x=0,
             y=lineno + 1,
             bufnr=bufnr,
+            winnr=winnr,
         )
         return "", canvas.img_size(self.img_identifier)["height"]
 

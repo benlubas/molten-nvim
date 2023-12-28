@@ -144,6 +144,7 @@ class OutputBuffer:
                     shape,
                     self.canvas,
                     virtual,
+                    winnr = self.nvim.current.window.handle if virtual else None,
                 )
                 lines_str += chunktext
                 lineno += chunktext.count("\n")
