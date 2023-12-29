@@ -2,34 +2,43 @@
 
 _TL;DR at the bottom_
 
-How to edit Jupyter Notebooks (`.ipynb` files) in neovim, using molten to run code.
+> [!NOTE]
+> Although I include sample configuration, this is **not** a replacement for reading the
+> readme for each plugin that I mention. Please setup each of these plugins individually
+> to ensure they're working before trying to use them all together.
 
-This is how _I_ edit notebooks, there are other plugins that will do similar things you can see
-a list of them at the bottom of the README.
+How to edit Jupyter Notebooks (`.ipynb` files) in neovim, using molten to run code, and
+load/save code cell output.
+
+This is how _I_ edit notebooks. It's the best experience you can get (in my opinion), but
+there are some extra features you can get with other plugins that I don't use but will
+mention at the bottom.
 
 ## The promise:
 
 \> your friend sends you a jupyter notebook file  
 \> `nvim friends_file.ipynb`  
-\> you see a markdown representation of the notebook  
-\> `:MoltenImportOutput` - you see the cell outputs from the notebook
-\> you edit the notebook, with LSP autocomplete, and format the code cells before running your new
-code, and all the cells below it, watching the cells run as they run  
-\> You admire the new chart, _in neovim_  
+\> you see a markdown representation of the notebook, including cell outputs and images  
+\> you edit the notebook, with LSP autocomplete, and format the code cells before running
+your new code, and all the cells below it, watching each cell output update as they run  
 \> You write the file  
-\> You send the `.ipynb` file, complete with your changes and the output of the code you ran, back
-to your friend  
+\> You send the `.ipynb` file, complete with your changes and the output of the code you
+ran, back to your friend
 
 ## The Setup:
 
-There are three main things required for a good notebook experience in neovim:
+There are four big things required for a good notebook experience in neovim:
+
 - Code running
-- LSP/autocomplete in a plaintext/markdown file
+- Output viewing
+- LSP features (autocomplete, go to definition/references, rename, format, etc.) in
+  a plaintext/markdown file
 - File format conversion
 
-### Code Running
+### Code Running And Output Viewing with Molten
 
-We'll be using molten, a few configuration options will improve the experience.
+Shocker we'll be using molten. A few configuration options will dramatically improve the
+notebook experience of this plugin.
 
 ```lua
 -- I find auto open annoying, keep in mind setting this option will require setting
@@ -39,105 +48,358 @@ vim.g.molten_auto_open_output = false
 -- this guide will be using image.nvim, you can leave it out if you want want it
 vim.g.molten_image_provider = "image.nvim"
 
-
 -- optional, I like wrapping. works for virt text and the output window
 vim.g.molten_wrap_output = true
 
--- Output as virtual text. Allows outputs to always be shown, works with images, but can be buggy
--- with longer images
+-- Output as virtual text. Allows outputs to always be shown, works with images, but can
+-- be buggy with longer images
 vim.g.molten_virt_text_output = true
+
 -- this will make it so the output shows up below the \`\`\` cell delimiter
 vim.g.molten_virt_lines_off_by_1 = true
 ```
 
+Additionally, you will want to setup some keybinds (as always, change the lhs to suit your
+needs) to run code and interact with the plugin. **At a minimum you should setup:**
+
+```lua
+vim.keymap.set("n", "<localleader>e", ":MoltenEvaluateOperator<CR>", { desc = "evaluate operator", silent = true })
+vim.keymap.set("n", "<localleader>os", ":noautocmd MoltenEnterOutput<CR>", { desc = "open output window", silent = true })
+```
+
+But I'd also recommend these ones:
+
+```lua
+vim.keymap.set("n", "<localleader>rr", ":MoltenReevaluateCell<CR>", { desc = "re-eval cell", silent = true })
+vim.keymap.set("v", "<localleader>r", ":<C-u>MoltenEvaluateVisual<CR>gv", { desc = "execute visual selection", silent = true })
+vim.keymap.set("n", "<localleader>oh", ":MoltenHideOutput<CR>", { desc = "close output window", silent = true })
+vim.keymap.set("n", "<localleader>md", ":MoltenDelete<CR>", { desc = "delete Molten cell", silent = true })
+
+-- if you work with html outputs:
+vim.keymap.set("n", "<localleader>mx", ":MoltenOpenInBrowser<CR>", { desc = "open output in browser", silent = true })
+```
+
 ### LSP Features with quarto-nvim
 
-One of the issues with plaintext notebooks is that you end up essentially editing a markdown file,
-and the pyright language server (for example) can't read a markdown file and give you information
-about the python code cells in it. Enter Quarto, and specifically quarto-nvim.
+One of the issues with plaintext notebooks is that you end up essentially editing
+a markdown file, and the pyright language server (for example) can't read a markdown file
+and give you information about the python code cells in it. Enter Quarto, and specifically
+quarto-nvim.
 
-[Quarto](https://quarto.org/) is a lot of things. One of those is tool for writing and publishing
-literate programming documents, or just any markdown document really. It's built on top of Pandoc,
-and so can render markdown to pdf, html, or any format that Pandoc supports.
+[Quarto](https://quarto.org/) is a lot of things. One of those is tool for writing and
+publishing literate programming documents, or just any markdown document really. It's
+built on top of Pandoc, and so can render markdown to pdf, html, or any format that Pandoc
+supports.
 
 The neovim plugin [quarto-nvim](https://github.com/quarto-dev/quarto-nvim) provides:
-- LSP Autocomplete, formatting, diagnostics, go to definition, and other LSP features for code cells
-in markdown documents
-- A code running integration with molten to easily run code cells
+
+- LSP Autocomplete, formatting, diagnostics, go to definition, and other LSP features for
+  code cells in markdown documents via [otter.nvim](https://github.com/jmbuhr/otter.nvim)
+- A code running integration with molten (written by me, so I'll provide support if there
+  are problems/bugs) to easily run code cells (including run above, run below, run all)
 - A convenient way to render the file you're working on
 
-All of that works out of the box in a `qmd` document, _and_ in a normal markdown document too! (Just
-run `:QuartoActivate` in the markdown doc, or setup a filetype plugin to do it for you)
+<details>
+  <summary>Sample configuration for quarto-nvim</summary>
+  
+```lua
+local quarto = require("quarto")
+quarto.setup({
+    lspFeatures = {
+        -- NOTE: put whatever languages you want here:
+        languages = { "r", "python", "rust" },
+        chunks = "all",
+        diagnostics = {
+            enabled = true,
+            triggers = { "BufWritePost" },
+        },
+        completion = {
+            enabled = true,
+        },
+    },
+    keymap = {
+        -- NOTE: setup your own keymaps:
+        hover = "H",
+        definition = "gd",
+        rename = "<leader>rn",
+        references = "gr",
+        format = "<leader>gf",
+    },
+    codeRunner = {
+        enabled = true,
+        default_method = "molten",
+    },
+})
+```
+
+</details>
+
+When you configure quarto, you gain access to these functions which should be mapped to
+commands:
+
+```lua
+local runner = require("quarto.runner")
+vim.keymap.set("n", "<localleader>rc", runner.run_cell,  { desc = "run cell", silent = true })
+vim.keymap.set("n", "<localleader>ra", runner.run_above, { desc = "run cell and above", silent = true })
+vim.keymap.set("n", "<localleader>rA", runner.run_all,   { desc = "run all cells", silent = true })
+vim.keymap.set("n", "<localleader>rl", runner.run_line,  { desc = "run line", silent = true })
+vim.keymap.set("v", "<localleader>r",  runner.run_range, { desc = "run visual range", silent = true })
+vim.keymap.set("n", "<localleader>RA", function()
+  runner.run_all(true)
+end, { desc = "run all cells of all languages", silent = true })
+```
+
+#### Activate Quarto-nvim in markdown buffers
+
+By default, quarto only activates in `quarto` buffers.
+
+We will do this with an ftplugin.
+
+> [!NOTE]
+> In order to do this, you must make sure that quarto is loaded for markdown filetypes
+> (ie. if you're using lazy.nvim, use `ft = {"quarto", "markdown"}`)
+
+```lua
+-- file: nvim/ftplugin/markdown.lua
+
+require("quarto").activate()
+```
 
 ### Notebook Conversion
 
-The tool `Quarto` (not the plugin) can convert jupyter notebooks to `qmd` files with the `quarto
-convert` command manually or you can automatically do this conversion with
-[GCBallesteros/jupytext.nvim](https://github.com/GCBallesteros/jupytext.nvim), but it is slow.
-Currently jupytext.nvim is a little buggy and unreliable, but it supports more conversion formats
-than the alternative&mdash;[goerz/jupytext.vim](https://github.com/goerz/jupytext.vim). Which does
-the same thing, but will only work for markdown conversion more or less.
+[GCBallesteros/jupytext.nvim](https://github.com/GCBallesteros/jupytext.nvim) is a plugin
+that will automatically convert from `ipynb` files to plaintext (markdown) files, and then
+back again when you save. By default, it converts to python files, for our purposes we
+want a markdown representation.
 
-**Most people should use `goerz/jupytext.vim` at the time of writing, but the alternative is
-maintained, and improving, so I will eventually switch this recommendation.**
+We can do that for a specific language like this:
 
-If you use Jupytext to produce a markdown output (recommended), you can use this in conjunction with
-the quarto-nvim plugin mentioned above to get get LSP features and convenient code running binds.
+```lua
+require("jupytext").setup({
+    custom_language_formatting = {
+        python = {
+            extension = "md",
+            style = "markdown",
+            force_ft = "markdown",
+        },
+    },
+})
+```
 
-> [!NOTE] Quarto doesn't activate automatically in markdown files. You have to run `:QuartoActivate`
-> manually or setup an auto command or ft plugin for markdown files to do this for you.
+You can use Jupytext in conjunction with quarto-nvim to get get LSP features and
+convenient code running binds in the markdown files generated by Jupytext.
 
 ### Extras
 
 #### Treesitter Text Objects
 
-Other than the quarto-nvim x molten integration, the best way to run code is with the
-`:MoltenEvaluateOperator` command (bound to some convenient mapping of course). I use
-`<localleader>e` for evaluate.
+Other than the quarto-nvim x molten integration, the best way to run chunks of code is
+with the `:MoltenEvaluateOperator` command (bound to some convenient mapping of course).
+I use `<localleader>e` for evaluate.
 
-When combined with treesitter text objects, you can easily run code cells without the quarto
-integration.
+When combined with [treesitter
+text-objects](https://github.com/nvim-treesitter/nvim-treesitter-textobjects), you can
+easily run code cells without the quarto integration.
 
-To define a new capture group, you need to add this:
+We'll first want to define a new capture group `@code_cell` for the filetype we want to
+run code in. Here's a very simple example for markdown, but you can do this with any
+filetype you want to have a code cell in:
+
+```scm
+;; located in: nvim/after/queries/markdown/textobjects.scm
+
+;extends
+
+(fenced_code_block (code_fence_content) @code_cell.inner) @code_cell.outer
+```
+
+We can now use `@code_cell.inner` and `@code_cell.outer` in the treesitter-text-objects
+plugin like so, I use b, you can use whatever mappings you like:
+
+```lua
+require("nvim-treesitter.configs").setup({
+    -- ... other ts config
+    textobjects = {
+        move = {
+            enable = true,
+            set_jumps = false, -- you can change this if you want.
+            goto_next_start = {
+                --- ... other keymaps
+                ["]b"] = { query = "@code_cell.inner", desc = "next code block" },
+            },
+            goto_previous_start = {
+                --- ... other keymaps
+                ["[b"] = { query = "@code_cell.inner", desc = "previous code block" },
+            },
+        },
+        select = {
+            enable = true,
+            lookahead = true, -- you can change this if you want
+            keymaps = {
+                --- ... other keymaps
+                ["ib"] = { query = "@code_cell.inner", desc = "in block" },
+                ["ab"] = { query = "@code_cell.outer", desc = "around block" },
+            },
+        },
+    }
+})
+```
+
+To test that worked you should be able to select the insides of a code cell with `vib` and
+run them with `:MoltenEvaluateOperator<CR>ib`.
 
 #### Output Chunks
 
-Saving output chunks has historically not been possible (afaik) with plaintext notebooks. You will
-lose output chunks in a round trip from `ipynb` to `qmd` to `ipynb`. And that is still true, but,
-the pain can be lessened a little.
+Saving output chunks has historically not been possible (afaik) with plaintext notebooks.
+You will lose output chunks in a round trip from `ipynb` to `qmd` to `ipynb`. And while
+that's still true, we can work around it.
 
-Jupytext _updates_ notebooks and doesn't destroy outputs that already exist, and **Molten has a way
-to export outputs from code that you ran to a matching jupyter notebook file**. More details in the
-molten [docs](https://github.com/benlubas/molten-nvim/blob/main/docs/Advanced-Functionality.md#exporting-outputs).
+Jupytext _updates_ notebooks and doesn't destroy outputs that already exist, and **Molten
+can both import outputs from a notebook AND export outputs from code you run to a jupyter
+notebook file**. More details on the [advanced
+functionality](./Advanced-Functionality.md#exporting-outputs) page.
 
-While this feature is still considered 'experimental' and is likely buggy, it _works_. Especially
-for basic things like text, image, and error outputs, I've had only one issue, and it relates to
-progress bars, and it's totally fixable I'm just lazy and it's not that big an issue imo.
+While this feature is still considered 'experimental', it _works_.
 
-#### Navigation
+We can make importing outputs seamless with an autocommand like the following:
 
-The reason that we're doing any of this in the first place is b/c we love using neovim, otherwise
-we'd just use jupyter lab or vs code. One of the large advantages of editing a notebook in neovim is
-the ability to quickly navigate notebooks.
+```lua
+-- automatically import output chunks from a jupyter notebook
+vim.api.nvim_create_autocmd("BufWinEnter", {
+  pattern = { "*.ipynb" },
+  callback = function(e)
+    if string.match(e.file, ".otter.") then
+      return
+    end
+    local venv = os.getenv("VIRTUAL_ENV")
+    if venv ~= nil then
+      venv = string.match(venv, "/.+/(.+)")
+      vim.cmd(("MoltenInit %s"):format(venv))
+    end
+    vim.cmd("MoltenImportOutput")
+  end,
+})
+```
 
-The way I do this is with a combination of nvim-treesitter text objects and the
-[Hydra](https://github.com/anuvyklack/hydra.nvim) plugin, and it's detailed
+> [!NOTE]
+> If you're not in a virtual environment, this will prompt you for a kernel.
+
+_Automatically saving outputs cannot work the same way due to how vim handles custom save
+commands like what jupytext.nvim is doing. I do have an open issue to make this possible
+though_
+
+#### Hydra
+
+The reason that we're doing any of this in the first place is b/c we get to use neovim and
+all the plugins that come with. The [Hydra](https://github.com/nvimtools/hydra.nvim)
+plugin allows very quick navigation and code running.
+
+I have a detailed explanation of how to set this up
 [here](https://github.com/quarto-dev/quarto-nvim/wiki/Integrating-with-Hydra).
 
+#### Disable Annoying Pyright Diagnostic
 
+It's very common to leave an unused expression at the bottom of a cell as a way of
+printing the value. Pyright will yell at you for this. Fortunately we can configure it to
+not do that. Just add this option to whatever existing configuration you have:
+
+```lua
+require("lspconfig")["pyright"].setup({
+    on_attach = on_attach,
+    capabilities = capabilities,
+    settings = {
+        python = {
+            analysis = {
+                diagnosticSeverityOverrides = {
+                    -- this removes a really annoying warning in notebook type files
+                    reportUnusedExpression = "none",
+                },
+            },
+        },
+    },
+})
+```
+
+#### Change Molten settings based on filetype
+
+Molten is a multi purpose code runner, I use it in regular python files to quickly test
+out a line of code. In those situations, creating virtual text is obnoxious, and I'd
+rather have output shown in a float that disappears when I move away.
+
+Autocommands to the rescue:
+
+```lua
+vim.api.nvim_create_autocmd("User", {
+  pattern = "MoltenInitPost",
+  callback = function()
+    -- if we're in a python file, change the configuration a little
+    if vim.bo.filetype == "python" then
+      vim.fn.MoltenUpdateOption("molten_virt_lines_off_by_1", false)
+      vim.fn.MoltenUpdateOption("molten_virt_text_output", false)
+    end
+  end,
+})
+
+-- change the configuration when editing a python file
+vim.api.nvim_create_autocmd("BufEnter", {
+  pattern = "*.py",
+  callback = function(e)
+    if string.match(e.file, ".otter.") then
+      return
+    end
+    if require("molten.status").initialized() == "Molten" then
+      vim.fn.MoltenUpdateOption("molten_virt_lines_off_by_1", false)
+      vim.fn.MoltenUpdateOption("molten_virt_text_output", false)
+    end
+  end,
+})
+
+-- Undo those config changes when we go back to a markdown or quarto file
+vim.api.nvim_create_autocmd("BufEnter", {
+  pattern = { "*.qmd", "*.md", "*.ipynb" },
+  callback = function(e)
+    if string.match(e.file, ".otter.") then
+      return
+    end
+    if require("molten.status").initialized() == "Molten" then
+      vim.fn.MoltenUpdateOption("molten_virt_lines_off_by_1", true)
+      vim.fn.MoltenUpdateOption("molten_virt_text_output", true)
+    end
+  end,
+})
+```
 
 ## Compromises
 
 Compared to Jupyter-lab:
-- output formats. Molten can't render everything that jupyter-lab can, notably HTML is currently
-unsupported.
-- loading outputs from `.ipynb`. This is on the roadmap for molten for sure
-- jank. the UI is definitely worse, and sometimes images will move somewhere weird or just not show
-up. Molten is still new, and I'm sure people will break it... bring it on lol
-- setup is a lot of work. I've mentioned 4 different plugins that are required to get this working
-and all 4 of those plugins have external dependencies.
 
-But it's worth it, for me anyway
+- output formats. Molten can't render everything that jupyter-lab can, specifically
+  in-editor HTML is just not going to happen
+- jank. the UI is definitely worse, and sometimes images will move somewhere weird or just
+  not show up. Molten is still relatively new, and bugs are still being ironed out.
+- setup is a lot of work. I've mentioned 4 different plugins that are required to get this
+  working and all 4 of those plugins have external dependencies.
 
-**TL;DR:** molten-nvim + image.nvim + quarto-nvim + jupytext.vim = great notebook experience,
+## Honorable Mentions
+
+Plugins that didn't quite make it into my workflow, but which are still really good and
+worth looking at.
+
+- [jupyter-kernel.nvim](https://github.com/lkhphuc/jupyter-kernel.nvim) - this plugin adds
+  autocomplete from the jupyter kernel, as well as hover inspections from the jupyter
+  kernel. Me personally, I'd rather just use pyright via quarto-nvim/otter.nvim. This
+  plugin could co-exist with the current setup, but might lead to double completions, and so
+  you might want to disable quarto's lsp features if you choose to use this plugin
+- [NotebookNavigator.nvim](https://github.com/GCBallesteros/NotebookNavigator.nvim) -
+  a plugin for editing notebooks as a different plaintext format which defines cells using
+  comments in the native language of the notebook. This plugin would be used in place of
+  quarto-nvim, as language servers just work in a `.py` file. I prefer to edit markdown
+  notebooks, and the point of notebooks to me is the markdown component, and having markdown
+  shown as comments without syntax highlighting defeats the purpose for me.
+
+## TL;DR
+
+molten-nvim + image.nvim + quarto-nvim + jupytext.nvim = great notebook experience,
 unfortunately, it does take some time to setup.
+
+<!-- vim: set tw=90: -->
