@@ -12,6 +12,9 @@ local image_api = {}
 local images = {}
 
 image_api.from_file = function(path, opts)
+  if opts.window and opts.window == vim.NIL then
+    opts.window = nil
+  end
   images[path] = image.from_file(path, opts or {})
   return path
 end

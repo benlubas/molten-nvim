@@ -54,6 +54,7 @@ class Canvas(ABC):
         x: int,
         y: int,
         bufnr: int,
+        winnr: int | None = None,
     ) -> str:
         """
         Add an image to the canvas.
@@ -175,6 +176,7 @@ class ImageNvimCanvas(Canvas):
         x: int,
         y: int,
         bufnr: int,
+        winnr: int | None = None,
     ) -> str:
         if path not in self.images:
             img = self.image_api.from_file(
@@ -185,6 +187,7 @@ class ImageNvimCanvas(Canvas):
                     "with_virtual_padding": True,
                     "x": x,
                     "y": y,
+                    "window": winnr,
                 },
             )
             self.to_make_visible.add(img)
