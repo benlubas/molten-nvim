@@ -58,7 +58,7 @@ scp 1.2.3.4:/tmp/remote-julia.json /tmp/remote-julia.json
 
 And finally run `:MoltenInit /tmp/remote-julia.json` in neovim.
 
-## Importing/Exporting Outputs (with .ipynb files)
+## Importing/Exporting Outputs to/from ipynb files
 
 > [!NOTE]
 > These commands are considered experimental, and while they work well enough to be used, there are
