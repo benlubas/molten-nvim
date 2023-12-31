@@ -64,15 +64,26 @@ def import_outputs(nvim: Nvim, kernel: MoltenKernel, filepath: str):
                 output = Output(cell["execution_count"])
                 output.old = True
                 for output_data in cell["outputs"]:
-                    output.chunks.append(
-                        to_outputchunk(
-                            nvim,
-                            kernel.runtime._alloc_file,
-                            output_data["data"],
-                            output_data["metadata"],
-                            kernel.options,
+                    if output_data.get("output_type") == "stream":
+                        output.chunks.append(
+                            to_outputchunk(
+                                nvim,
+                                kernel.runtime._alloc_file,
+                                { "text/plain": output_data.get("text") },
+                                output_data.get("metadata"),
+                                kernel.options,
+                            )
                         )
-                    )
+                    else:
+                        output.chunks.append(
+                            to_outputchunk(
+                                nvim,
+                                kernel.runtime._alloc_file,
+                                output_data.get("data"),
+                                output_data.get("metadata"),
+                                kernel.options,
+                            )
+                        )
                 start = DynamicPosition(
                     nvim,
                     kernel.extmark_namespace,
