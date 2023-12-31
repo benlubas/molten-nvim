@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.3.1](https://github.com/benlubas/molten-nvim/compare/v1.3.0...v1.3.1) (2023-12-31)
+
+
+### Bug Fixes
+
+* account for stream jupter outputs ([#113](https://github.com/benlubas/molten-nvim/issues/113)) ([54e7450](https://github.com/benlubas/molten-nvim/commit/54e7450479cb9883a30bea6881965686da79e629))
+* **docs:** image nvim provider config option ([#114](https://github.com/benlubas/molten-nvim/issues/114)) ([02561e0](https://github.com/benlubas/molten-nvim/commit/02561e0301910eaae1ba70ba247dc85e0ea3d517))
+* don't add image height twice ([#107](https://github.com/benlubas/molten-nvim/issues/107)) ([8a661e7](https://github.com/benlubas/molten-nvim/commit/8a661e714c9761302f7e63d21c1396e2e25c7ddc))
+* dont clear img on win changed ([#110](https://github.com/benlubas/molten-nvim/issues/110)) ([ab0eec9](https://github.com/benlubas/molten-nvim/commit/ab0eec985cc16549518453e2cfe5a770b560998d))
+
 ## [1.3.0](https://github.com/benlubas/molten-nvim/compare/v1.2.0...v1.3.0) (2023-12-26)
 
 
