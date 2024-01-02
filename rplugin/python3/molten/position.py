@@ -63,6 +63,9 @@ class DynamicPosition(Position):
     def __str__(self) -> str:
         return f"DynamicPosition({self.bufno}, {self.lineno}, {self.colno})"
 
+    def __repr__(self) -> str:
+        return f"DynamicPosition(bufno={self.bufno}, lineno={self.lineno}, colno={self.colno})"
+
     def _get_pos(self) -> List[int]:
         out = self.nvim.funcs.nvim_buf_get_extmark_by_id(
             self.bufno, self.extmark_namespace, self.extmark_id, {}
