@@ -39,6 +39,9 @@ class CodeCell:
     def __str__(self) -> str:
         return f"CodeCell({self.begin}, {self.end})"
 
+    def __repr__(self) -> str:
+        return f"CodeCell(begin={self.begin}, end={self.end})"
+
     def clear_interface(self, highlight_namespace):
         """Clear the highlight of the code cell"""
         self.nvim.funcs.nvim_buf_clear_namespace(
