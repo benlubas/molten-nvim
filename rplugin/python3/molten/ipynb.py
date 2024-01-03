@@ -4,7 +4,7 @@ from molten.code_cell import CodeCell
 from molten.moltenbuffer import MoltenKernel
 import os
 from molten.outputbuffer import OutputBuffer
-from molten.outputchunks import Output, to_outputchunk
+from molten.outputchunks import Output, OutputStatus, to_outputchunk
 from molten.position import DynamicPosition
 
 from molten.utils import MoltenException, notify_error, notify_info, notify_warn
@@ -112,6 +112,7 @@ def import_outputs(nvim: Nvim, kernel: MoltenKernel, filepath: str):
                 kernel.extmark_namespace,
                 kernel.options,
             )
+            output.status = OutputStatus.DONE
             kernel.outputs[span].output = output
             kernel.update_interface()
         else:
