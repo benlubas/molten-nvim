@@ -1,5 +1,7 @@
 # Toggleterm Guide: Integrating Python with Quarto & Molten in Neovim
 
+https://github.com/benlubas/molten-nvim/assets/14924440/34b66959-0f10-4d74-a15a-e38dfd6aaa0d
+
 For developers accustomed to using toggleterm with Python3 during development, extending this convenience to a notebook buffer offers enhanced functionality for specific use-cases. This guide demonstrates how to configure a toggleterm in Neovim to interact with a Quarto notebook using the Molten plugin. While the example focuses on a specific setup using Quarto & Molten with the Lazy plugin manager, the principles can be adapted to various setups.
 
 ## Setting Up a Python3 Toggle Term
