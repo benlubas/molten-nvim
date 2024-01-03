@@ -169,24 +169,22 @@ require("quarto").activate()
 
 [GCBallesteros/jupytext.nvim](https://github.com/GCBallesteros/jupytext.nvim) is a plugin
 that will automatically convert from `ipynb` files to plaintext (markdown) files, and then
-back again when you save. By default, it converts to python files, for our purposes we
-want a markdown representation.
-
-We can do that for a specific language like this:
+back again when you save. By default, it converts to python files, but we will configure
+the plugin to produce a markdown representation.
 
 ```lua
 require("jupytext").setup({
-    custom_language_formatting = {
-        python = {
-            extension = "md",
-            style = "markdown",
-            force_ft = "markdown",
-        },
-    },
+    style = "markdown",
+    output_extension = "md",
+    force_ft = "markdown",
 })
 ```
 
-Because Jupytext generates markdown files, we get the full benefits on quarto-nvim when
+> [!NOTE]
+> Jupytext can convert to the Quarto format, but it's slow enough to notice, on open _and_
+> on save, so I prefer markdown
+
+Because Jupytext generates markdown files, we get the full benefits of quarto-nvim when
 using Jupytext.
 
 ### Extras
@@ -237,7 +235,8 @@ require("nvim-treesitter.configs").setup({
                 ["ab"] = { query = "@code_cell.outer", desc = "around block" },
             },
         },
-        swap = {
+        swap = { -- Swap only works with code blocks that are under the same
+                 -- markdown header
             enable = true,
             swap_next = {
                 --- ... other keymap
@@ -252,8 +251,8 @@ require("nvim-treesitter.configs").setup({
 })
 ```
 
-To test that worked you should be able to select the insides of a code cell with `vib` and
-run them with `:MoltenEvaluateOperator<CR>ib`.
+Test it by selecting the insides of a code cell with `vib`, or run them with
+`:MoltenEvaluateOperator<CR>ib`.
 
 #### Output Chunks
 
@@ -261,22 +260,19 @@ Saving output chunks has historically not been possible (afaik) with plaintext n
 You will lose output chunks in a round trip from `ipynb` to `qmd` to `ipynb`. And while
 that's still true, we can work around it.
 
-Jupytext _updates_ notebooks and doesn't destroy outputs that already exist, and **Molten
-can both import outputs from a notebook AND export outputs from code you run to a jupyter
-notebook file**. More details about how and when this works on the [advanced
+Jupytext _updates_ notebooks and doesn't destroy outputs that already exist, and Molten
+can both **import outputs** from a notebook AND **export outputs from code you run** to a jupyter
+notebook file. More details about how and when this works on the [advanced
 functionality](./Advanced-Functionality.md#importingexporting-outputs-tofrom-ipynb-files)
 page.
 
-We can make importing outputs seamless with an autocommand like the following:
+We can make importing/exporting outputs seamless with a few autocommands:
 
 ```lua
 -- automatically import output chunks from a jupyter notebook
 vim.api.nvim_create_autocmd("BufWinEnter", {
   pattern = { "*.ipynb" },
   callback = function(e)
-    if string.match(e.file, ".otter.") then
-      return
-    end
     local venv = os.getenv("VIRTUAL_ENV")
     if venv ~= nil then
       venv = string.match(venv, "/.+/(.+)")
@@ -290,18 +286,34 @@ vim.api.nvim_create_autocmd("BufWinEnter", {
 > [!NOTE]
 > If you're not in a python virtual environment, this will prompt you for a kernel.
 
-_Automatically saving outputs cannot work the same way due to how vim handles custom save
-commands like what jupytext.nvim is doing. I do have an open issue to make this possible
-though_
+```lua
+-- automatically export output chunks to a jupyter notebook on write
+vim.api.nvim_create_autocmd("BufWritePost", {
+    pattern = { "*.ipynb" },
+    callback = function()
+        if require("molten.status").initialized() == "Molten" then
+            vim.cmd("MoltenExportOutput!")
+        end
+    end,
+})
+```
+
+> [!NOTE]
+> If you have more than one kernel active this will prompt you for a kernel to choose
+> from
+
+> [!WARNING]
+> This export, in conjunction with the jupytext conversion, can make saving lag the editor
+> for ~500ms, so autosave plugins can cause a bad experience.
 
 #### Hydra
 
-The reason that we're doing any of this in the first place is b/c we get to use neovim and
-all the plugins that come with. The [Hydra](https://github.com/nvimtools/hydra.nvim)
-plugin allows very quick navigation and code running.
+The [Hydra](https://github.com/nvimtools/hydra.nvim) plugin allows very quick navigation
+and code running.
 
 I have a detailed explanation of how to set this up
-[here](https://github.com/quarto-dev/quarto-nvim/wiki/Integrating-with-Hydra).
+[on the quarto-nvim wiki](https://github.com/quarto-dev/quarto-nvim/wiki/Integrating-with-Hydra).
+It kinda requires treesitter text objects.
 
 #### Disable Annoying Pyright Diagnostic
 
@@ -334,17 +346,6 @@ rather have output shown in a float that disappears when I move away.
 Autocommands to the rescue:
 
 ```lua
-vim.api.nvim_create_autocmd("User", {
-  pattern = "MoltenInitPost",
-  callback = function()
-    -- if we're in a python file, change the configuration a little
-    if vim.bo.filetype == "python" then
-      vim.fn.MoltenUpdateOption("molten_virt_lines_off_by_1", false)
-      vim.fn.MoltenUpdateOption("molten_virt_text_output", false)
-    end
-  end,
-})
-
 -- change the configuration when editing a python file
 vim.api.nvim_create_autocmd("BufEnter", {
   pattern = "*.py",
@@ -352,9 +353,12 @@ vim.api.nvim_create_autocmd("BufEnter", {
     if string.match(e.file, ".otter.") then
       return
     end
-    if require("molten.status").initialized() == "Molten" then
+    if require("molten.status").initialized() == "Molten" then -- this is kinda a hack...
       vim.fn.MoltenUpdateOption("virt_lines_off_by_1", false)
       vim.fn.MoltenUpdateOption("virt_text_output", false)
+    else
+      vim.g.molten_virt_lines_off_by_1 = false
+      vim.g.molten_virt_text_output = false
     end
   end,
 })
@@ -369,6 +373,9 @@ vim.api.nvim_create_autocmd("BufEnter", {
     if require("molten.status").initialized() == "Molten" then
       vim.fn.MoltenUpdateOption("virt_lines_off_by_1", true)
       vim.fn.MoltenUpdateOption("virt_text_output", true)
+    else
+      vim.g.molten_virt_lines_off_by_1 = true
+      vim.g.molten_virt_text_output = true
     end
   end,
 })
@@ -380,6 +387,8 @@ Compared to Jupyter-lab:
 
 - output formats. Molten can't render everything that jupyter-lab can, specifically
   in-editor HTML is just not going to happen
+- Markdown and latex-in-markdown rendering. Currently you can render latex, but you have
+  to send it to the kernel. It doesn't happen automatically.
 - jank. the UI is definitely worse, and sometimes images will move somewhere weird until
   you scroll. Molten is still relatively new, and bugs are still being ironed out.
 - setup is a lot of work. I've mentioned 4 different plugins that are required to get this
