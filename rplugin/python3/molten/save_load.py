@@ -97,6 +97,7 @@ def load(nvim: Nvim, moltenbuffer: MoltenKernel, nvim_buffer: Buffer, data: Dict
             )
 
         output.old = True
+        output.status = OutputStatus.DONE
 
         moltenbuffer.outputs[span] = OutputBuffer(
             moltenbuffer.nvim,
