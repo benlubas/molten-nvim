@@ -18,7 +18,7 @@ other plugins that I don't use but will mention at the bottom.
 
 \> your friend sends you a jupyter notebook file  
 \> `nvim friends_file.ipynb`  
-\> you see a markdown representation of the notebook, including cell outputs and images  
+\> you see a markdown representation of the notebook, including code outputs and images  
 \> you edit the notebook, with LSP autocomplete, and format the code cells before running
 your new code, and all the cells below it, watching each cell output update as they run  
 \> `:wq`  
@@ -45,7 +45,8 @@ notebook experience of this plugin.
 -- a keybind for `:noautocmd MoltenEnterOutput` to open the output again
 vim.g.molten_auto_open_output = false
 
--- this guide will be using image.nvim, you can leave it out if you want want it
+-- this guide will be using image.nvim
+-- Don't forget to setup and install the plugin if you want to view image outputs
 vim.g.molten_image_provider = "image.nvim"
 
 -- optional, I like wrapping. works for virt text and the output window
@@ -404,7 +405,7 @@ worth looking at.
 
 ## TL;DR
 
-molten-nvim + image.nvim + quarto-nvim + jupytext.nvim = great notebook experience,
-unfortunately, it does take some time to setup.
+molten-nvim + image.nvim + quarto-nvim (+ otter.nvim) + jupytext.nvim = great notebook
+experience, unfortunately, it does take some time to setup.
 
 <!-- vim: set tw=90: -->
