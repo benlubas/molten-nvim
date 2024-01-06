@@ -348,6 +348,17 @@ vim.fn.MoltenRunningKernels(false) -- list all kernel ids
 </details>
 
 <details>
+  <summary>MoltenAvailableKernels</summary>
+
+Returns a list of kernel names that molten is aware of.
+
+```lua
+vim.fn.MoltenAvailableKernels()
+```
+
+</details>
+
+<details>
   <summary>MoltenDefineCell</summary>
 
 Takes in a start line, and end line, and a kernel and creates a code cell in the current buffer
