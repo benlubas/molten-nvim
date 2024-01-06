@@ -144,7 +144,7 @@ class OutputBuffer:
                     shape,
                     self.canvas,
                     virtual,
-                    winnr = self.nvim.current.window.handle if virtual else None,
+                    winnr=self.nvim.current.window.handle if virtual else None,
                 )
                 lines_str += chunktext
                 lineno += chunktext.count("\n")
@@ -156,13 +156,17 @@ class OutputBuffer:
                 lines_str = lines_str[:limit]
                 lines_str += f"\n...truncated to {limit} chars\n"
 
-            lines = handle_progress_bars(lines_str)
+            lines = lines_str.split("\n")
             lineno = len(lines) + virtual_lines
         else:
             lines = []
 
+        # Remove trailing empty lines
+        while len(lines) > 0 and lines[-1] == "":
+            lines.pop()
+
         lines.insert(0, self._get_header_text(self.output))
-        return lines, lineno
+        return lines, len(lines) - 1
 
     def show_virtual_output(self, anchor: Position) -> None:
         if self.displayed_status == OutputStatus.DONE and self.virt_text_id is not None:
@@ -357,21 +361,6 @@ class OutputBuffer:
     def remove_window_footer(self) -> None:
         if self.display_win is not None:
             self.display_win.api.set_config({"footer": ""})
-
-
-def handle_progress_bars(line_str: str) -> List[str]:
-    """Progress bars like tqdm use special chars (`\\r`) and some trick to work
-    This is fine for the terminal, but in a text editor we have so do some extra work
-    """
-    actual_lines = []
-    lines = line_str.split("\n")
-    for line in lines:
-        parts = line.split("\r")
-        last = parts[-1]
-        if last != "":
-            actual_lines.append(last)
-
-    return actual_lines
 
 
 def border_size(border: Union[str, List[str], List[List[str]]]):
