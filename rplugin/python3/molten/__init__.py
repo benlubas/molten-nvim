@@ -66,7 +66,9 @@ class Molten:
         self.highlight_namespace = self.nvim.funcs.nvim_create_namespace("molten-highlights")
         self.extmark_namespace = self.nvim.funcs.nvim_create_namespace("molten-extmarks")
 
-        self.timer = self.nvim.eval("timer_start(500, 'MoltenTick', {'repeat': -1})")  # type: ignore
+        self.timer = self.nvim.eval(
+            f"timer_start({self.options.tick_rate}, 'MoltenTick', {{'repeat': -1}})"
+        )  # type: ignore
 
         self._setup_highlights()
         self._set_autocommands()
@@ -552,7 +554,7 @@ class Molten:
             shared_kernels = [(x, True) for x in self.molten_kernels.keys()]
             PROMPT = "You Need to Initialize a Kernel First:"
             self.nvim.lua._prompt_init_and_run(available_kernels + shared_kernels, PROMPT, command)
-        elif not kernels: # and auto_init_behavior == "raise"
+        elif not kernels:  # and auto_init_behavior == "raise"
             raise MoltenException(
                 "Molten is not initialized in this buffer; run `:MoltenInit` to initialize."
             )
