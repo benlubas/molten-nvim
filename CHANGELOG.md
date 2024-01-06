@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.4.0](https://github.com/benlubas/molten-nvim/compare/v1.3.1...v1.4.0) (2024-01-06)
+
+
+### Features
+
+* configurable tick_rate ([#123](https://github.com/benlubas/molten-nvim/issues/123)) ([d79f48c](https://github.com/benlubas/molten-nvim/commit/d79f48c010639d7bc59fb695a1e94ccf96040cab))
+
+
+### Bug Fixes
+
+* mark imported cells DONE so no re-render ([#119](https://github.com/benlubas/molten-nvim/issues/119)) ([2adcc7f](https://github.com/benlubas/molten-nvim/commit/2adcc7f8b99ade56eac8f7250e4e8cbfb68a151d))
+* progress bar exports and similar ([#122](https://github.com/benlubas/molten-nvim/issues/122)) ([bee4bb5](https://github.com/benlubas/molten-nvim/commit/bee4bb5b43d20d2cdd88f1555af92d362f3aa362))
+
 ## [1.3.1](https://github.com/benlubas/molten-nvim/compare/v1.3.0...v1.3.1) (2023-12-31)
 
 
