@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://github.com/benlubas/molten-nvim/compare/v1.4.0...v1.5.0) (2024-01-06)
+
+
+### Features
+
+* MoltenAvailableKernels ([#124](https://github.com/benlubas/molten-nvim/issues/124)) ([36a4e9e](https://github.com/benlubas/molten-nvim/commit/36a4e9eb435ff890127c7cb45c50d3efe0819f00))
+
 ## [1.4.0](https://github.com/benlubas/molten-nvim/compare/v1.3.1...v1.4.0) (2024-01-06)
 
 
