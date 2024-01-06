@@ -335,6 +335,11 @@ class Molten:
                 f"Wrong number of arguments passed to :MoltenUpdateOption, expected 2, given {len(args)}",
             )
 
+    @pynvim.function("MoltenAvailableKernels", sync=True)  # type: ignore
+    def function_available_kernels(self, _):
+        """List of string kernel names that molten knows about"""
+        return get_available_kernels()
+
     @pynvim.function("MoltenRunningKernels", sync=True)  # type: ignore
     def function_list_running_kernels(self, args: List[Optional[bool]]) -> List[str]:
         """List all the running kernels. When passed [True], returns only buf local kernels"""
