@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.1](https://github.com/benlubas/molten-nvim/compare/v1.5.0...v1.5.1) (2024-01-07)
+
+
+### Bug Fixes
+
+* forgot the virtual lines ([#127](https://github.com/benlubas/molten-nvim/issues/127)) ([3733aa8](https://github.com/benlubas/molten-nvim/commit/3733aa8d9dfb433dcf570d413e3da7c0a3b1a60b))
+
 ## [1.5.0](https://github.com/benlubas/molten-nvim/compare/v1.4.0...v1.5.0) (2024-01-06)
 
 
