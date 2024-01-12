@@ -168,7 +168,7 @@ class OutputBuffer:
         lines.insert(0, self._get_header_text(self.output))
         return lines, len(lines) - 1 + virtual_lines
 
-    def show_virtual_output(self, anchor: Position) -> None:
+    def show_virtual_output(self, anchor: Position, offset: int = 0) -> None:
         if self.displayed_status == OutputStatus.DONE and self.virt_text_id is not None:
             return
 
@@ -186,7 +186,7 @@ class OutputBuffer:
         win = self.nvim.current.window
         win_info = self.nvim.funcs.getwininfo(win.handle)[0]
         win_col = win_info["wincol"]
-        win_row = anchor.lineno
+        win_row = anchor.lineno + offset
         win_width = win_info["width"] - win_info["textoff"]
         win_height = win_info["height"]
 
@@ -218,11 +218,11 @@ class OutputBuffer:
         )
         self.canvas.present()
 
-    def show_floating_win(self, anchor: Position) -> None:
+    def show_floating_win(self, anchor: Position, offset: int = 0) -> None:
         win = self.nvim.current.window
         win_col = win.col
-        win_row = self._buffer_to_window_lineno(anchor.lineno + 1)
-        if win_row == 0:  # anchor position is off screen
+        win_row = self._buffer_to_window_lineno(anchor.lineno + 1) + offset
+        if win_row <= 0:  # anchor position is off screen
             return
         win_width = win.width
         win_height = win.height

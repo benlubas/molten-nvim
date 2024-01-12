@@ -325,7 +325,8 @@ class MoltenKernel:
 
         if self.options.virt_text_output:
             for span, output in self.outputs.items():
-                output.show_virtual_output(span.end)
+                offset = span.calculate_output_offset()
+                output.show_virtual_output(span.end, offset)
 
         self.canvas.present()
 
@@ -395,7 +396,9 @@ class MoltenKernel:
             )
 
         if self.should_show_floating_win:
-            self.outputs[span].show_floating_win(span.end)
+            offset = span.calculate_output_offset()
+            self.outputs[span].show_floating_win(span.end, offset)
+
         else:
             self.outputs[span].clear_float_win()
 
