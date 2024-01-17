@@ -274,14 +274,16 @@ def to_outputchunk(
 
         for mimetype, process_func in special_mimetypes:
             try:
-                maybe_data = data.get(mimetype)
+                maybe_data = None
+                if data is not None:
+                    maybe_data = data.get(mimetype)
                 if maybe_data is not None:
                     chunk = process_func(maybe_data)  # type: ignore
                     break
             except ImportError:
                 continue
 
-        if chunk is None:
+        if chunk is None and data is not None:
             # handle arbitrary images
             for mimetype in data.keys():
                 match mimetype.split("/"):
@@ -291,9 +293,11 @@ def to_outputchunk(
 
     if chunk is None:
         # fallback to plain text if there's nothing else
-        if data.get("text/plain"):
+        if data is not None and data.get("text/plain"):
             chunk = _from_plaintext(data["text/plain"])
         else:
+            if data == None:
+                data = {}
             chunk = BadOutputChunk(list(data.keys()))
 
     chunk.jupyter_data = data
