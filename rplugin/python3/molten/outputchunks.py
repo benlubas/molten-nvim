@@ -274,7 +274,9 @@ def to_outputchunk(
 
         for mimetype, process_func in special_mimetypes:
             try:
-                maybe_data = data.get(mimetype)
+                maybe_data = None
+                if data is not None:
+                    maybe_data = data.get(mimetype)
                 if maybe_data is not None:
                     chunk = process_func(maybe_data)  # type: ignore
                     break
