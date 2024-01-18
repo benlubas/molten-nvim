@@ -4,7 +4,7 @@ from molten.code_cell import CodeCell
 from molten.moltenbuffer import MoltenKernel
 import os
 from molten.outputbuffer import OutputBuffer
-from molten.outputchunks import Output, OutputStatus, to_outputchunk
+from molten.outputchunks import ErrorOutputChunk, Output, OutputStatus, to_outputchunk
 from molten.position import DynamicPosition
 
 from molten.utils import MoltenException, notify_error, notify_info, notify_warn
@@ -63,27 +63,12 @@ def import_outputs(nvim: Nvim, kernel: MoltenKernel, filepath: str):
                 # we're done. This is a match, we'll create the output
                 output = Output(cell["execution_count"])
                 output.old = True
+                output.success = True
                 for output_data in cell["outputs"]:
-                    if output_data.get("output_type") == "stream":
-                        output.chunks.append(
-                            to_outputchunk(
-                                nvim,
-                                kernel.runtime._alloc_file,
-                                { "text/plain": output_data.get("text") },
-                                output_data.get("metadata"),
-                                kernel.options,
-                            )
-                        )
-                    else:
-                        output.chunks.append(
-                            to_outputchunk(
-                                nvim,
-                                kernel.runtime._alloc_file,
-                                output_data.get("data"),
-                                output_data.get("metadata"),
-                                kernel.options,
-                            )
-                        )
+                    m_chunk, success = handle_output_types(nvim, output_data.get("output_type"), kernel, output_data)
+                    output.chunks.append(m_chunk)
+                    output.success &= success
+
                 start = DynamicPosition(
                     nvim,
                     kernel.extmark_namespace,
@@ -129,6 +114,31 @@ def import_outputs(nvim: Nvim, kernel: MoltenKernel, filepath: str):
             nvim, f"Failed to load output for {failed} running cell that would be overridden"
         )
 
+def handle_output_types(nvim: Nvim, output_type: str, kernel: MoltenKernel, output_data):
+    chunk = None
+    success = True
+    match output_type:
+        case "stream":
+            chunk = to_outputchunk(
+                nvim,
+                kernel.runtime._alloc_file,
+                { "text/plain": output_data.get("text") },
+                output_data.get("metadata"),
+                kernel.options,
+            )
+        case "error":
+            chunk = ErrorOutputChunk(output_data["ename"], output_data["evalue"], output_data["traceback"])
+            chunk.extras = output_data
+            success = False
+        case _:
+            chunk = to_outputchunk(
+                nvim,
+                kernel.runtime._alloc_file,
+                output_data.get("data"),
+                output_data.get("metadata"),
+                kernel.options,
+            )
+    return chunk, success
 
 def export_outputs(nvim: Nvim, kernel: MoltenKernel, filepath: str, overwrite: bool):
     """Export outputs of the current file/kernel to a .ipynb file with the given name."""
