@@ -25,6 +25,8 @@ your new code, and all the cells below it, watching each cell output update as t
 \> You send the `.ipynb` file, complete with your changes and the output of the code you
 ran, back to your friend
 
+https://github.com/benlubas/molten-nvim/assets/56943754/02460b48-0c4e-4edd-80e7-0aeb4464757c
+
 ## The Setup:
 
 There are four big things required for a good notebook experience in neovim:
