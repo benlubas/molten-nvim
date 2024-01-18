@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.2](https://github.com/benlubas/molten-nvim/compare/v1.5.1...v1.5.2) (2024-01-18)
+
+
+### Bug Fixes
+
+* none check on import loading ([#130](https://github.com/benlubas/molten-nvim/issues/130)) ([921e6e9](https://github.com/benlubas/molten-nvim/commit/921e6e9021dccd48f2d4a43be234ca9c118ef065))
+
 ## [1.5.1](https://github.com/benlubas/molten-nvim/compare/v1.5.0...v1.5.1) (2024-01-07)
 
 
