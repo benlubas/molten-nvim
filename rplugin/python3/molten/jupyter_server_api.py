@@ -11,7 +11,7 @@ from urllib.parse import urlparse
 import requests
 import websocket
 
-from magma.runtime_state import RuntimeState
+from molten.runtime_state import RuntimeState
 
 
 class JupyterAPIClient:
