@@ -864,7 +864,6 @@ class Molten:
     @pynvim.function("MoltenSendStdin", sync=False)  # type: ignore
     @nvimui  #type: ignore
     def function_molten_send_stdin(self, args: Tuple[str, str]) -> None:
-        self.nvim.out_write(f"{args=}\n")
         molten_kernels = self._get_current_buf_kernels(False)
         if molten_kernels is None:
             return
