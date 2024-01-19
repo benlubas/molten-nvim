@@ -1,4 +1,5 @@
-from typing import List, Optional, Dict
+from contextlib import AbstractContextManager
+from typing import IO, Callable, List, Optional, Dict, Tuple
 from queue import Queue
 import hashlib
 
@@ -9,15 +10,16 @@ from molten.code_cell import CodeCell
 from molten.options import MoltenOptions
 from molten.images import Canvas
 from molten.position import Position
-from molten.utils import notify_info
+from molten.utils import notify_info, notify_warn
 from molten.outputbuffer import OutputBuffer
-from molten.outputchunks import OutputStatus
+from molten.outputchunks import OutputChunk, OutputStatus
 from molten.runtime import JupyterRuntime
 
 
-# Handles a Single Kernel that can be attached to multiple buffers
-# Other MoltenKernels can be attached to the same buffers
 class MoltenKernel:
+    """Handles a Single Kernel that can be attached to multiple buffers
+    Other MoltenKernels can be attached to the same buffers"""
+
     nvim: Nvim
     canvas: Canvas
     highlight_namespace: int
@@ -26,8 +28,8 @@ class MoltenKernel:
 
     runtime: JupyterRuntime
 
-    # name unique to this specific jupyter runtime. Only used within Molten. Human Readable
     kernel_id: str
+    """name unique to this specific jupyter runtime. Only used within Molten. Human Readable"""
 
     outputs: Dict[CodeCell, OutputBuffer]
     current_output: Optional[CodeCell]
@@ -71,9 +73,11 @@ class MoltenKernel:
 
         self.options = options
 
-    def _doautocmd(self, autocmd: str) -> None:
+    def _doautocmd(self, autocmd: str, opts: Dict = {}) -> None:
         assert " " not in autocmd
-        self.nvim.command(f"doautocmd User {autocmd}")
+        opts["pattern"] = autocmd
+        self.nvim.api.exec_autocmds("User", opts)
+        # self.nvim.command(f"doautocmd User {autocmd}")
 
     def add_nvim_buffer(self, buffer: Buffer) -> None:
         self.buffers.append(buffer)
@@ -96,7 +100,8 @@ class MoltenKernel:
         self.runtime.restart()
 
     def run_code(self, code: str, span: CodeCell) -> None:
-        self.delete_overlapping_cells(span)
+        if not self.try_delete_overlapping_cells(span):
+            return
         self.runtime.run_code(code)
 
         self.outputs[span] = OutputBuffer(
@@ -113,6 +118,11 @@ class MoltenKernel:
 
         self._check_if_done_running()
 
+    def reevaluate_all(self) -> None:
+        for span in sorted(self.outputs.keys(), key=lambda s: s.begin):
+            code = span.get_text(self.nvim)
+            self.run_code(code, span)
+
     def reevaluate_cell(self) -> bool:
         self.selected_cell = self._get_selected_span()
         if self.selected_cell is None:
@@ -121,6 +131,42 @@ class MoltenKernel:
         code = self.selected_cell.get_text(self.nvim)
 
         self.run_code(code, self.selected_cell)
+        return True
+
+    def open_in_browser(self, silent=False) -> bool:
+        """Open the HTML output of the currently selected cell in the browser.
+        Returns: True if we're in a cell, False otherwise"""
+        self.selected_cell = self._get_selected_span()
+        if self.selected_cell is None:
+            return False
+
+        filepath = write_html_from_chunks(
+            self.outputs[self.selected_cell].output.chunks, self.runtime._alloc_file
+        )
+        if filepath is None:
+            if not silent:
+                notify_warn(self.nvim, "No HTML output to open.")
+            return True
+
+        opencmd = self.options.open_cmd
+        import platform
+
+        if opencmd is None:
+            match platform.system():
+                case "Darwin":
+                    opencmd = "open"
+                case "Linux":
+                    opencmd = "xdg-open"
+                case "Windows":
+                    opencmd = "start"
+
+        if opencmd is None:
+            notify_warn(self.nvim, f"Can't open in browser, OS unsupported: {platform.system()}")
+        else:
+            import subprocess
+
+            subprocess.run([opencmd, filepath])
+
         return True
 
     def _check_if_done_running(self) -> None:
@@ -140,11 +186,30 @@ class MoltenKernel:
         if self.current_output is None or not self.current_output in self.outputs:
             did_stuff = self.runtime.tick(None)
         else:
-            did_stuff = self.runtime.tick(self.outputs[self.current_output].output)
+            output = self.outputs[self.current_output].output
+            starting_status = output.status
+            did_stuff = self.runtime.tick(output)
+
+            if (
+                self.options.auto_open_html_in_browser
+                and starting_status != OutputStatus.DONE
+                and output.status == OutputStatus.DONE
+            ):
+                self.open_in_browser(silent=True)
         if did_stuff:
             self.update_interface()
         if not was_ready and self.runtime.is_ready():
-            notify_info(self.nvim, f"Kernel '{self.runtime.kernel_name}' is ready.")
+            self._doautocmd(
+                "MoltenKernelReady",
+                opts={
+                    "data": {
+                        "kernel_id": self.kernel_id,
+                    }
+                },
+            )
+            notify_info(
+                self.nvim, f"Kernel '{self.runtime.kernel_name}' (id: {self.kernel_id}) is ready."
+            )
 
     def enter_output(self) -> None:
         if self.selected_cell is not None:
@@ -188,27 +253,49 @@ class MoltenKernel:
 
         return selected
 
-    def delete_overlapping_cells(self, span: CodeCell) -> None:
-        """Delete the code cells in this kernel that overlap with the given span"""
+    def try_delete_overlapping_cells(self, span: CodeCell) -> bool:
+        """Delete the code cells in this kernel that overlap with the given span, if overlapping
+        a currently running cell, return False
+        Returns:
+            False if the span overlaps with a currently running cell, True otherwise
+        """
         for output_span in list(self.outputs.keys()):
             if output_span.overlaps(span):
-                if self.current_output == output_span:
-                    self.current_output = None
-                self.outputs[output_span].clear_float_win()
-                self.outputs[output_span].clear_virt_output(span.bufno)
-                del self.outputs[output_span]
-                output_span.clear_interface(self.highlight_namespace)
+                if not self._delete_cell(output_span):
+                    return False
+        return True
 
-    def delete_cell(self) -> None:
+    def _delete_cell(self, cell: CodeCell, quiet=False) -> bool:
+        """Delete the given cell if it exists _and_ isn't running. If the cell is running, display
+        an error and return False, otherwise return True"""
+        if cell in self.outputs and self.outputs[cell].output.status == OutputStatus.RUNNING:
+            if not quiet:
+                notify_warn(
+                    self.nvim,
+                    "Cannot delete a running cell. Wait for it to finish or use :MoltenInterrupt before creating an overlapping cell.",
+                )
+            return False
+        self.outputs[cell].clear_float_win()
+        self.outputs[cell].clear_virt_output(cell.bufno)
+        cell.clear_interface(self.highlight_namespace)
+        del self.outputs[cell]
+        if self.current_output == cell:
+            self.current_output = None
+        if self.selected_cell == cell:
+            self.selected_cell = None
+        return True
+
+    def delete_current_cell(self) -> None:
         self.selected_cell = self._get_selected_span()
         if self.selected_cell is None:
             return
-
-        self.outputs[self.selected_cell].clear_float_win()
-        self.outputs[self.selected_cell].clear_virt_output(self.selected_cell.bufno)
-        self.selected_cell.clear_interface(self.highlight_namespace)
-        del self.outputs[self.selected_cell]
+        self._delete_cell(self.selected_cell)
         self.selected_cell = None
+
+    def clear_empty_spans(self) -> None:
+        for span in list(self.outputs.keys()):
+            if span.empty():
+                self._delete_cell(span, quiet=True)
 
     def update_interface(self) -> None:
         buffer_numbers = [buf.number for buf in self.buffers]
@@ -219,6 +306,7 @@ class MoltenKernel:
             return
 
         self.updating_interface = True
+        self.clear_empty_spans()
         new_selected_cell = self._get_selected_span()
 
         # Clear the cell we just left
@@ -315,3 +403,29 @@ class MoltenKernel:
         return hashlib.md5(
             "\n".join(self.nvim.current.buffer.api.get_lines(0, -1, True)).encode("utf-8")
         ).hexdigest()
+
+
+def write_html_from_chunks(
+    chunks: List[OutputChunk],
+    alloc_file: Callable[
+        [str, str],
+        "AbstractContextManager[Tuple[str, IO[bytes]]]",
+    ],
+) -> Optional[str]:
+    """Build an HTML file from the given chunks.
+    Returns: the filepath of the HTML file, or none if there is no HTML output in the chunks
+    """
+    html = ""
+    for chunk in chunks:
+        if (
+            chunk.output_type == "display_data"
+            and chunk.jupyter_data
+            and "text/html" in chunk.jupyter_data
+        ):
+            html += chunk.jupyter_data["text/html"]
+
+    if html != "":
+        with alloc_file("html", "w") as (path, file):
+            file.write(html)  # type: ignore
+        return path
+    return None

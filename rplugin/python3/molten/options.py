@@ -31,11 +31,14 @@ class HL:
 
 
 class MoltenOptions:
+    auto_init_behavior: str
+    auto_open_html_in_browser: bool
     auto_open_output: bool
     copy_output: bool
     enter_output_behavior: str
     image_provider: str
     limit_output_chars: int
+    open_cmd: Optional[str]
     output_crop_border: bool
     output_show_more: bool
     output_virt_lines: bool
@@ -47,6 +50,7 @@ class MoltenOptions:
     output_win_style: Optional[str]
     save_path: str
     show_mimetype_debug: bool
+    tick_rate: int
     use_border_highlights: bool
     virt_lines_off_by_1: bool
     virt_text_max_lines: int
@@ -60,10 +64,13 @@ class MoltenOptions:
         self.hl = HL()
         # fmt: off
         CONFIG_VARS = [
+            ("molten_auto_init_behavior", "init"), # "raise" or "init"
+            ("molten_auto_open_html_in_browser", False),
             ("molten_auto_open_output", True),
             ("molten_copy_output", False),
             ("molten_enter_output_behavior", "open_then_enter"),
             ("molten_image_provider", "none"),
+            ("molten_open_cmd", None),
             ("molten_output_crop_border", True),
             ("molten_output_show_more", False),
             ("molten_output_virt_lines", False),
@@ -76,6 +83,7 @@ class MoltenOptions:
             ("molten_output_win_style", False),
             ("molten_save_path", os.path.join(nvim.funcs.stdpath("data"), "molten")),
             ("molten_show_mimetype_debug", False),
+            ("molten_tick_rate", 500),
             ("molten_use_border_highlights", False),
             ("molten_virt_lines_off_by_1", False),
             ("molten_virt_text_max_lines", 12),

@@ -78,8 +78,8 @@ def create_info_window(nvim, molten_kernels, buffers, initialized):
     }
 
     # set keymaps
-    info_buf.api.set_keymap("n", "q", ":q<CR>", {"silent": True, "noremap": True})
-    info_buf.api.set_keymap("n", "<ESC>", ":q<CR>", {"silent": True, "noremap": True})
+    info_buf.api.set_keymap("n", "q", ":q<CR>", {"silent": True})
+    info_buf.api.set_keymap("n", "<ESC>", ":q<CR>", {"silent": True})
 
     # open the window
     nvim.api.open_win(

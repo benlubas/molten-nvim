@@ -58,34 +58,40 @@ scp 1.2.3.4:/tmp/remote-julia.json /tmp/remote-julia.json
 
 And finally run `:MoltenInit /tmp/remote-julia.json` in neovim.
 
-## Exporting Outputs
+## Importing/Exporting Outputs to/from ipynb files
 
 > [!NOTE]
-> This command is considered experimental, and while it works well enough to be used. There are
-> likely still bugs. So if you find them, don't hesitate to create an issue.
+> These commands are considered experimental, and while they work well enough to be used, there are
+> likely still bugs. If you find one, don't hesitate to create an issue.
 
-With the `:MoltenExportOutput` command, you can export cell outputs to a Jupyter Notebook (`.ipynb` file).
-**This does not create the notebook.**
+In-depth on:
+- `:MoltenExportOutput`
+- `:MoltenImportOutput`
 
-This command is intended for use with tools like Quarto, or Jupytext, which convert notebooks to
-plaintext, but it's implemented in such a way that the plaintext file format shouldn't matter, as
-long as the code contents of the cells matches up.
+These commands are intended for use with tools like Quarto, or Jupytext, which convert notebooks to
+plaintext, but they're implemented in such a way that the plaintext file format shouldn't matter, as
+long as the code contents of the cells match.
 
 ### Usage
 
 `:MoltenExportOutput` will create a copy of the notebook, prepended with "copy-of-", while
 `:MoltenExportOutput!` will overwrite the existing notebook (with an identical one that just has new
-outputs). Existing outputs are deleted.
+outputs). Existing outputs are deleted (only for the cells that you export).
+
+`:MoltenImportOutput` will import outputs from a notebook file so you can view them in neovim. It
+requires a running kernel.
 
 You can specify a file path as the first argument. By default, Molten looks for an existing notebook
-with the same name in the same spot. For example: `/path/to/file.md` exports to
-`/path/to/file.ipynb` by default. If you call `:MoltenExportOutput! /some/other/path/other_file.ipynb`
-then Molten will add outputs to `/some/other/path/other_file.ipynb`.
+with the same name in the same spot. For example, when editing `/path/to/file.md` the default path
+is `/path/to/file.ipynb`. If you call `:MoltenExportOutput! /other/file.ipynb`
+then Molten will add outputs to `/other/file.ipynb` (`/other/file.ipynb` must already exist).
 
-If there are multiple kernels attached to the buffer when the command is called, you will be
-prompted for which kernel's outputs to export. There is nothing stopping you from exporting outputs
-from multiple kernels to the same notebook if you would like. That might be confusing, so it's not
-the default behavior.
+If there are multiple kernels attached to the buffer when either command is called, you will be
+prompted for which kernel to use. You can only export one kernels output at a time, and you can only
+import outputs to one kernel at a time.
+
+There is nothing stopping you from exporting outputs from multiple kernels to the same notebook if
+you would like.
 
 ### Bailing
 
@@ -95,12 +101,28 @@ the notebook. **Cells are searched for in order.**
 If your export is failing, it's probably b/c your notebook and plaintext representation got out of
 sync with each other.
 
-### Shortcomings
+Imports do not bail in the same sense because they're fairly harmless. If you accidentally import
+an output from the wrong notebook, no data is lost, so molten will let it happen. Molten reports the
+number of cells imported, so if that number looks wrong, your import didn't quite work out for some
+reason.
 
-#### cell matching
-Cells are matched by code content (comments are ignored). As a result, **if you have two or more
-code cells that have the same code content, and only the second one has output, molten will export
-that output to the first cell in the notebook**.
+
+### Cell Matching
+
+Cells are matched differently for imports vs exports. We're kinda forced to do this.
+
+#### exports
+
+For exports, cells are matched by code content and **comments are ignored**. As a result, **if you
+have two or more code cells that have the same code content, and only the second one has output,
+molten will export that output to the first cell in the notebook**.
 
 To avoid this, just don't create cells that are identical. If you must, just execute both before
 exporting, they will be correctly lined up.
+
+#### imports
+
+Cells are matched as plaintext, line by line, sequentially. This works pretty well, but results in
+quarto cells not being "full" as the metadata comments are not matched. Additionally, markdown text
+that is exactly the same as a code cell and that comes before the code cell, will get the output
+instead of the code cell (but this is _rare_).

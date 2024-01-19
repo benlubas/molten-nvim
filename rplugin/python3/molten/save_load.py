@@ -67,6 +67,7 @@ def load(nvim: Nvim, moltenbuffer: MoltenKernel, nvim_buffer: Buffer, data: Dict
             nvim_buffer.number,
             cell["span"]["end"]["lineno"],
             cell["span"]["end"]["colno"],
+            right_gravity=True,
         )
         span = CodeCell(nvim, begin_position, end_position)
 
@@ -96,6 +97,7 @@ def load(nvim: Nvim, moltenbuffer: MoltenKernel, nvim_buffer: Buffer, data: Dict
             )
 
         output.old = True
+        output.status = OutputStatus.DONE
 
         moltenbuffer.outputs[span] = OutputBuffer(
             moltenbuffer.nvim,

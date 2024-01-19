@@ -69,7 +69,7 @@ version = "1.1.0",
 #### Python Deps
 
 **Note**: It's recommended that you install python packages in a virtual environment as outlined in
-the [venv guide](Virtual-Environments)
+the [venv guide](./Virtual-Environments.md)
 
 **Absolutely necessary python packages:**
 - [`pynvim`](https://github.com/neovim/pynvim) (for the Remote Plugin API)
@@ -88,7 +88,7 @@ the [venv guide](Virtual-Environments)
 - `plotly` and `kaleido` (for displaying Plotly figures)
     - In order to render plotly figures you might also needed `nbformat` installed in the project
     venv, unfortunately installing it in the neovim venv did not work (see [venv
-    guide](Virtual-Environments))
+    guide](./Virtual-Environments.md))
 - `pyperclip` if you want to use `molten_copy_output`
 
 #### .NET Deps
@@ -113,7 +113,6 @@ return {
             -- these are examples, not defaults. Please see the readme
             vim.g.molten_image_provider = "image.nvim"
             vim.g.molten_output_win_max_height = 20
-            vim.g.molten_auto_open_output = false
         end,
     },
     {
@@ -131,61 +130,7 @@ return {
     }
 },
 ```
-### NixOS Installation
 
-There are several ways to get Molten working on NixOS. The easiest way is with Home Manager to manage your NeoVim environment.
-
-#### NixOS Home Manager Installation
-
-If you use home manager and have configure Neovim through it, you can set up the dependencies like so:
-
-```nix
-  # home.nix or wherever you configure neovim
-  { pkgs, ... }:
-  let
-    # the vimPlugins.molten-nvim package has not been merged into nixpkgs yet but for now you can use this
-    molten-nvim = pkgs.callPackage pkgs.vimUtils.buildVimPlugin {
-      pname = "molten-nvim";
-      version = "2023-10-21";
-      src = fetchFromGitHub {
-        owner = "benlubas";
-        repo = "molten-nvim";
-        rev = "f9c28efc13f7a262e27669b984f3839ff5c50c32";
-        sha256 = "1r8xf3jphgml0pax34p50d67rglnq5mazdlmma1jnfkm67acxaac";
-      };
-      meta.homepage = "https://github.com/benlubas/molten-nvim/";
-    };
-  in {
-    # ... other config
-    programs.neovim = {
-      # whatever other neovim configuration you have
-      plugins = with pkgs.vimPlugins; [
-        # ... other plugins
-        image-nvim
-        molten-nvim
-      ];
-      extraPackages = with pkgs; [
-        # ... other packages
-        imagemagick
-      ];
-      extraLuaPackages = ps: [
-        # ... other lua packages
-        magick
-      ];
-      extraPython3Packages = ps: with ps; [
-        # ... other python packages
-        pynvim
-        jupyter-client
-        cairosvg
-        pnglatex
-        plotly
-        pyperclip
-      ];
-    };
-  }
-```
-
-There are multiple ways to manage your Lua configuration so follow the instructions for setting up `Image.nvim` and `molten-nvim` for your specific setup.
 ### A Note on Remote Plugins
 
 Molten is a remote plugin. This means that the first time you install, and after you update Molten
@@ -193,6 +138,9 @@ you need to run the `:UpdateRemotePlugins` command in Neovim. This can be done w
 mangers (like Lazy for example) automatically.
 
 But if things aren't working, make sure that you run that command and then restart your editor.
+
+> [!WARNING]
+> Windows users see [the windows page](./Windows.md)
 
 ### Customize
 

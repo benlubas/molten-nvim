@@ -39,6 +39,9 @@ class CodeCell:
     def __str__(self) -> str:
         return f"CodeCell({self.begin}, {self.end})"
 
+    def __repr__(self) -> str:
+        return f"CodeCell(begin={self.begin}, end={self.end})"
+
     def clear_interface(self, highlight_namespace):
         """Clear the highlight of the code cell"""
         self.nvim.funcs.nvim_buf_clear_namespace(
@@ -48,13 +51,18 @@ class CodeCell:
             self.end.lineno + 1,
         )
 
+    def empty(self) -> bool:
+        return self.end <= self.begin
+
     def get_text(self, nvim: Nvim) -> str:
         assert self.begin.bufno == self.end.bufno
 
         lines: List[str] = nvim.funcs.nvim_buf_get_lines(
-            self.bufno, self.begin.lineno, self.end.lineno + 1, True
+            self.bufno, self.begin.lineno, self.end.lineno + 1, False
         )
 
+        if len(lines) == 0:
+            return "" # apparently this can happen...
         if len(lines) == 1:
             return lines[0][self.begin.colno : self.end.colno]
         else:
