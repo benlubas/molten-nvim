@@ -35,6 +35,8 @@ class HistoryBuffer:
         else:
             self.histories[cell] = [(code, output)]
 
+        # TODO: refresh the buffer if it's open
+
     def remove(self, cell: CodeCell):
         del self.histories[cell]
 
@@ -57,25 +59,7 @@ class HistoryBuffer:
         lang = kernel.runtime.kernel_manager.kernel_spec.language  # type: ignore
 
         for code, output in self.histories[cell]:
-            # add the code in a markdown cell with the appropriate language
-            lines.append(f"```{lang}")
-            lines.extend(code.split("\n"))
-            lines.append(f"```")
-
-            # add output
-            for chunk in output.chunks:
-                output_text, _ = chunk.place(
-                    self.buf,
-                    kernel.options,
-                    0,
-                    len(lines) - 1,
-                    # NOTE: it doesn't really matter what we pass for shape, the width is the only
-                    # value used, and it's not going to matter
-                    (0, 0, 100, 0),
-                    kernel.canvas,
-                    False,
-                )
-                lines.extend(output_text.split("\n"))
+            lines.extend(self.append_history_to_buf(lang, code, output, kernel, len(lines)))
 
         self.buf[0] = lines[0]
         self.buf.append(lines[1:])
@@ -84,8 +68,35 @@ class HistoryBuffer:
 
         return self.buf
 
+    def append_history_to_buf(self, lang, code, output, kernel, offset):
+        lines = []
+        # add the code in a markdown cell with the appropriate language
+        lines.append(f"```{lang}")
+        lines.extend(code.split("\n"))
+        lines.append(f"```")
+
+        # add output
+        for chunk in output.chunks:
+            output_text, _ = chunk.place(
+                self.buf,
+                kernel.options,
+                0,
+                len(lines) - 1 + offset,
+                # NOTE: it doesn't really matter what we pass for shape, the width is the only
+                # value used, and it's only used to predict window height, which we don't use
+                (0, 0, 100, 0),
+                kernel.canvas,
+                False,
+            )
+            lines.extend(output_text.split("\n"))
+        return lines
+
+    # def update_history_buffer(self, cell: CodeCell, kernel) -> Buffer | None:
+    #     pass
+
     def close(self):
         """ close an open history buffer """
+        # TODO: also clear images.
         if self.buf and self.buf.api.is_valid():
             self.buf.api.delete({})
 
