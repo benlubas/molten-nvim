@@ -316,7 +316,7 @@ class Molten:
         # from different kernels are disjoint
         for k in kernels:
             if k.kernel_id != kernel.kernel_id:
-                if not k.try_delete_overlapping_cells(span):
+                if not k.merge_overlapping_cells(span):
                     return
 
         kernel.run_code(code, span)
@@ -803,6 +803,30 @@ class Molten:
                 self._deinit_buffer([molten])
 
             raise MoltenException("Error while doing Molten IO: " + str(err))
+
+    @pynvim.command("MoltenHistory", nargs="*", sync=True)  # type: ignore
+    @nvimui  # type: ignore
+    def command_history(self, args) -> None:
+        """ MoltenHistory [kernel] cell/all """
+        kernels = self._get_current_buf_kernels(True)
+        assert kernels is not None
+
+        buf = self.nvim.current.buffer
+        if len(args) > 1:
+            query = args[1]
+        else:
+            query = "cell"
+
+        if len(args) > 0:
+            kernel = args[0]
+        else:
+            self.kernel_check(f"MoltenHistory %k {query}", buf)
+            return
+
+        for molten in kernels:
+            if molten.kernel_id == kernel:
+                if molten.current_output is not None:
+                    molten.history.open_split(molten.current_output, molten)
 
     # Internal functions which are exposed to VimScript
 

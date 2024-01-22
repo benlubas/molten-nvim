@@ -12,8 +12,9 @@ from molten.images import Canvas
 from molten.position import Position
 from molten.utils import notify_info, notify_warn
 from molten.outputbuffer import OutputBuffer
-from molten.outputchunks import OutputChunk, OutputStatus
+from molten.outputchunks import Output, OutputChunk, OutputStatus
 from molten.runtime import JupyterRuntime
+from molten.history import HistoryBuffer
 
 
 class MoltenKernel:
@@ -32,6 +33,8 @@ class MoltenKernel:
     """name unique to this specific jupyter runtime. Only used within Molten. Human Readable"""
 
     outputs: Dict[CodeCell, OutputBuffer]
+
+    history: HistoryBuffer
     current_output: Optional[CodeCell]
     queued_outputs: "Queue[CodeCell]"
 
@@ -64,6 +67,7 @@ class MoltenKernel:
         self.kernel_id = kernel_id
 
         self.outputs = {}
+        self.history = HistoryBuffer(nvim, {})
         self.current_output = None
         self.queued_outputs = Queue()
 
@@ -77,7 +81,6 @@ class MoltenKernel:
         assert " " not in autocmd
         opts["pattern"] = autocmd
         self.nvim.api.exec_autocmds("User", opts)
-        # self.nvim.command(f"doautocmd User {autocmd}")
 
     def add_nvim_buffer(self, buffer: Buffer) -> None:
         self.buffers.append(buffer)
@@ -100,13 +103,17 @@ class MoltenKernel:
         self.runtime.restart()
 
     def run_code(self, code: str, span: CodeCell) -> None:
-        if not self.try_delete_overlapping_cells(span):
+        if not self.merge_overlapping_cells(span):
             return
         self.runtime.run_code(code)
 
         self.outputs[span] = OutputBuffer(
             self.nvim, self.canvas, self.extmark_namespace, self.options
         )
+
+        output = self.outputs[span].output
+        self.history.add(span, code, output)
+
         self.queued_outputs.put(span)
 
         self.selected_cell = span
@@ -168,6 +175,9 @@ class MoltenKernel:
             subprocess.run([opencmd, filepath])
 
         return True
+
+    def get_history(self, query: str) -> None | Dict[CodeCell, List[Tuple[str, Output]]]:
+        self.history.get_history(query, self.selected_cell)
 
     def _check_if_done_running(self) -> None:
         # TODO: refactor
@@ -253,15 +263,23 @@ class MoltenKernel:
 
         return selected
 
-    def try_delete_overlapping_cells(self, span: CodeCell) -> bool:
+    def merge_overlapping_cells(self, new_cell: CodeCell) -> bool:
         """Delete the code cells in this kernel that overlap with the given span, if overlapping
-        a currently running cell, return False
+        a currently running cell, return False. Re-associates history of deleted cell to the new
+        cell. If more than one cell is overwritten, more recent cell's history is placed entirely
+        after less recent cells.
         Returns:
             False if the span overlaps with a currently running cell, True otherwise
         """
-        for output_span in list(self.outputs.keys()):
-            if output_span.overlaps(span):
-                if not self._delete_cell(output_span):
+        for old_cell in list(self.outputs.keys()):
+            if old_cell.overlaps(new_cell):
+                hist = self.history.histories.get(old_cell) or []
+                if self._delete_cell(old_cell):
+                    if new_cell in self.history.histories:
+                        self.history.histories[new_cell] += hist
+                    else:
+                        self.history.histories[new_cell] = hist
+                else:
                     return False
         return True
 
@@ -279,6 +297,7 @@ class MoltenKernel:
         self.outputs[cell].clear_virt_output(cell.bufno)
         cell.clear_interface(self.highlight_namespace)
         del self.outputs[cell]
+        self.history.remove(cell)
         if self.current_output == cell:
             self.current_output = None
         if self.selected_cell == cell:

@@ -90,7 +90,7 @@ def import_outputs(nvim: Nvim, kernel: MoltenKernel, filepath: str):
 
     failed = 0
     for span, output in molten_outputs.items():
-        if kernel.try_delete_overlapping_cells(span):
+        if kernel.merge_overlapping_cells(span):
             kernel.outputs[span] = OutputBuffer(
                 kernel.nvim,
                 kernel.canvas,
