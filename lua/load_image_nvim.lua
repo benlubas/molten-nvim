@@ -42,7 +42,7 @@ image_api.render = function(identifier, geometry)
 end
 
 image_api.clear = function(identifier, buf)
-  if (buf and images[identifier].buffer == buf) or not buf then
+  if (buf and images[identifier].buffer == buf) or buf == nil then
     images[identifier]:clear()
   end
 end

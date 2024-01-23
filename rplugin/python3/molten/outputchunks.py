@@ -157,7 +157,7 @@ class ImageOutputChunk(OutputChunk):
     ) -> Tuple[str, int]:
         self.img_identifier = canvas.add_image(
             self.img_path,
-            f"{'virt-' if virtual else ''}{self.img_path}",
+            f"{'virt-' if virtual else ''}{bufnr}-{self.img_path}",
             x=0,
             y=lineno + 1,
             bufnr=bufnr,

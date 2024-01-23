@@ -67,7 +67,7 @@ class MoltenKernel:
         self.kernel_id = kernel_id
 
         self.outputs = {}
-        self.history = HistoryBuffer(nvim, {})
+        self.history = HistoryBuffer(nvim, options, self.canvas, self.highlight_namespace)
         self.current_output = None
         self.queued_outputs = Queue()
 
@@ -76,6 +76,7 @@ class MoltenKernel:
         self.updating_interface = False
 
         self.options = options
+        self.language = self.runtime.kernel_manager.kernel_spec.language  # type: ignore
 
     def _doautocmd(self, autocmd: str, opts: Dict = {}) -> None:
         assert " " not in autocmd
@@ -189,6 +190,7 @@ class MoltenKernel:
             key = self.queued_outputs.get_nowait()
             self.current_output = key
 
+
     def tick(self) -> None:
         self._check_if_done_running()
 
@@ -207,8 +209,7 @@ class MoltenKernel:
                 if self.options.auto_open_html_in_browser:
                     self.open_in_browser(silent=True)
 
-                self.nvim.out_write("now done\n")
-                self.history.update_history_buffer(self.current_output, self)
+                self.history.update_history_buffer(self.current_output, self.language)
 
         if did_stuff:
             self.update_interface()
