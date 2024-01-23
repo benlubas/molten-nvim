@@ -41,8 +41,10 @@ image_api.render = function(identifier, geometry)
   end
 end
 
-image_api.clear = function(identifier)
-  images[identifier]:clear()
+image_api.clear = function(identifier, buf)
+  if (buf and images[identifier].buffer == buf) or not buf then
+    images[identifier]:clear()
+  end
 end
 
 image_api.clear_all = function()

@@ -190,6 +190,32 @@ class Output:
 
         self._should_clear = False
 
+    def get_header_text(self) -> str:
+        if self.execution_count is None:
+            execution_count = "..."
+        else:
+            execution_count = str(self.execution_count)
+
+        if self.status == OutputStatus.HOLD:
+            status = "* On Hold"
+        elif self.status == OutputStatus.DONE:
+            if self.success:
+                status = "✓ Done"
+            else:
+                status = "✗ Failed"
+        elif self.status == OutputStatus.RUNNING:
+            status = "... Running"
+        else:
+            raise ValueError("bad Output.status: %s" % self.status)
+
+        if self.old:
+            old = "[OLD] "
+        else:
+            old = ""
+
+        return f"{old}Out[{execution_count}]: {status}"
+
+
     def merge_text_chunks(self):
         """Merge the last two chunks if they are text chunks, and text on a line before \r
         character, this is b/c outputs before a \r aren't shown, and so, should be deleted"""

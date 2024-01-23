@@ -825,8 +825,8 @@ class Molten:
 
         for molten in kernels:
             if molten.kernel_id == kernel:
-                if molten.current_output is not None:
-                    molten.history.open_split(molten.current_output, molten)
+                if molten.selected_cell is not None:
+                    molten.history.open_split(molten.selected_cell, molten)
 
     # Internal functions which are exposed to VimScript
 

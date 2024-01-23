@@ -201,11 +201,15 @@ class MoltenKernel:
             did_stuff = self.runtime.tick(output)
 
             if (
-                self.options.auto_open_html_in_browser
-                and starting_status != OutputStatus.DONE
+                starting_status != OutputStatus.DONE
                 and output.status == OutputStatus.DONE
             ):
-                self.open_in_browser(silent=True)
+                if self.options.auto_open_html_in_browser:
+                    self.open_in_browser(silent=True)
+
+                self.nvim.out_write("now done\n")
+                self.history.update_history_buffer(self.current_output, self)
+
         if did_stuff:
             self.update_interface()
         if not was_ready and self.runtime.is_ready():

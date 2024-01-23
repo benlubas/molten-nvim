@@ -6,18 +6,6 @@ from molten.code_cell import CodeCell
 from molten.outputchunks import Output
 from molten.utils import notify_error
 
-# TODO: what do I want this to look like...
-
-# general ideas:
-# use folding to show only the first line of code + a few lines of output or an image
-
-# option 1:
-# Floating window below the current cell that shows history inside (enter the window and scroll
-# through) This would only contain history for that one cell
-
-# option 2:
-# A split that shows all of the history of the entire kernel so far
-
 
 class HistoryBuffer:
     histories: Dict[CodeCell, List[Tuple[str, Output]]]
@@ -35,8 +23,6 @@ class HistoryBuffer:
         else:
             self.histories[cell] = [(code, output)]
 
-        # TODO: refresh the buffer if it's open
-
     def remove(self, cell: CodeCell):
         del self.histories[cell]
 
@@ -45,7 +31,7 @@ class HistoryBuffer:
             case "cell":
                 if cell is None:
                     return
-                return { cell : self.histories[cell] }
+                return {cell: self.histories[cell]}
             case "all":
                 return self.histories
 
@@ -53,32 +39,57 @@ class HistoryBuffer:
         if cell not in self.histories:
             notify_error(self.nvim, "Couldn't find code cell history, please try again")
             return
-        self.buf = self.nvim.buffers[self.nvim.funcs.nvim_create_buf(False, True)]
+
+        # self.nvim.out_write("called\n")
+        if self.buf:
+            self.buf.api.set_lines(0, -1, False, [])
+        else:
+            # self.nvim.out_write("new buffer\n")
+            self.buf = self.nvim.buffers[self.nvim.funcs.nvim_create_buf(False, True)]
+        # self.nvim.out_write("hi there\n")
 
         lines = []
+        output_ranges = []
         lang = kernel.runtime.kernel_manager.kernel_spec.language  # type: ignore
 
         for code, output in self.histories[cell]:
-            lines.extend(self.append_history_to_buf(lang, code, output, kernel, len(lines)))
+            new_lines, output_range = self.generate_history_lines(
+                lang, code, output, kernel, len(lines)
+            )
+            lines.extend(new_lines)
+            output_ranges.append(output_range)
 
         self.buf[0] = lines[0]
         self.buf.append(lines[1:])
-        self.nvim.api.set_option_value("filetype", "markdown.molten_history", {"buf": self.buf.handle})
+        self.nvim.api.set_option_value(
+            "filetype", "markdown.molten_history", {"buf": self.buf.handle}
+        )
         self.nvim.api.set_option_value("buflisted", False, {"buf": self.buf.handle})
+        self.nvim.out_write(f"{output_ranges=}\n")
+        for r in output_ranges:
+            for line in range(r[0], r[1]):
+                self.buf.api.add_highlight(kernel.highlight_namespace, "comment", line, 0, -1)
 
         return self.buf
 
-    def append_history_to_buf(self, lang, code, output, kernel, offset):
+    def generate_history_lines(
+        self, lang, code, output: Output, kernel, offset
+    ) -> Tuple[List[str], Tuple[int, int]]:
+        if self.buf is None:
+            return [], (0, 0)
         lines = []
         # add the code in a markdown cell with the appropriate language
         lines.append(f"```{lang}")
         lines.extend(code.split("\n"))
         lines.append(f"```")
 
+        out_start = offset + len(lines)
+
         # add output
+        lines.append(output.get_header_text())
         for chunk in output.chunks:
             output_text, _ = chunk.place(
-                self.buf,
+                self.buf.handle,
                 kernel.options,
                 0,
                 len(lines) - 1 + offset,
@@ -88,20 +99,27 @@ class HistoryBuffer:
                 kernel.canvas,
                 False,
             )
-            lines.extend(output_text.split("\n"))
-        return lines
+            lines.extend(output_text.rstrip("\n").split("\n"))
 
-    # def update_history_buffer(self, cell: CodeCell, kernel) -> Buffer | None:
-    #     pass
+        lines.append("━" * 80)
+        return lines, (out_start, offset + len(lines) - 1)
 
-    def close(self):
-        """ close an open history buffer """
-        # TODO: also clear images.
+    def update_history_buffer(self, cell: CodeCell, kernel) -> Buffer | None:
+        if not self.buf or not self.buf.api.is_valid():
+            return
+
+        self.create_cell_history_buffer(cell, kernel)
+
+    def clear(self, kernel):
+        """close an open history buffer"""
+        if self.buf:
+            kernel.canvas.clear(buf=self.buf.handle)
         if self.buf and self.buf.api.is_valid():
             self.buf.api.delete({})
+        self.buf = None
 
     def open_split(self, cell: CodeCell, kernel):
-        self.close()
+        self.clear(kernel)
 
         self.create_cell_history_buffer(cell, kernel)
 

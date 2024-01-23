@@ -35,7 +35,7 @@ class Canvas(ABC):
         """
 
     @abstractmethod
-    def clear(self) -> None:
+    def clear(self, buf=None) -> None:
         """
         Clear all images from the canvas.
         """
@@ -101,7 +101,7 @@ class NoCanvas(Canvas):
     def present(self) -> None:
         pass
 
-    def clear(self) -> None:
+    def clear(self, buf=None) -> None:
         pass
 
     def img_size(self, _indentifier: str) -> Dict[str, int]:
@@ -162,9 +162,9 @@ class ImageNvimCanvas(Canvas):
         self.to_make_invisible.clear()
         self.to_make_visible.clear()
 
-    def clear(self) -> None:
+    def clear(self, buf=None) -> None:
         for img in self.visible:
-            self.image_api.clear(img)
+            self.image_api.clear(img, buf)
 
     def img_size(self, identifier: str) -> Dict[str, int]:
         return self.image_api.image_size(identifier)

@@ -46,31 +46,6 @@ class OutputBuffer:
     def _buffer_to_window_lineno(self, lineno: int) -> int:
         return self.lua.calculate_window_position(lineno)
 
-    def _get_header_text(self, output: Output) -> str:
-        if output.execution_count is None:
-            execution_count = "..."
-        else:
-            execution_count = str(output.execution_count)
-
-        if output.status == OutputStatus.HOLD:
-            status = "* On Hold"
-        elif output.status == OutputStatus.DONE:
-            if output.success:
-                status = "✓ Done"
-            else:
-                status = "✗ Failed"
-        elif output.status == OutputStatus.RUNNING:
-            status = "... Running"
-        else:
-            raise ValueError("bad output.status: %s" % output.status)
-
-        if output.old:
-            old = "[OLD] "
-        else:
-            old = ""
-
-        return f"{old}Out[{execution_count}]: {status}"
-
     def enter(self, anchor: Position) -> bool:
         entered = False
         if self.display_win is None:
@@ -165,7 +140,7 @@ class OutputBuffer:
         while len(lines) > 0 and lines[-1] == "":
             lines.pop()
 
-        lines.insert(0, self._get_header_text(self.output))
+        lines.insert(0, self.output.get_header_text())
         return lines, len(lines) - 1 + virtual_lines
 
     def show_virtual_output(self, anchor: Position) -> None:
