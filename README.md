@@ -13,6 +13,7 @@ https://github.com/benlubas/molten-nvim/assets/56943754/17ae81c0-306f-4496-bce8-
   (or both)
 - Renders images, plots, and LaTeX in neovim
 - View code and output history in a separate buffer
+- Take input from stdin with `vim.ui.input`
 - Send code from multiple buffers to the same kernel
 - Send code from the same buffer to multiple kernels
 - Supports any language with a Jupyter Kernel (in theory, they haven't all been tested)

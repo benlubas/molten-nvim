@@ -63,7 +63,7 @@ class MoltenKernel:
 
         self._doautocmd("MoltenInitPre")
 
-        self.runtime = JupyterRuntime(nvim, kernel_name, options)
+        self.runtime = JupyterRuntime(nvim, kernel_name, kernel_id, options)
         self.kernel_id = kernel_id
 
         self.outputs = {}
@@ -233,6 +233,12 @@ class MoltenKernel:
             notify_info(
                 self.nvim, f"Kernel '{self.runtime.kernel_name}' (id: {self.kernel_id}) is ready."
             )
+
+    def tick_input(self) -> None:
+        self.runtime.tick_input()
+
+    def send_stdin(self, input: str) -> None:
+        self.runtime.kernel_client.input(input)
 
     def enter_output(self) -> None:
         if self.selected_cell is not None:

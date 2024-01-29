@@ -37,6 +37,7 @@ class Molten:
     extmark_namespace: int
 
     timer: Optional[int]
+    input_timer: Optional[int]
 
     options: MoltenOptions
 
@@ -53,6 +54,7 @@ class Molten:
         self.canvas = None
         self.buffers = {}
         self.timer = None
+        self.input_timer = None
         self.molten_kernels = {}
 
     def _initialize(self) -> None:
@@ -68,6 +70,10 @@ class Molten:
 
         self.timer = self.nvim.eval(
             f"timer_start({self.options.tick_rate}, 'MoltenTick', {{'repeat': -1}})"
+        )  # type: ignore
+
+        self.input_timer = self.nvim.eval(
+            f"timer_start({self.options.tick_rate}, 'MoltenTickInput', {{'repeat': -1}})"
         )  # type: ignore
 
         self._setup_highlights()
@@ -103,6 +109,8 @@ class Molten:
             self.canvas.deinit()
         if self.timer is not None:
             self.nvim.funcs.timer_stop(self.timer)
+        if self.input_timer is not None:
+            self.nvim.funcs.timer_stop(self.input_timer)
 
     def _initialize_if_necessary(self) -> None:
         if not self.initialized:
@@ -866,7 +874,7 @@ class Molten:
     def function_on_exit_pre(self, _: Any) -> None:
         self._deinitialize()
 
-    @pynvim.function("MoltenTick", sync=True)  # type: ignore
+    @pynvim.function("MoltenTick", sync=False)  # type: ignore
     @nvimui  # type: ignore
     def function_molten_tick(self, _: Any) -> None:
         self._initialize_if_necessary()
@@ -878,7 +886,30 @@ class Molten:
         for m in molten_kernels:
             m.tick()
 
-    @pynvim.function("MoltenUpdateInterface", sync=True)  # type: ignore
+    @pynvim.function("MoltenTickInput", sync=False)  # type: ignore
+    @nvimui  #type: ignore
+    def function_molten_tick_input(self, _: Any) -> None:
+        self._initialize_if_necessary()
+
+        molten_kernels = self._get_current_buf_kernels(False)
+        if molten_kernels is None:
+            return
+
+        for m in molten_kernels:
+            m.tick_input()
+
+    @pynvim.function("MoltenSendStdin", sync=False)  # type: ignore
+    @nvimui  #type: ignore
+    def function_molten_send_stdin(self, args: Tuple[str, str]) -> None:
+        molten_kernels = self._get_current_buf_kernels(False)
+        if molten_kernels is None:
+            return
+
+        for m in molten_kernels:
+            if m.kernel_id == args[0]:
+                m.send_stdin(args[1])
+
+    @pynvim.function("MoltenUpdateInterface", sync=False)  # type: ignore
     @nvimui  # type: ignore
     def function_update_interface(self, _: Any) -> None:
         self._update_interface()
