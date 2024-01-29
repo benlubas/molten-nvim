@@ -51,8 +51,8 @@ class HistoryBuffer:
             return
 
         if self.buf:
-            self.buf.api.set_lines(0, -1, False, [])
             self.canvas.clear(bufnr=self.buf.handle)
+            self.buf.api.set_lines(0, -1, False, [])
         else:
             self.buf = self.nvim.buffers[self.nvim.funcs.nvim_create_buf(False, True)]
 

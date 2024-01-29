@@ -163,8 +163,11 @@ class ImageNvimCanvas(Canvas):
         self.to_make_visible.clear()
 
     def clear(self, bufnr=None) -> None:
+        cleared = set()
         for img in self.visible:
-            self.image_api.clear(img, bufnr)
+            if self.image_api.clear(img, bufnr):
+                cleared.add(img)
+        self.visible.difference_update(cleared)
 
     def img_size(self, identifier: str) -> Dict[str, int]:
         return self.image_api.image_size(identifier)

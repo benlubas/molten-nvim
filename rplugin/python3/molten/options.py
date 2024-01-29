@@ -6,8 +6,6 @@ from dataclasses import dataclass
 
 from molten.utils import notify_error
 
-HL_NAMESPACE = ""
-VIRT_TEXT_NAMESPACE = ""
 
 @dataclass
 class HL:

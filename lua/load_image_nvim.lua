@@ -15,8 +15,8 @@ image_api.from_file = function(path, opts)
   if opts.window and opts.window == vim.NIL then
     opts.window = nil
   end
-  images[path] = image.from_file(path, opts or {})
-  return path
+  images[opts.id] = image.from_file(path, opts or {})
+  return opts.id
 end
 
 image_api.render = function(identifier, geometry)
@@ -36,7 +36,7 @@ image_api.render = function(identifier, geometry)
     img.window = nil
   end
 
-  if img.window then
+  if img.window and not img.is_rendered then
     img:render(geometry)
   end
 end
@@ -44,7 +44,9 @@ end
 image_api.clear = function(identifier, buf)
   if (buf and images[identifier].buffer == buf) or buf == nil then
     images[identifier]:clear()
+    return true
   end
+  return false
 end
 
 image_api.clear_all = function()
