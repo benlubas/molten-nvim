@@ -1,22 +1,23 @@
 # Molten
 
 Molten is a fork of [Magma](https://www.github.com/dccsillag/magma-nvim), a plugin for running code
-interactively with the jupyter kernel. Molten provides an excellent repl-like experience, and an
+interactively with the Jupyter kernel. Molten provides an excellent repl-like experience, and an
 incredible notebook-like experience in neovim.
 
 https://github.com/benlubas/molten-nvim/assets/56943754/17ae81c0-306f-4496-bce8-99286e7f21ed
 
 ## Feature Highlights
 
-- Send code to run asynchronously in the jupyter kernel
-- See output below the code in real time, without flicker, as virtual text or in a floating
-window (or both)
+- Send code to run asynchronously in the Jupyter kernel
+- See output below the code in real time, without flicker, as virtual text or in a floating window
+  (or both)
 - Renders images, plots, and LaTeX in neovim
+- View code and output history in a separate buffer
 - Send code from multiple buffers to the same kernel
 - Send code from the same buffer to multiple kernels
 - Supports any language with a Jupyter Kernel (in theory, they haven't all been tested)
 - Python virtual environment support
-- Import and Export outputs to and from jupyter notebook files
+- Import and Export outputs to and from Jupyter notebook files
 
 ## Requirements
 
@@ -106,6 +107,7 @@ kernel is attached to the buffer. This is configurable with the `molten_auto_ini
 | `MoltenInit`              | `["shared"] [kernel]` | Initialize a kernel for the current buffer. If `shared` is passed as the first value, this buffer will use an already running kernel. If no kernel is given, prompts the user. |
 | `MoltenDeinit`            | none                  | De-initialize the current buffer's runtime and molten instance. (called automatically on vim close/buffer unload) |
 | `MoltenGoto`              | `[n]`                 | Go to the `n`th code cell `n` defaults to 1 (1 indexed) |
+| `MoltenHistory`           | none                  | Open a vertical split buffer that shows history for the current cell. The windows auto updates with the history for the last cell that was run. Needs to be run from within a cell |
 | `MoltenNext`              | `[n]`                 | Go to the next code cell, or jump `n` code cells `n` defaults to 1. Values wrap. Negative values move backwards |
 | `MoltenPrev`              | `[n]`                 | like `Next` but backwards |
 | `MoltenEvaluateLine`      | `[kernel]`            | Evaluate the current line |
