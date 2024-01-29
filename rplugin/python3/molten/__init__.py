@@ -835,6 +835,19 @@ class Molten:
     def function_clear_interface(self, _: List[Any]) -> None:
         self._clear_on_buf_leave()
 
+    @pynvim.function("MoltenUpdateHistory", sync=True)  # type: ignore
+    @nvimui  # type: ignore
+    def function_update_history(self, _: List[Any]) -> None:
+        self._initialize_if_necessary()
+
+        molten_kernels = self._get_current_buf_kernels(True)
+        assert molten_kernels is not None
+
+        for molten in molten_kernels:
+            if molten.selected_cell is not None:
+                molten.history.update_history_buffer(molten.selected_cell, molten.language)
+                return
+
     @pynvim.function("MoltenOnBufferUnload", sync=True)  # type: ignore
     @nvimui  # type: ignore
     def function_on_buffer_unload(self, _: Any) -> None:

@@ -209,6 +209,14 @@ class MoltenKernel:
                 if self.options.auto_open_html_in_browser:
                     self.open_in_browser(silent=True)
 
+                # We have to delay this update b/c otherwise images glitch out. I'm pretty sure this
+                # is an image.nvim issue but I looked into it and couldn't figure it out. so... hack
+                self.nvim.exec_lua("""
+                    vim.loop.new_timer():start(250, 0, vim.schedule_wrap(function()
+                        vim.fn.MoltenUpdateHistory()
+                    end))
+                """)
+
                 self.history.update_history_buffer(self.current_output, self.language)
 
         if did_stuff:
