@@ -69,11 +69,3 @@ class CodeCell:
             return "\n".join(
                 [lines[0][self.begin.colno :]] + lines[1:-1] + [lines[-1][: self.end.colno]]
             )
-
-    def calculate_output_offset(self) -> int:
-        lines = self.get_text(self.nvim).splitlines()
-        for i, line in enumerate(reversed(lines)):
-            # Show after first non-empty, non-comment line.
-            if line != '' and not line.startswith("#"):
-                return -1 * i
-        return 0

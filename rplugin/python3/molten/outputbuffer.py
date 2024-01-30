@@ -168,10 +168,10 @@ class OutputBuffer:
         lines.insert(0, self._get_header_text(self.output))
         return lines, len(lines) - 1 + virtual_lines
 
-    def show_virtual_output(self, anchor: Position, offset: int = 0) -> None:
+    def show_virtual_output(self, anchor: Position) -> None:
         if self.displayed_status == OutputStatus.DONE and self.virt_text_id is not None:
             return
-
+        offset = self.calculate_offset(anchor) if self.options.cover_empty_lines else 0
         self.displayed_status = self.output.status
 
         buf = self.nvim.buffers[anchor.bufno]
@@ -218,9 +218,36 @@ class OutputBuffer:
         )
         self.canvas.present()
 
-    def show_floating_win(self, anchor: Position, offset: int = 0) -> None:
+    def calculate_offset(self, anchor: Position) -> int:
+        current_pos = anchor
+        offset = 0
+        while current_pos.lineno > 0:
+            current_line = self.nvim.funcs.nvim_buf_get_lines(
+                current_pos.bufno,
+                current_pos.lineno,
+                current_pos.lineno + 1,
+                False,
+            )[0]
+
+            if current_line != "" and not current_line.startswith(self.options.comment_string):
+                return offset
+            else:
+                current_pos = DynamicPosition(
+                    self.nvim,
+                    self.extmark_namespace,
+                    current_pos.bufno,
+                    current_pos.lineno-1,
+                    0,
+                )
+
+                offset -= 1
+        # Only get here if current_pos.lineno == 0
+        return 0
+
+    def show_floating_win(self, anchor: Position) -> None:
         win = self.nvim.current.window
         win_col = win.col
+        offset = self.calculate_offset(anchor) if self.options.cover_empty_lines else 0
         win_row = self._buffer_to_window_lineno(anchor.lineno + 1) + offset
         if win_row <= 0:  # anchor position is off screen
             return
@@ -324,8 +351,10 @@ class OutputBuffer:
             if self.display_virt_lines is not None:
                 del self.display_virt_lines
 
-            if self.options.output_virt_lines:
+            if self.options.output_virt_lines or self.options.cover_empty_lines:
                 virt_lines_y = anchor.lineno
+                if self.options.cover_empty_lines:
+                    virt_lines_y += offset
                 virt_lines_height = max_height + border_h
                 if self.options.virt_lines_off_by_1:
                     virt_lines_y += 1

@@ -171,6 +171,8 @@ variable, their values, and a brief description.
 | `g:molten_auto_init_behavior`                 | `"raise"` \| (`"init"`)                                     | When set to "raise" commands which would otherwise ask for a kernel when they're run without a running kernel will instead raise an exception. Useful for other plugins that want to use `pcall` and do their own error handling |
 | `g:molten_auto_open_html_in_browser`          | `true` \| (`false`)                                         | Automatically open HTML outputs in a browser. related: `molten_open_cmd` |
 | `g:molten_auto_open_output`                   | (`true`) \| `false`                                         | Automatically open the floating output window when your cursor moves into a cell |
+| `g:molten_comment_string`                     | (`""`) \| str                                               | String to use for comments. Currently only used when `cover_empty_lines` is enabled. |
+| `g:molten_cover_empty_lines`                  | `true` \| (`false`)                                         | The output window and virtual text will be shown just below the last line of code in the cell.|
 | `g:molten_copy_output`                        | `true` \| (`false`)                                         | Copy evaluation output to clipboard automatically (requires [`pyperclip`](#requirements))|
 | `g:molten_enter_output_behavior`              | (`"open_then_enter"`) \| `"open_and_enter"` \| `"no_open"`  | The behavior of [MoltenEnterOutput](#moltenenteroutput) |
 | `g:molten_image_provider`                     | (`"none"`) \| `"image.nvim"`                                | How images are displayed |
@@ -400,4 +402,3 @@ that isn't currently supported, feel free to open an issue and/or PR!
 
 - @dccsillag and everyone who has contributed to [magma-nvim](https://github.com/dccsillag/magma-nvim)
 - @3rd and everyone who has contributed to [image.nvim](https://github.com/3rd/image.nvim)
-
