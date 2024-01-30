@@ -402,7 +402,6 @@ class MoltenKernel:
 
         if self.should_show_floating_win:
             self.outputs[span].show_floating_win(span.end)
-
         else:
             self.outputs[span].clear_float_win()
 

@@ -69,8 +69,8 @@ class MoltenOptions:
             ("molten_auto_init_behavior", "init"), # "raise" or "init"
             ("molten_auto_open_html_in_browser", False),
             ("molten_auto_open_output", True),
-            ("molten_comment_string", [False,""]),
-            ("molten_cover_empty_lines", [False,{}]),
+            ("molten_comment_string", ""),
+            ("molten_cover_empty_lines", False),
             ("molten_copy_output", False),
             ("molten_enter_output_behavior", "open_then_enter"),
             ("molten_image_provider", "none"),

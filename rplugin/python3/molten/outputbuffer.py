@@ -236,7 +236,7 @@ class OutputBuffer:
                     self.nvim,
                     self.extmark_namespace,
                     current_pos.bufno,
-                    current_pos.lineno-1,
+                    current_pos.lineno - 1,
                     0,
                 )
 
