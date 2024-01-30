@@ -25,6 +25,8 @@ your new code, and all the cells below it, watching each cell output update as t
 \> You send the `.ipynb` file, complete with your changes and the output of the code you
 ran, back to your friend
 
+https://github.com/benlubas/molten-nvim/assets/56943754/02460b48-0c4e-4edd-80e7-0aeb4464757c
+
 ## The Setup:
 
 There are four big things required for a good notebook experience in neovim:
@@ -273,17 +275,14 @@ We can make importing/exporting outputs seamless with a few autocommands:
 -- automatically import output chunks from a jupyter notebook
 -- tries to find a kernel that matches the kernel in the jupyter notebook
 -- falls back to a kernel that matches the name of the active venv (if any)
-vim.api.nvim_create_autocmd("BufWinEnter", {
-    pattern = { "*.ipynb" },
-    callback = function(e)
+local imb = function(e) -- init molten buffer
+    vim.schedule(function()
         local kernels = vim.fn.MoltenAvailableKernels()
-
         local try_kernel_name = function()
             local metadata = vim.json.decode(io.open(e.file, "r"):read("a"))["metadata"]
             return metadata.kernelspec.name
         end
         local ok, kernel_name = pcall(try_kernel_name)
-
         if not ok or not vim.tbl_contains(kernels, kernel_name) then
             kernel_name = nil
             local venv = os.getenv("VIRTUAL_ENV")
@@ -291,11 +290,26 @@ vim.api.nvim_create_autocmd("BufWinEnter", {
                 kernel_name = string.match(venv, "/.+/(.+)")
             end
         end
-
         if kernel_name ~= nil and vim.tbl_contains(kernels, kernel_name) then
             vim.cmd(("MoltenInit %s"):format(kernel_name))
         end
         vim.cmd("MoltenImportOutput")
+    end)
+end
+
+-- automatically import output chunks from a jupyter notebook
+vim.api.nvim_create_autocmd("BufAdd", {
+    pattern = { "*.ipynb" },
+    callback = imb,
+})
+
+-- we have to do this as well so that we catch files opened like nvim ./hi.ipynb
+vim.api.nvim_create_autocmd("BufEnter", {
+    pattern = { "*.ipynb" },
+    callback = function(e)
+        if vim.api.nvim_get_vvar("vim_did_enter") ~= 1 then
+            imb(e)
+        end
     end,
 })
 ```
@@ -409,7 +423,7 @@ Compared to Jupyter-lab:
 - jank. the UI is definitely worse, and sometimes images will move somewhere weird until
   you scroll. Molten is still relatively new, and bugs are still being ironed out.
 - setup is a lot of work. I've mentioned ~4~ 5 different plugins that are required to get
-this working and all 4 of those plugins have external dependencies.
+  this working and all 4 of those plugins have external dependencies.
 
 ## Honorable Mentions
 

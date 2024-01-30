@@ -12,6 +12,7 @@ https://github.com/benlubas/molten-nvim/assets/56943754/17ae81c0-306f-4496-bce8-
 - See output below the code in real time, without flicker, as virtual text or in a floating
 window (or both)
 - Renders images, plots, and LaTeX in neovim
+- Take input from stdin with `vim.ui.input`
 - Send code from multiple buffers to the same kernel
 - Send code from the same buffer to multiple kernels
 - Supports any language with a Jupyter Kernel (in theory, they haven't all been tested)

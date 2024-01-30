@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.6.0](https://github.com/benlubas/molten-nvim/compare/v1.5.2...v1.6.0) (2024-01-20)
+
+
+### Features
+
+* handle input_request messages ([#136](https://github.com/benlubas/molten-nvim/issues/136)) ([4a3980f](https://github.com/benlubas/molten-nvim/commit/4a3980f74742ac6f151cc00e444e74fc02b799a2))
+
+
+### Bug Fixes
+
+* error io ([#135](https://github.com/benlubas/molten-nvim/issues/135)) ([3883374](https://github.com/benlubas/molten-nvim/commit/38833744d5cdffc5cfc84b2be0c5449b5b132495))
+
+## [1.5.2](https://github.com/benlubas/molten-nvim/compare/v1.5.1...v1.5.2) (2024-01-18)
+
+
+### Bug Fixes
+
+* none check on import loading ([#130](https://github.com/benlubas/molten-nvim/issues/130)) ([921e6e9](https://github.com/benlubas/molten-nvim/commit/921e6e9021dccd48f2d4a43be234ca9c118ef065))
+
 ## [1.5.1](https://github.com/benlubas/molten-nvim/compare/v1.5.0...v1.5.1) (2024-01-07)
 
 
