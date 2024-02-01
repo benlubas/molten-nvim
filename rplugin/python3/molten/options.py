@@ -34,8 +34,8 @@ class MoltenOptions:
     auto_init_behavior: str
     auto_open_html_in_browser: bool
     auto_open_output: bool
-    comment_string: str
     cover_empty_lines: bool
+    cover_lines_starting_with: List[str]
     copy_output: bool
     enter_output_behavior: str
     image_provider: str
@@ -69,8 +69,8 @@ class MoltenOptions:
             ("molten_auto_init_behavior", "init"), # "raise" or "init"
             ("molten_auto_open_html_in_browser", False),
             ("molten_auto_open_output", True),
-            ("molten_comment_string", ""),
             ("molten_cover_empty_lines", False),
+            ("molten_cover_lines_starting_with", []),
             ("molten_copy_output", False),
             ("molten_enter_output_behavior", "open_then_enter"),
             ("molten_image_provider", "none"),

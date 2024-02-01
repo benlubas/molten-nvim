@@ -219,27 +219,24 @@ class OutputBuffer:
         self.canvas.present()
 
     def calculate_offset(self, anchor: Position) -> int:
-        current_pos = anchor
         offset = 0
-        while current_pos.lineno > 0:
+        lineno=anchor.lineno
+        while lineno > 0:
             current_line = self.nvim.funcs.nvim_buf_get_lines(
-                current_pos.bufno,
-                current_pos.lineno,
-                current_pos.lineno + 1,
+                anchor.bufno,
+                lineno,
+                lineno + 1,
                 False,
             )[0]
-
-            if current_line != "" and not current_line.startswith(self.options.comment_string):
+            is_comment = False
+            for x in self.options.cover_lines_starting_with:
+                if current_line.startswith(x):
+                    is_comment = True
+                    break
+            if current_line != "" and not is_comment:
                 return offset
             else:
-                current_pos = DynamicPosition(
-                    self.nvim,
-                    self.extmark_namespace,
-                    current_pos.bufno,
-                    current_pos.lineno - 1,
-                    0,
-                )
-
+                lineno -= 1
                 offset -= 1
         # Only get here if current_pos.lineno == 0
         return 0
