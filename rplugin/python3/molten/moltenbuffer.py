@@ -2,6 +2,7 @@ from contextlib import AbstractContextManager
 from typing import IO, Callable, List, Optional, Dict, Tuple
 from queue import Queue
 import hashlib
+from PIL import Image
 
 from pynvim import Nvim
 from pynvim.api import Buffer
@@ -10,9 +11,9 @@ from molten.code_cell import CodeCell
 from molten.options import MoltenOptions
 from molten.images import Canvas
 from molten.position import Position
-from molten.utils import notify_info, notify_warn
+from molten.utils import notify_error, notify_info, notify_warn
 from molten.outputbuffer import OutputBuffer
-from molten.outputchunks import OutputChunk, OutputStatus
+from molten.outputchunks import ImageOutputChunk, OutputChunk, OutputStatus
 from molten.runtime import JupyterRuntime
 
 
@@ -133,6 +134,29 @@ class MoltenKernel:
         self.run_code(code, self.selected_cell)
         return True
 
+    def open_image_popup(self, silent=False) -> bool:
+        """Open the current image outputs in a floating window
+        Returns: True if we're in a cell, False otherwise"""
+        self.selected_cell = self._get_selected_span()
+        if self.selected_cell is None:
+            return False
+
+        output = self.outputs[self.selected_cell].output
+        for chunk in output.chunks:
+            if isinstance(chunk, ImageOutputChunk):
+                try:
+                    img = Image.open(chunk.img_path)
+                    img.show(f"[{output.execution_count}] Molten Image")
+                    if not silent:
+                        notify_info(self.nvim, "Opened image popup")
+                except:
+                    if not silent:
+                        notify_error(
+                            self.nvim, "Failed to open image when trying to show the popup"
+                        )
+
+        return True
+
     def open_in_browser(self, silent=False) -> bool:
         """Open the HTML output of the currently selected cell in the browser.
         Returns: True if we're in a cell, False otherwise"""
@@ -190,12 +214,12 @@ class MoltenKernel:
             starting_status = output.status
             did_stuff = self.runtime.tick(output)
 
-            if (
-                self.options.auto_open_html_in_browser
-                and starting_status != OutputStatus.DONE
-                and output.status == OutputStatus.DONE
-            ):
-                self.open_in_browser(silent=True)
+            if starting_status != OutputStatus.DONE and output.status == OutputStatus.DONE:
+                if self.options.auto_open_html_in_browser:
+                    self.open_in_browser(silent=True)
+                if self.options.auto_image_popup:
+                    self.open_image_popup(silent=True)
+
         if did_stuff:
             self.update_interface()
         if not was_ready and self.runtime.is_ready():
