@@ -197,6 +197,7 @@ class JupyterRuntime:
     def tick(self, output: Optional[Output]) -> bool:
         did_stuff = False
 
+        print(self.kernel_client)
         assert isinstance(
             self.kernel_client,
             (
@@ -240,7 +241,8 @@ class JupyterRuntime:
 
         assert isinstance(
             self.kernel_client,
-            jupyter_client.blocking.client.BlockingKernelClient
+            (jupyter_client.blocking.client.BlockingKernelClient,
+             JupyterAPIClient),
         )
 
         try:
