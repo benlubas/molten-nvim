@@ -25,6 +25,7 @@ from molten.jupyter_server_api import JupyterAPIClient, JupyterAPIManager
 class JupyterRuntime:
     state: RuntimeState
     kernel_name: str
+    kernel_id: str
 
     kernel_manager: jupyter_client.KernelManager | JupyterAPIManager  # type: ignore
     kernel_client: jupyter_client.KernelClient | JupyterAPIClient  # type: ignore
@@ -34,10 +35,12 @@ class JupyterRuntime:
     options: MoltenOptions
     nvim: Nvim
 
-    def __init__(self, nvim: Nvim, kernel_name: str, options: MoltenOptions):
+    def __init__(self, nvim: Nvim, kernel_name: str, kernel_id: str, options: MoltenOptions):
         self.state = RuntimeState.STARTING
         self.kernel_name = kernel_name
+        self.kernel_id = kernel_id
         self.nvim = nvim
+        self.nvim.exec_lua("_prompt_stdin = require('prompt').prompt_stdin")
 
         if kernel_name.startswith("http://") or kernel_name.startswith("https://"):
             self.external_kernel = True
@@ -230,6 +233,26 @@ class JupyterRuntime:
 
         return did_stuff
 
+    def tick_input(self):
+        """ Tick to check input_requests """
+        if not self.is_ready:
+            return
+
+        assert isinstance(
+            self.kernel_client,
+            jupyter_client.blocking.client.BlockingKernelClient
+        )
+
+        try:
+            msg = self.kernel_client.get_stdin_msg(timeout=0)
+            if msg is not None:
+                self.take_input(msg)
+        except EmptyQueueException:
+            pass
+
+    def take_input(self, msg):
+        if msg['msg_type'] == "input_request":
+            self.nvim.lua._prompt_stdin(self.kernel_id, msg['content']['prompt'])
 
 def get_available_kernels() -> List[str]:
     return list(jupyter_client.kernelspec.find_kernel_specs().keys())  # type: ignore

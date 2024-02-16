@@ -86,4 +86,12 @@ M.select_and_run = function(kernels, prompt, command)
   end)()
 end
 
+M.prompt_stdin = function(kernel_id, prompt)
+  vim.ui.input({ prompt = prompt }, function(input)
+    vim.schedule(function()
+      vim.fn.MoltenSendStdin(kernel_id, input)
+    end)
+  end)
+end
+
 return M
