@@ -197,7 +197,6 @@ class JupyterRuntime:
     def tick(self, output: Optional[Output]) -> bool:
         did_stuff = False
 
-        print(self.kernel_client)
         assert isinstance(
             self.kernel_client,
             (

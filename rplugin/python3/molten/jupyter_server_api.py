@@ -25,6 +25,9 @@ class JupyterAPIClient:
 
         self._recv_queue: Queue[Dict[str, Any]] = Queue()
 
+    def get_stdin_msg(self, **kwargs):
+        return None
+
     def wait_for_ready(self, timeout: float = 0.):
         start = time.time()
         while True:
