@@ -220,7 +220,7 @@ class OutputBuffer:
 
     def calculate_offset(self, anchor: Position) -> int:
         offset = 0
-        lineno=anchor.lineno
+        lineno = anchor.lineno
         while lineno > 0:
             current_line = self.nvim.funcs.nvim_buf_get_lines(
                 anchor.bufno,
@@ -244,8 +244,17 @@ class OutputBuffer:
     def show_floating_win(self, anchor: Position) -> None:
         win = self.nvim.current.window
         win_col = win.col
-        offset = self.calculate_offset(anchor) if self.options.cover_empty_lines else 0
-        win_row = self._buffer_to_window_lineno(anchor.lineno + 1) + offset
+        if self.options.cover_empty_lines:
+            offset = self.calculate_offset(anchor)
+            virt_text_space = self._buffer_to_window_lineno(
+                anchor.lineno + 1
+            ) - self._buffer_to_window_lineno(anchor.lineno)
+            win_row = (
+                self._buffer_to_window_lineno(anchor.lineno + 1) + offset - virt_text_space + 1
+            )
+        else:
+            win_row = self._buffer_to_window_lineno(anchor.lineno + 1)
+
         if win_row <= 0:  # anchor position is off screen
             return
         win_width = win.width
