@@ -246,11 +246,8 @@ class OutputBuffer:
         win_col = win.col
         if self.options.cover_empty_lines:
             offset = self.calculate_offset(anchor)
-            virt_text_space = self._buffer_to_window_lineno(
-                anchor.lineno + 1
-            ) - self._buffer_to_window_lineno(anchor.lineno)
             win_row = (
-                self._buffer_to_window_lineno(anchor.lineno + 1) + offset - virt_text_space + 1
+                self._buffer_to_window_lineno(anchor.lineno + offset) + 1
             )
         else:
             win_row = self._buffer_to_window_lineno(anchor.lineno + 1)
