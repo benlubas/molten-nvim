@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.7.0](https://github.com/benlubas/molten-nvim/compare/v1.6.0...v1.7.0) (2024-02-23)
+
+
+### Features
+
+* Cover Empty Lines ([#129](https://github.com/benlubas/molten-nvim/issues/129)) ([2f50650](https://github.com/benlubas/molten-nvim/commit/2f50650d2712229c2008c65490ea0915b9e88879))
+* open images externally ([#150](https://github.com/benlubas/molten-nvim/issues/150)) ([3ca888e](https://github.com/benlubas/molten-nvim/commit/3ca888e5a3e554ce7fcda815a79e6eb4d018a35a))
+
+
+### Bug Fixes
+
+* small bugs ([65da69e](https://github.com/benlubas/molten-nvim/commit/65da69e669953d9d2bc89bc400ef5595779d8062))
+
 ## [1.6.0](https://github.com/benlubas/molten-nvim/compare/v1.5.2...v1.6.0) (2024-01-20)
 
 
