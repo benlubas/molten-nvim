@@ -244,6 +244,7 @@ class OutputBuffer:
     def show_floating_win(self, anchor: Position) -> None:
         win = self.nvim.current.window
         win_col = win.col
+        offset = 0
         if self.options.cover_empty_lines:
             offset = self.calculate_offset(anchor)
             win_row = (
@@ -353,6 +354,7 @@ class OutputBuffer:
 
             if self.display_virt_lines is not None:
                 del self.display_virt_lines
+                self.display_virt_lines = None
 
             if self.options.output_virt_lines or self.options.cover_empty_lines:
                 virt_lines_y = anchor.lineno
