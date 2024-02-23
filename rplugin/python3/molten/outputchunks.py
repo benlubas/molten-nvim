@@ -158,10 +158,10 @@ class ImageOutputChunk(OutputChunk):
         self.img_identifier = canvas.add_image(
             self.img_path,
             f"{'virt-' if virtual else ''}{self.img_path}",
-            x=0,
-            y=lineno + 1,
-            bufnr=bufnr,
-            winnr=winnr,
+            0,
+            lineno + 1,
+            bufnr,
+            winnr,
         )
         return "", canvas.img_size(self.img_identifier)["height"]
 
@@ -264,32 +264,32 @@ def to_outputchunk(
         return TextLnOutputChunk(text)
 
     chunk = None
-    if options.image_provider != "none":
-        # handle these mimetypes first, since they require Molten to render them
-        special_mimetypes = [
-            ("image/svg+xml", _from_image_svgxml),
-            ("application/vnd.plotly.v1+json", _from_application_plotly),
-            ("text/latex", _from_latex),
-        ]
+    # if options.image_provider != "none":
+    # handle these mimetypes first, since they require Molten to render them
+    special_mimetypes = [
+        ("image/svg+xml", _from_image_svgxml),
+        ("application/vnd.plotly.v1+json", _from_application_plotly),
+        ("text/latex", _from_latex),
+    ]
 
-        for mimetype, process_func in special_mimetypes:
-            try:
-                maybe_data = None
-                if data is not None:
-                    maybe_data = data.get(mimetype)
-                if maybe_data is not None:
-                    chunk = process_func(maybe_data)  # type: ignore
+    for mimetype, process_func in special_mimetypes:
+        try:
+            maybe_data = None
+            if data is not None:
+                maybe_data = data.get(mimetype)
+            if maybe_data is not None:
+                chunk = process_func(maybe_data)  # type: ignore
+                break
+        except ImportError:
+            continue
+
+    if chunk is None and data is not None:
+        # handle arbitrary images
+        for mimetype in data.keys():
+            match mimetype.split("/"):
+                case ["image", extension]:
+                    chunk = _from_image(extension, data[mimetype])
                     break
-            except ImportError:
-                continue
-
-        if chunk is None and data is not None:
-            # handle arbitrary images
-            for mimetype in data.keys():
-                match mimetype.split("/"):
-                    case ["image", extension]:
-                        chunk = _from_image(extension, data[mimetype])
-                        break
 
     if chunk is None:
         # fallback to plain text if there's nothing else

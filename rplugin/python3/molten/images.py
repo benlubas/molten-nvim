@@ -113,7 +113,8 @@ class NoCanvas(Canvas):
         _identifier: str,
         _x: int,
         _y: int,
-        _window: int,
+        _bufnr: int,
+        _winnr: int,
     ) -> None:
         pass
 
