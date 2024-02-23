@@ -2,7 +2,7 @@
 
 > [!WARNING]
 > The entire page is a hack, and can break when you update Molten. The file contents below are up to
-> date as of version 1.6.x
+> date as of version 1.7.x
 
 This plugin is a remote plugin, and there are reportedly problems with the `:UpdateRemotePlugins`
 command not generating the rplugin manifest file on Windows. This file is supposed to be
@@ -30,6 +30,7 @@ call remote#host#RegisterPlugin('python3', '/home/benlubas/github/molten-nvim/rp
       \ {'sync': v:true, 'name': 'MoltenExportOutput', 'type': 'command', 'opts': {'bang': '', 'nargs': '*'}},
       \ {'sync': v:true, 'name': 'MoltenGoto', 'type': 'command', 'opts': {'nargs': '*'}},
       \ {'sync': v:true, 'name': 'MoltenHideOutput', 'type': 'command', 'opts': {}},
+      \ {'sync': v:true, 'name': 'MoltenImagePopup', 'type': 'command', 'opts': {}},
       \ {'sync': v:true, 'name': 'MoltenImportOutput', 'type': 'command', 'opts': {'nargs': '*'}},
       \ {'sync': v:true, 'name': 'MoltenInfo', 'type': 'command', 'opts': {}},
       \ {'sync': v:true, 'name': 'MoltenInit', 'type': 'command', 'opts': {'complete': 'file', 'nargs': '*'}},
@@ -50,7 +51,7 @@ call remote#host#RegisterPlugin('python3', '/home/benlubas/github/molten-nvim/rp
       \ {'sync': v:true, 'name': 'MoltenDefineCell', 'type': 'function', 'opts': {}},
       \ {'sync': v:true, 'name': 'MoltenOperatorfunc', 'type': 'function', 'opts': {}},
       \ {'sync': v:false, 'name': 'MoltenSendStdin', 'type': 'function', 'opts': {}},
-      \ {'sync': v:false, 'name': 'MoltenTick', 'type': 'function', 'opts': {}},
+      \ {'sync': v:true, 'name': 'MoltenTick', 'type': 'function', 'opts': {}},
       \ {'sync': v:false, 'name': 'MoltenTickInput', 'type': 'function', 'opts': {}},
       \ {'sync': v:true, 'name': 'MoltenOnBufferUnload', 'type': 'function', 'opts': {}},
       \ {'sync': v:true, 'name': 'MoltenOnCursorMoved', 'type': 'function', 'opts': {}},
