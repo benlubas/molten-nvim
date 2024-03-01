@@ -11,6 +11,7 @@ from contextlib import AbstractContextManager
 from enum import Enum
 from abc import ABC, abstractmethod
 import re
+from datetime import datetime
 
 from pynvim import Nvim
 
@@ -178,6 +179,7 @@ class Output:
     status: OutputStatus
     success: bool
     old: bool
+    start_time: datetime
 
     _should_clear: bool
 
@@ -187,6 +189,7 @@ class Output:
         self.chunks = []
         self.success = True
         self.old = False
+        self.start_time = datetime.now()
 
         self._should_clear = False
 

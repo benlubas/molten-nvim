@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any, List, Optional, Tuple, Union
 
 from pynvim import Nvim
@@ -69,7 +70,32 @@ class OutputBuffer:
         else:
             old = ""
 
-        return f"{old}Out[{execution_count}]: {status}"
+        if output.status == OutputStatus.DONE and not output.old:
+            now = datetime.now()
+            start = output.start_time
+            diff = now - start
+
+            time = ""
+
+            days = diff.days
+            hours = diff.seconds // 3600
+            minutes = diff.seconds // 60
+            seconds = diff.seconds - hours * 3600 - minutes * 60
+            microseconds = diff.microseconds
+
+            # Days
+            if days:
+                time += f"{days}d "
+            if hours:
+                time += f"{hours}hr "
+            if minutes:
+                time += f"{minutes}m "
+
+            time += f"{seconds}.{microseconds}s"
+        else:
+            time = ""
+
+        return f"{old}Out[{execution_count}]: {status} {time}"
 
     def enter(self, anchor: Position) -> bool:
         entered = False
