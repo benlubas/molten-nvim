@@ -1,4 +1,5 @@
 from contextlib import AbstractContextManager
+from datetime import datetime
 from typing import IO, Callable, List, Optional, Dict, Tuple
 from queue import Queue
 import hashlib
@@ -219,6 +220,8 @@ class MoltenKernel:
                     self.open_in_browser(silent=True)
                 if self.options.auto_image_popup:
                     self.open_image_popup(silent=True)
+
+                output.end_time = datetime.now()
 
         if did_stuff:
             self.update_interface()

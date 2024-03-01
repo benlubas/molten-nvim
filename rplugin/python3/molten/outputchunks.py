@@ -180,6 +180,7 @@ class Output:
     success: bool
     old: bool
     start_time: datetime
+    end_time: datetime
 
     _should_clear: bool
 
@@ -189,7 +190,9 @@ class Output:
         self.chunks = []
         self.success = True
         self.old = False
+
         self.start_time = datetime.now()
+        self.end_time = None
 
         self._should_clear = False
 

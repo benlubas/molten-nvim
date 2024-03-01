@@ -71,27 +71,30 @@ class OutputBuffer:
             old = ""
 
         if output.status == OutputStatus.DONE and not output.old:
-            now = datetime.now()
             start = output.start_time
-            diff = now - start
+            end = output.end_time
+            if(end is not None):
+                diff = end - start
 
-            time = ""
+                days = diff.days
+                hours = diff.seconds // 3600
+                minutes = diff.seconds // 60
+                seconds = diff.seconds - hours * 3600 - minutes * 60
+                microseconds = diff.microseconds
 
-            days = diff.days
-            hours = diff.seconds // 3600
-            minutes = diff.seconds // 60
-            seconds = diff.seconds - hours * 3600 - minutes * 60
-            microseconds = diff.microseconds
+                time = ""
 
-            # Days
-            if days:
-                time += f"{days}d "
-            if hours:
-                time += f"{hours}hr "
-            if minutes:
-                time += f"{minutes}m "
+                # Days
+                if days:
+                    time += f"{days}d "
+                if hours:
+                    time += f"{hours}hr "
+                if minutes:
+                    time += f"{minutes}m "
 
-            time += f"{seconds}.{microseconds}s"
+                time += f"{seconds}.{microseconds}s"
+            else:
+                time = ""
         else:
             time = ""
 
