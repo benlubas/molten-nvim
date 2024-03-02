@@ -91,7 +91,8 @@ class OutputBuffer:
             if minutes:
                 time += f"{minutes}m "
 
-            time += f"{seconds}.{microseconds}s"
+            # Microseconds is an int, roundabout way to round to 2 digits
+            time += f"{seconds}.{int(round(microseconds, -4) / 10000)}s"
         else:
             time = ""
 
