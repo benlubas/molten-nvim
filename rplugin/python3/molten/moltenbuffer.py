@@ -223,8 +223,9 @@ class MoltenKernel:
 
                 output.end_time = datetime.now()
 
-        # if did_stuff:
-        self.update_interface()
+        if self.options.output_show_exec_time or did_stuff:
+            self.update_interface()
+
         if not was_ready and self.runtime.is_ready():
             self._doautocmd(
                 "MoltenKernelReady",

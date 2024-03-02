@@ -70,7 +70,7 @@ class OutputBuffer:
         else:
             old = ""
 
-        if not output.old:
+        if not output.old and self.options.output_show_exec_time:
             start = output.start_time
             end = output.end_time if output.end_time is not None else datetime.now()
             diff = end - start
