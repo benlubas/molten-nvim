@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any, List, Optional, Tuple, Union
 
 from pynvim import Nvim
@@ -69,7 +70,33 @@ class OutputBuffer:
         else:
             old = ""
 
-        return f"{old}Out[{execution_count}]: {status}"
+        if not output.old and self.options.output_show_exec_time:
+            start = output.start_time
+            end = output.end_time if output.end_time is not None else datetime.now()
+            diff = end - start
+
+            days = diff.days
+            hours = diff.seconds // 3600
+            minutes = diff.seconds // 60
+            seconds = diff.seconds - hours * 3600 - minutes * 60
+            microseconds = diff.microseconds
+
+            time = ""
+
+            # Days
+            if days:
+                time += f"{days}d "
+            if hours:
+                time += f"{hours}hr "
+            if minutes:
+                time += f"{minutes}m "
+
+            # Microseconds is an int, roundabout way to round to 2 digits
+            time += f"{seconds}.{int(round(microseconds, -4) / 10000)}s"
+        else:
+            time = ""
+
+        return f"{old}Out[{execution_count}]: {status} {time}"
 
     def enter(self, anchor: Position) -> bool:
         entered = False

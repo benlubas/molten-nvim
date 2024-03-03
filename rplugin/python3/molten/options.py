@@ -95,6 +95,7 @@ class MoltenOptions:
             ("molten_virt_text_max_lines", 12),
             ("molten_virt_text_output", False),
             ("molten_wrap_output", False),
+            ("molten_output_show_exec_time", True),
         ]
         # fmt: on
 

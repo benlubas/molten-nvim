@@ -1,4 +1,5 @@
 from contextlib import AbstractContextManager
+from datetime import datetime
 from typing import IO, Callable, List, Optional, Dict, Tuple
 from queue import Queue
 import hashlib
@@ -220,8 +221,11 @@ class MoltenKernel:
                 if self.options.auto_image_popup:
                     self.open_image_popup(silent=True)
 
-        if did_stuff:
+                output.end_time = datetime.now()
+
+        if self.options.output_show_exec_time or did_stuff:
             self.update_interface()
+
         if not was_ready and self.runtime.is_ready():
             self._doautocmd(
                 "MoltenKernelReady",
