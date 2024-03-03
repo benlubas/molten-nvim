@@ -96,7 +96,7 @@ class OutputBuffer:
         else:
             time = ""
 
-        return f"{old}Out[{execution_count}]: {status} {time}"
+        return f"{old}Out[{execution_count}]: {status} {time}".rstrip()
 
     def enter(self, anchor: Position) -> bool:
         entered = False

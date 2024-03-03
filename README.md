@@ -180,6 +180,7 @@ variable, their values, and a brief description.
 | `g:molten_image_provider`                     | (`"none"`) \| `"image.nvim"`                                | How images are displayed |
 | `g:molten_open_cmd`                           | (`nil`) \| Any command                                      | Defaults to `xdg-open` on Linux, `open` on Darwin, and `start` on Windows. But you can override it to whatever you want. The command is called like: `subprocess.run([open_cmd, filepath])` |
 | `g:molten_output_crop_border`                 | (`true`) \| `false`                                         | 'crops' the bottom border of the output window when it would otherwise just sit at the bottom of the screen |
+| `g:molten_output_show_exec_time`              | (`true`) \| `false`                                         | Shows the current amount of time since the cell has begun execution |
 | `g:molten_output_show_more`                   | `true` \| (`false`)                                         | When the window can't display the entire contents of the output buffer, shows the number of extra lines in the window footer (requires nvim 10.0+ and a window border) |
 | `g:molten_output_virt_lines`                  | `true` \| (`false`)                                         | Pad the main buffer with virtual lines so the floating window doesn't cover anything while it's open |
 | `g:molten_output_win_border`                  | (`{ "", "━", "", "" }`) \| any value for `border` in `:h nvim_open_win()`| Some border features will not work if you don't specify your border as a table. see border option of `:h nvim_open_win()` |
@@ -196,7 +197,6 @@ variable, their values, and a brief description.
 | `g:molten_virt_text_output`                   | `true` \| (`false`)                                         | When true, show output as virtual text below the cell, virtual text stays after leaving the cell. When true, output window doesn't open automatically on run. Effected by `virt_lines_off_by_1` |
 | `g:molten_virt_text_max_lines`                | (`12`) \| `int`                                             | Max height of the virtual text |
 | `g:molten_wrap_output`                        | `true` \| (`false`)                                         | Wrap output text |
-| `g:molten_output_show_exec_time`       | (`true`) \| `false`                                                       | Shows the current amount of time since the cell has begun execution. May cause performance issues.     
 | [DEBUG] `g:molten_show_mimetype_debug`        | `true` \| (`false`)                                         | Before any non-iostream output chunk, the mime-type for that output chunk is shown. Meant for debugging/plugin devlopment |
 
 ### Status Line

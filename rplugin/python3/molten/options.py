@@ -43,6 +43,7 @@ class MoltenOptions:
     limit_output_chars: int
     open_cmd: Optional[str]
     output_crop_border: bool
+    output_show_exec_time: bool
     output_show_more: bool
     output_virt_lines: bool
     output_win_border: Union[str, List[str]]
@@ -78,6 +79,7 @@ class MoltenOptions:
             ("molten_image_provider", "none"),
             ("molten_open_cmd", None),
             ("molten_output_crop_border", True),
+            ("molten_output_show_exec_time", True),
             ("molten_output_show_more", False),
             ("molten_output_virt_lines", False),
             ("molten_output_win_border", [ "", "━", "", "" ]),
@@ -95,7 +97,6 @@ class MoltenOptions:
             ("molten_virt_text_max_lines", 12),
             ("molten_virt_text_output", False),
             ("molten_wrap_output", False),
-            ("molten_output_show_exec_time", True),
         ]
         # fmt: on
 
