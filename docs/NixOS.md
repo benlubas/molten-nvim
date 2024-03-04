@@ -4,6 +4,9 @@ There are several ways to get Molten working on NixOS. If you would like to inst
 the Home Manager instructions provide an example of how to do that. It's also possible to manage
 your neovim plugins with lazy.
 
+If you just want to try out Molten and have flakes enabled, do: `nix run
+github:benlubas/molten-nvim#` for a basic environment.
+
 These setups include setup for `image.nvim`. If you don't need image rendering, you can exclude the
 lines marked `# for image rendering`.
 
