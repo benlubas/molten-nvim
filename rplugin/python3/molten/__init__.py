@@ -498,6 +498,11 @@ class Molten:
             return
         _, lineno_begin, colno_begin, _ = self.nvim.funcs.getpos("'<")
         _, lineno_end, colno_end, _ = self.nvim.funcs.getpos("'>")
+
+        if lineno_begin == 0 or colno_begin == 0 or lineno_end == 0 or colno_end == 0:
+            notify_error(self.nvim, "No visual selection found")
+            return
+
         span = (
             (
                 lineno_begin - 1,
