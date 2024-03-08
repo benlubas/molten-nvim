@@ -10,7 +10,7 @@ from pynvim.api import Buffer
 from molten.code_cell import CodeCell
 
 from molten.options import MoltenOptions
-from molten.images import Canvas
+from molten.images import Canvas, WeztermCanvas
 from molten.position import Position
 from molten.utils import notify_error, notify_info, notify_warn
 from molten.outputbuffer import OutputBuffer
@@ -146,6 +146,12 @@ class MoltenKernel:
         for chunk in output.chunks:
             if isinstance(chunk, ImageOutputChunk):
                 try:
+                    if isinstance(self.canvas, WeztermCanvas):
+                        self.nvim.command(
+                            f"silent !wezterm cli split-pane -- wezterm imgcat '{chunk.img_path}' --hold"
+                        )
+                        return True
+
                     img = Image.open(chunk.img_path)
                     img.show(f"[{output.execution_count}] Molten Image")
                     if not silent:
@@ -153,7 +159,8 @@ class MoltenKernel:
                 except:
                     if not silent:
                         notify_error(
-                            self.nvim, "Failed to open image when trying to show the popup"
+                            self.nvim,
+                            "Failed to open image when trying to show the popup",
                         )
 
         return True
@@ -186,7 +193,9 @@ class MoltenKernel:
                     opencmd = "start"
 
         if opencmd is None:
-            notify_warn(self.nvim, f"Can't open in browser, OS unsupported: {platform.system()}")
+            notify_warn(
+                self.nvim, f"Can't open in browser, OS unsupported: {platform.system()}"
+            )
         else:
             import subprocess
 
@@ -196,7 +205,9 @@ class MoltenKernel:
 
     def _check_if_done_running(self) -> None:
         # TODO: refactor
-        is_idle = (self.current_output is None or not self.current_output in self.outputs) or (
+        is_idle = (
+            self.current_output is None or not self.current_output in self.outputs
+        ) or (
             self.current_output is not None
             and self.outputs[self.current_output].output.status == OutputStatus.DONE
         )
@@ -215,7 +226,10 @@ class MoltenKernel:
             starting_status = output.status
             did_stuff = self.runtime.tick(output)
 
-            if starting_status != OutputStatus.DONE and output.status == OutputStatus.DONE:
+            if (
+                starting_status != OutputStatus.DONE
+                and output.status == OutputStatus.DONE
+            ):
                 if self.options.auto_open_html_in_browser:
                     self.open_in_browser(silent=True)
                 if self.options.auto_image_popup:
@@ -236,7 +250,8 @@ class MoltenKernel:
                 },
             )
             notify_info(
-                self.nvim, f"Kernel '{self.runtime.kernel_name}' (id: {self.kernel_id}) is ready."
+                self.nvim,
+                f"Kernel '{self.runtime.kernel_name}' (id: {self.kernel_id}) is ready.",
             )
 
     def tick_input(self) -> None:
@@ -302,7 +317,10 @@ class MoltenKernel:
     def _delete_cell(self, cell: CodeCell, quiet=False) -> bool:
         """Delete the given cell if it exists _and_ isn't running. If the cell is running, display
         an error and return False, otherwise return True"""
-        if cell in self.outputs and self.outputs[cell].output.status == OutputStatus.RUNNING:
+        if (
+            cell in self.outputs
+            and self.outputs[cell].output.status == OutputStatus.RUNNING
+        ):
             if not quiet:
                 notify_warn(
                     self.nvim,
@@ -435,7 +453,9 @@ class MoltenKernel:
 
     def _get_content_checksum(self) -> str:
         return hashlib.md5(
-            "\n".join(self.nvim.current.buffer.api.get_lines(0, -1, True)).encode("utf-8")
+            "\n".join(self.nvim.current.buffer.api.get_lines(0, -1, True)).encode(
+                "utf-8"
+            )
         ).hexdigest()
 
 
