@@ -199,11 +199,67 @@ class ImageNvimCanvas(Canvas):
         self.to_make_invisible.add(identifier)
 
 
+class WeztermCanvas(Canvas):
+    """A canvas for using Wezterm's imgcat functionality to render images/plots"""
+
+    nvim: Nvim
+    to_make_visible: Set[str]
+    to_make_invisible: Set[str]
+    visible: Set[str]
+
+    def __init__(self, nvim: Nvim):
+        self.nvim = nvim
+        self.images = {}
+        self.visible = set()
+        self.to_make_visible = set()
+        self.to_make_invisible = set()
+        self.next_id = 0
+
+    def init(self) -> None:
+        pass
+        # NOTE: scratch code below:
+        # shell = self.nvim.command_output(":lua print(vim.o.shell)")
+        # self.nvim.command(
+        #     f"!wezterm cli split-pane -- wezterm cli activate-pane-direction Prev"
+        # )
+        # self.nvim.command(
+        #     "!wezterm cli activate-pane-direction Prev -- wezterm cli send-text hello -- {shell} wezterm cli activate-pane-direction Prev"
+        # )
+
+    def deinit(self) -> None:
+        pass
+
+    def present(self) -> None:
+        pass
+
+    def clear(self) -> None:
+        pass
+
+    def img_size(self, _indentifier: str) -> Dict[str, int]:
+        return {"height": 0, "width": 0}
+
+    def add_image(
+        self,
+        _path: str,
+        _identifier: str,
+        _x: int,
+        _y: int,
+        _bufnr: int,
+        _winnr: int,
+    ) -> None:
+        pass
+
+    def remove_image(self, _identifier: str) -> None:
+        pass
+
+
 def get_canvas_given_provider(name: str, nvim: Nvim) -> Canvas:
     if name == "none":
         return NoCanvas()
     elif name == "image.nvim":
         return ImageNvimCanvas(nvim)
+    elif name == "wezterm":
+        return WeztermCanvas(nvim)
     else:
         notify_warn(nvim, f"unknown image provider: `{name}`")
         return NoCanvas()
