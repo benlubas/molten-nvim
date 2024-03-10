@@ -214,17 +214,12 @@ class WeztermCanvas(Canvas):
         self.to_make_visible = set()
         self.to_make_invisible = set()
         self.next_id = 0
+        self.initial_pane_id: int | None = None
 
     def init(self) -> None:
-        pass
-        # NOTE: scratch code below:
-        # shell = self.nvim.command_output(":lua print(vim.o.shell)")
-        # self.nvim.command(
-        #     f"!wezterm cli split-pane -- wezterm cli activate-pane-direction Prev"
-        # )
-        # self.nvim.command(
-        #     "!wezterm cli activate-pane-direction Prev -- wezterm cli send-text hello -- {shell} wezterm cli activate-pane-direction Prev"
-        # )
+        self.nvim.exec_lua("_wezterm = require('wezterm')")
+        self.wezterm_api = self.nvim.lua._wezterm
+        self.initial_pane_id = self.wezterm_api.get_current_pane()
 
     def deinit(self) -> None:
         pass
@@ -251,6 +246,11 @@ class WeztermCanvas(Canvas):
 
     def remove_image(self, _identifier: str) -> None:
         pass
+
+    def wezterm_present(self) -> None:
+        """Send the current image outputs to the terminal split
+        Returns: True if we're in a cell, False otherwise"""
+        self.wezterm_api.wezterm_molten_init()
 
 
 def get_canvas_given_provider(name: str, nvim: Nvim) -> Canvas:
