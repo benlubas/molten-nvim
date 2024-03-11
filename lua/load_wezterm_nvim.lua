@@ -7,7 +7,7 @@ end
 
 local wezterm_api = {}
 
-wezterm_api.get_current_pane = function()
+wezterm_api.get_pane_id = function()
   local current_pane_id = wezterm.get_pane_id()
   return current_pane_id
 end

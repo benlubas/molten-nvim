@@ -212,7 +212,7 @@ class WeztermCanvas(Canvas):
     def init(self) -> None:
         self.nvim.exec_lua("_wezterm = require('load_wezterm_nvim').wezterm_api")
         self.wezterm_api = self.nvim.lua._wezterm
-        self.initial_pane_id = self.wezterm_api.get_current_pane()
+        self.initial_pane_id = self.wezterm_api.get_pane_id()
 
     def deinit(self) -> None:
         """Closes the terminal split that was opened with MoltenInit"""
