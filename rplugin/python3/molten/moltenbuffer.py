@@ -149,9 +149,7 @@ class MoltenKernel:
             if isinstance(chunk, ImageOutputChunk):
                 try:
                     if isinstance(self.canvas, WeztermCanvas):
-                        self.nvim.command(
-                            f"silent !wezterm cli split-pane -- wezterm imgcat '{chunk.img_path}' --hold"
-                        )
+                        self.canvas.send_image(chunk.img_path)
                         return True
 
                     img = Image.open(chunk.img_path)
@@ -235,6 +233,8 @@ class MoltenKernel:
                 if self.options.auto_open_html_in_browser:
                     self.open_in_browser(silent=True)
                 if self.options.auto_image_popup:
+                    self.open_image_popup(silent=True)
+                if isinstance(self.canvas, WeztermCanvas):
                     self.open_image_popup(silent=True)
 
                 output.end_time = datetime.now()
