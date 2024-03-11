@@ -10,7 +10,7 @@ from pynvim.api import Buffer
 from molten.code_cell import CodeCell
 
 from molten.options import MoltenOptions
-from molten.images import Canvas, WeztermCanvas
+from molten.images import Canvas
 from molten.position import Position
 from molten.utils import notify_error, notify_info, notify_warn
 from molten.outputbuffer import OutputBuffer
@@ -86,8 +86,6 @@ class MoltenKernel:
 
     def deinit(self) -> None:
         self._doautocmd("MoltenDeinitPre")
-        if isinstance(self.canvas, WeztermCanvas):
-            self.canvas.deinit()
         self.runtime.deinit()
         self._doautocmd("MoltenDeinitPost")
 
@@ -148,10 +146,6 @@ class MoltenKernel:
         for chunk in output.chunks:
             if isinstance(chunk, ImageOutputChunk):
                 try:
-                    if isinstance(self.canvas, WeztermCanvas):
-                        self.canvas.send_image(chunk.img_path)
-                        return True
-
                     img = Image.open(chunk.img_path)
                     img.show(f"[{output.execution_count}] Molten Image")
                     if not silent:
@@ -225,8 +219,6 @@ class MoltenKernel:
                 if self.options.auto_open_html_in_browser:
                     self.open_in_browser(silent=True)
                 if self.options.auto_image_popup:
-                    self.open_image_popup(silent=True)
-                if isinstance(self.canvas, WeztermCanvas):
                     self.open_image_popup(silent=True)
 
                 output.end_time = datetime.now()
