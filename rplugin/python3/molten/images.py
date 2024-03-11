@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 
 from pynvim import Nvim
 
+from molten.options import MoltenOptions
 from molten.utils import notify_warn
 
 
@@ -203,9 +204,19 @@ class WeztermCanvas(Canvas):
     """A canvas for using Wezterm's imgcat functionality to render images/plots"""
 
     nvim: Nvim
+    options: MoltenOptions
+    to_make_visible: Set[str]
+    to_make_invisible: Set[str]
+    visible: Set[str]
 
-    def __init__(self, nvim: Nvim):
+    def __init__(self, nvim: Nvim, options: MoltenOptions):
         self.nvim = nvim
+        self.options = options
+        self.images: dict = {}
+        self.visible = set()
+        self.to_make_visible = set()
+        self.to_make_invisible = set()
+        self.next_id = 0
         self.initial_pane_id: int | None = None
         self.image_pane: int | None = None
 
@@ -219,7 +230,23 @@ class WeztermCanvas(Canvas):
         self.wezterm_api.close_image_pane(str(self.image_pane).strip())
 
     def present(self) -> None:
-        pass
+        # images to both show and hide should be ignored
+        to_work_on = self.to_make_visible.difference(
+            self.to_make_visible.intersection(self.to_make_invisible)
+        )
+
+        for identifier in to_work_on:
+            # TODO: Investigate how well adding the image size to the wezterm api call works or if i should just let wezterm autosize the image based on the split size.
+            # size = self.img_size(identifier)
+            self.wezterm_api.send_image(
+                identifier,
+                str(self.image_pane).strip(),
+                str(self.initial_pane_id).strip(),
+            )
+
+        self.visible.update(self.to_make_visible)
+        self.to_make_invisible.clear()
+        self.to_make_visible.clear()
 
     def clear(self) -> None:
         pass
@@ -229,38 +256,34 @@ class WeztermCanvas(Canvas):
 
     def add_image(
         self,
-        _path: str,
-        _identifier: str,
+        path: str,
+        identifier: str,
         _x: int,
         _y: int,
         _bufnr: int,
         _winnr: int,
-    ) -> None:
+    ) -> str | dict[str, str]:
+        if path not in self.images:
+            img = {"path": path, "id": identifier}
+            self.to_make_visible.add(img["path"])
+            return img
+        return path
+
+    def remove_image(self, identifier: str) -> None:
         pass
 
-    def remove_image(self, _identifier: str) -> None:
-        pass
-
-        # NOTE: Doing it this way kept there from being a delay with the image being rendered by waiting for the terminal/shell/and prompt to load
-
-    def wezterm_init_split(self) -> None:
+    def wezterm_split(self) -> None:
         """Splits the terminal based on config preferences at molten init if supplied, otherwise resort to default values"""
         self.image_pane = self.wezterm_api.wezterm_molten_init(self.initial_pane_id)
 
-    def send_image(self, path: str) -> None:
-        """Sends an image to the terminal for rendering. Panes are passed to allow automatic transitioning between the panes after sending the graphic"""
-        self.wezterm_api.send_image(
-            path, str(self.image_pane).strip(), str(self.initial_pane_id).strip()
-        )
 
-
-def get_canvas_given_provider(name: str, nvim: Nvim) -> Canvas:
+def get_canvas_given_provider(name: str, nvim: Nvim, options: MoltenOptions) -> Canvas:
     if name == "none":
         return NoCanvas()
     elif name == "image.nvim":
         return ImageNvimCanvas(nvim)
     elif name == "wezterm":
-        return WeztermCanvas(nvim)
+        return WeztermCanvas(nvim, options)
     else:
         notify_warn(nvim, f"unknown image provider: `{name}`")
         return NoCanvas()
