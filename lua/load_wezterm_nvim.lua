@@ -41,7 +41,7 @@ wezterm_api.send_image = function(path, image_pane_id, initial_pane_id)
 end
 
 wezterm_api.close_image_pane = function(image_pane_id)
-  local _, out, err = wezterm.exec_sync({
+  wezterm.exec_sync({
     "cli",
     "send-text",
     "--pane-id",
@@ -49,10 +49,6 @@ wezterm_api.close_image_pane = function(image_pane_id)
     "--no-paste",
     "wezterm cli kill-pane --pane-id " .. image_pane_id .. "\r",
   })
-  print(_)
-  print(out)
-  print(err)
-  return _
 end
 
 return { wezterm_api = wezterm_api }
