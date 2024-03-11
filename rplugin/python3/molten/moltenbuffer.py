@@ -86,6 +86,8 @@ class MoltenKernel:
 
     def deinit(self) -> None:
         self._doautocmd("MoltenDeinitPre")
+        if isinstance(self.canvas, WeztermCanvas):
+            self.canvas.deinit()
         self.runtime.deinit()
         self._doautocmd("MoltenDeinitPost")
 
