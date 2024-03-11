@@ -203,26 +203,20 @@ class WeztermCanvas(Canvas):
     """A canvas for using Wezterm's imgcat functionality to render images/plots"""
 
     nvim: Nvim
-    to_make_visible: Set[str]
-    to_make_invisible: Set[str]
-    visible: Set[str]
 
     def __init__(self, nvim: Nvim):
         self.nvim = nvim
-        self.images = {}
-        self.visible = set()
-        self.to_make_visible = set()
-        self.to_make_invisible = set()
-        self.next_id = 0
         self.initial_pane_id: int | None = None
+        self.image_pane: int | None = None
 
     def init(self) -> None:
-        self.nvim.exec_lua("_wezterm = require('wezterm')")
+        self.nvim.exec_lua("_wezterm = require('load_wezterm_nvim').wezterm_api")
         self.wezterm_api = self.nvim.lua._wezterm
         self.initial_pane_id = self.wezterm_api.get_current_pane()
 
     def deinit(self) -> None:
-        pass
+        """Closes the terminal split that was opened with MoltenInit"""
+        self.wezterm_api.close_image_pane(str(self.image_pane).strip())
 
     def present(self) -> None:
         pass
@@ -247,10 +241,17 @@ class WeztermCanvas(Canvas):
     def remove_image(self, _identifier: str) -> None:
         pass
 
-    def wezterm_present(self) -> None:
-        """Send the current image outputs to the terminal split
-        Returns: True if we're in a cell, False otherwise"""
-        self.wezterm_api.wezterm_molten_init()
+        # NOTE: Doing it this way kept there from being a delay with the image being rendered by waiting for the terminal/shell/and prompt to load
+
+    def wezterm_init_split(self) -> None:
+        """Splits the terminal based on config preferences at molten init if supplied, otherwise resort to default values"""
+        self.image_pane = self.wezterm_api.wezterm_molten_init(self.initial_pane_id)
+
+    def send_image(self, path: str) -> None:
+        """Sends an image to the terminal for rendering. Panes are passed to allow automatic transitioning between the panes after sending the graphic"""
+        self.wezterm_api.send_image(
+            path, str(self.image_pane).strip(), str(self.initial_pane_id).strip()
+        )
 
 
 def get_canvas_given_provider(name: str, nvim: Nvim) -> Canvas:
