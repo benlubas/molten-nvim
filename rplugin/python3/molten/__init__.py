@@ -198,8 +198,6 @@ class Molten:
 
         self.add_kernel(self.nvim.current.buffer, kernel_id, molten)
         molten._doautocmd("MoltenInitPost")
-        if isinstance(molten.canvas, WeztermCanvas):
-            # molten.canvas.wezterm_init()
 
         return molten
 
