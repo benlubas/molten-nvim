@@ -887,7 +887,7 @@ class Molten:
             if m.kernel_id == args[0]:
                 m.send_stdin(args[1])
 
-    @pynvim.function("MoltenUpdateInterface", sync=False)  # type: ignore
+    @pynvim.function("MoltenUpdateInterface", sync=True)  # type: ignore
     @nvimui  # type: ignore
     def function_update_interface(self, _: Any) -> None:
         self._update_interface()
