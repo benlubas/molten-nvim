@@ -1,4 +1,3 @@
-from typing import Dict, List, Tuple
 from pynvim import Nvim
 
 from pynvim.api import Buffer
@@ -8,11 +7,13 @@ from molten.options import MoltenOptions
 from molten.outputchunks import Output
 from molten.utils import notify_error
 
+Record = list[tuple[str, Output]]
+
 
 class HistoryBuffer:
     buf: Buffer | None
     canvas: Canvas
-    histories: Dict[CodeCell, List[Tuple[str, Output]]]
+    histories: dict[CodeCell, Record]
     nvim: Nvim
     options: MoltenOptions
 
@@ -33,7 +34,9 @@ class HistoryBuffer:
     def remove(self, cell: CodeCell):
         del self.histories[cell]
 
-    def get_history(self, query: str, cell: CodeCell | None):
+    def get_history(
+        self, query: str, cell: CodeCell | None
+    ) -> dict[CodeCell, Record] | Record | None:
         match query:
             case "cell":
                 if cell is None:
@@ -85,7 +88,7 @@ class HistoryBuffer:
 
     def generate_history_lines(
         self, lang, code, output: Output, offset
-    ) -> Tuple[List[str], Tuple[int, int]]:
+    ) -> tuple[list[str], tuple[int, int]]:
         if self.buf is None:
             return [], (0, 0)
         lines = []

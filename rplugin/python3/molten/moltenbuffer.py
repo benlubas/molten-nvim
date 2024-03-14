@@ -1,6 +1,6 @@
 from contextlib import AbstractContextManager
 from datetime import datetime
-from typing import IO, Callable, List, Optional, Dict, Tuple
+from typing import IO, Callable
 from queue import Queue
 import hashlib
 
@@ -26,20 +26,20 @@ class MoltenKernel:
     canvas: Canvas
     highlight_namespace: int
     extmark_namespace: int
-    buffers: List[Buffer]
+    buffers: list[Buffer]
 
     runtime: JupyterRuntime
 
     kernel_id: str
     """name unique to this specific jupyter runtime. Only used within Molten. Human Readable"""
 
-    outputs: Dict[CodeCell, OutputBuffer]
+    outputs: dict[CodeCell, OutputBuffer]
 
     history: HistoryBuffer
-    current_output: Optional[CodeCell]
+    current_output: CodeCell | None
     queued_outputs: "Queue[CodeCell]"
 
-    selected_cell: Optional[CodeCell]
+    selected_cell: CodeCell | None
     should_show_floating_win: bool
     updating_interface: bool
 
@@ -79,7 +79,7 @@ class MoltenKernel:
         self.options = options
         self.language = self.runtime.kernel_manager.kernel_spec.language  # type: ignore
 
-    def _doautocmd(self, autocmd: str, opts: Dict = {}) -> None:
+    def _doautocmd(self, autocmd: str, opts: dict = {}) -> None:
         assert " " not in autocmd
         opts["pattern"] = autocmd
         self.nvim.api.exec_autocmds("User", opts)
@@ -207,7 +207,7 @@ class MoltenKernel:
 
         return True
 
-    def get_history(self, query: str) -> None | Dict[CodeCell, List[Tuple[str, Output]]]:
+    def get_history(self, query: str) -> None | dict[CodeCell, list[tuple[str, Output]]]:
         self.history.get_history(query, self.selected_cell)
 
     def _check_if_done_running(self) -> None:
@@ -308,7 +308,7 @@ class MoltenKernel:
         for cell, output in self.outputs.items():
             output.clear_virt_output(cell.bufno)
 
-    def _get_selected_span(self) -> Optional[CodeCell]:
+    def _get_selected_span(self) -> CodeCell | None:
         current_position = self._get_cursor_position()
         selected = None
         for span in reversed(self.outputs.keys()):
@@ -480,12 +480,12 @@ class MoltenKernel:
 
 
 def write_html_from_chunks(
-    chunks: List[OutputChunk],
+    chunks: list[OutputChunk],
     alloc_file: Callable[
         [str, str],
-        "AbstractContextManager[Tuple[str, IO[bytes]]]",
+        "AbstractContextManager[tuple[str, IO[bytes]]]",
     ],
-) -> Optional[str]:
+) -> str | None:
     """Build an HTML file from the given chunks.
     Returns: the filepath of the HTML file, or none if there is no HTML output in the chunks
     """

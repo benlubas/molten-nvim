@@ -1,4 +1,4 @@
-from typing import Type, Optional, Dict, Any
+from typing import Type, Any
 import os
 from pynvim import Nvim
 
@@ -16,7 +16,7 @@ from molten.moltenbuffer import MoltenKernel
 class MoltenIOError(Exception):
     @classmethod
     def assert_has_key(
-        cls, data: Dict[str, Any], key: str, type_: Optional[Type[Any]] = None
+        cls, data: dict[str, Any], key: str, type_: Type[Any] | None = None
     ) -> Any:
         if key not in data:
             raise cls(f"Missing key: {key}")
@@ -39,7 +39,7 @@ def get_default_save_file(options: MoltenOptions, buffer: Buffer) -> str:
     return os.path.join(options.save_path, mangled_name + ".json")
 
 
-def load(nvim: Nvim, moltenbuffer: MoltenKernel, nvim_buffer: Buffer, data: Dict[str, Any]) -> None:
+def load(nvim: Nvim, moltenbuffer: MoltenKernel, nvim_buffer: Buffer, data: dict[str, Any]) -> None:
     MoltenIOError.assert_has_key(data, "content_checksum", str)
 
     if moltenbuffer._get_content_checksum() != data["content_checksum"]:
@@ -108,7 +108,7 @@ def load(nvim: Nvim, moltenbuffer: MoltenKernel, nvim_buffer: Buffer, data: Dict
         moltenbuffer.outputs[span].output = output
 
 
-def save(molten_kernel: MoltenKernel, nvim_buffer: int) -> Dict[str, Any]:
+def save(molten_kernel: MoltenKernel, nvim_buffer: int) -> dict[str, Any]:
     """Save the current kernel state for the given buffer."""
     return {
         "version": 1,

@@ -1,4 +1,4 @@
-from typing import Optional, Tuple, List, Dict, Generator, IO, Any
+from typing import Generator, IO, Any
 from enum import Enum
 from contextlib import contextmanager
 from queue import Empty as EmptyQueueException
@@ -35,7 +35,7 @@ class JupyterRuntime:
     kernel_manager: jupyter_client.KernelManager  # type: ignore
     kernel_client: jupyter_client.KernelClient  # type: ignore
 
-    allocated_files: List[str]
+    allocated_files: list[str]
 
     options: MoltenOptions
     nvim: Nvim
@@ -100,13 +100,13 @@ class JupyterRuntime:
     @contextmanager
     def _alloc_file(
         self, extension: str, mode: str
-    ) -> Generator[Tuple[str, IO[bytes]], None, None]:
+    ) -> Generator[tuple[str, IO[bytes]], None, None]:
         with tempfile.NamedTemporaryFile(suffix="." + extension, mode=mode, delete=False) as file:
             path = file.name
             yield path, file
         self.allocated_files.append(path)
 
-    def _append_chunk(self, output: Output, data: Dict[str, Any], metadata: Dict[str, Any]) -> None:
+    def _append_chunk(self, output: Output, data: dict[str, Any], metadata: dict[str, Any]) -> None:
         if self.options.show_mimetype_debug:
             output.chunks.append(MimetypesOutputChunk(list(data.keys())))
 
@@ -116,7 +116,7 @@ class JupyterRuntime:
             if isinstance(chunk, TextOutputChunk) and chunk.text.startswith("\r"):
                 output.merge_text_chunks()
 
-    def _tick_one(self, output: Output, message_type: str, content: Dict[str, Any]) -> bool:
+    def _tick_one(self, output: Output, message_type: str, content: dict[str, Any]) -> bool:
         def copy_on_demand(content_ctor):
             if self.options.copy_output:
                 import pyperclip
@@ -192,7 +192,7 @@ class JupyterRuntime:
         else:
             return False
 
-    def tick(self, output: Optional[Output]) -> bool:
+    def tick(self, output: Output | None) -> bool:
         did_stuff = False
 
         assert isinstance(
@@ -249,5 +249,5 @@ class JupyterRuntime:
         if msg['msg_type'] == "input_request":
             self.nvim.lua._prompt_stdin(self.kernel_id, msg['content']['prompt'])
 
-def get_available_kernels() -> List[str]:
+def get_available_kernels() -> list[str]:
     return list(jupyter_client.kernelspec.find_kernel_specs().keys())  # type: ignore

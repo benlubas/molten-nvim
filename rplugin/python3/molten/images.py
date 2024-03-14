@@ -1,4 +1,4 @@
-from typing import Dict, Set
+from typing import Set
 from abc import ABC, abstractmethod
 
 from pynvim import Nvim
@@ -41,7 +41,7 @@ class Canvas(ABC):
         """
 
     @abstractmethod
-    def img_size(self, identifier: str) -> Dict[str, int]:
+    def img_size(self, identifier: str) -> dict[str, int]:
         """
         Get the height of an image in terminal rows.
         """
@@ -104,7 +104,7 @@ class NoCanvas(Canvas):
     def clear(self, bufnr=None) -> None:
         pass
 
-    def img_size(self, _indentifier: str) -> Dict[str, int]:
+    def img_size(self, _indentifier: str) -> dict[str, int]:
         return {"height": 0, "width": 0}
 
     def add_image(
@@ -170,7 +170,7 @@ class ImageNvimCanvas(Canvas):
                 cleared.add(img)
         self.visible.difference_update(cleared)
 
-    def img_size(self, identifier: str) -> Dict[str, int]:
+    def img_size(self, identifier: str) -> dict[str, int]:
         return self.image_api.image_size(identifier)
 
     def add_image(

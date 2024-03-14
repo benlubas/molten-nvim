@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any
 
 from pynvim import Nvim
 from pynvim.api import Buffer, Window
@@ -18,10 +18,10 @@ class OutputBuffer:
     output: Output
 
     display_buf: Buffer
-    display_win: Optional[Window]
-    display_virt_lines: Optional[DynamicPosition]
+    display_win: Window | None
+    display_virt_lines: DynamicPosition | None
     extmark_namespace: int
-    virt_text_id: Optional[int]
+    virt_text_id: int | None
     displayed_status: OutputStatus
 
     options: MoltenOptions
@@ -152,7 +152,7 @@ class OutputBuffer:
                 {"scope": "local", "win": self.display_win.handle},
             )
 
-    def build_output_text(self, shape, buf: int, virtual: bool) -> Tuple[List[str], int]:
+    def build_output_text(self, shape, buf: int, virtual: bool) -> tuple[list[str], int]:
         lineno = 0
         lines_str = ""
         # images are rendered with virtual lines by image.nvim
@@ -424,7 +424,7 @@ class OutputBuffer:
             self.display_win.api.set_config({"footer": ""})
 
 
-def border_size(border: Union[str, List[str], List[List[str]]]):
+def border_size(border: str | list[str] | list[list[str]]):
     width, height = 0, 0
     match border:
         case list(b):
@@ -441,7 +441,7 @@ def border_size(border: Union[str, List[str], List[List[str]]]):
     return width, height
 
 
-def border_char_size(index: int, border: Union[List[str], List[List[str]]]):
+def border_char_size(index: int, border: list[str] | list[list[str]]):
     match border[index % len(border)]:
         case str(ch) | [str(ch), _]:
             return len(ch)

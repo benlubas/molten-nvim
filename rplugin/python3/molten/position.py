@@ -1,4 +1,3 @@
-from typing import List
 from pynvim import Nvim
 
 
@@ -66,7 +65,7 @@ class DynamicPosition(Position):
     def __repr__(self) -> str:
         return f"DynamicPosition(bufno={self.bufno}, lineno={self.lineno}, colno={self.colno})"
 
-    def _get_pos(self) -> List[int]:
+    def _get_pos(self) -> list[int]:
         out = self.nvim.funcs.nvim_buf_get_extmark_by_id(
             self.bufno, self.extmark_namespace, self.extmark_id, {}
         )

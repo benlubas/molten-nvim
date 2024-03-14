@@ -1,4 +1,3 @@
-from typing import Dict
 from pynvim.api import Buffer, Nvim
 from molten.code_cell import CodeCell
 from molten.moltenbuffer import MoltenKernel
@@ -39,7 +38,7 @@ def import_outputs(nvim: Nvim, kernel: MoltenKernel, filepath: str):
     buffer_contents = buf[:]
     nb = nbformat.read(filepath, as_version=NOTEBOOK_VERSION)
 
-    molten_outputs: Dict[CodeCell, Output] = {}
+    molten_outputs: dict[CodeCell, Output] = {}
 
     for cell in nb["cells"]:
         if cell["cell_type"] != "code" or "outputs" not in cell:
