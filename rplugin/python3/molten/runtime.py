@@ -133,7 +133,8 @@ class JupyterRuntime:
         if message_type == "execute_input":
             output.execution_count = content["execution_count"]
             if self.external_kernel is False:
-                assert output.status != OutputStatus.DONE
+                if output.status == OutputStatus.DONE:
+                    return False
                 if output.status == OutputStatus.HOLD:
                     output.status = OutputStatus.RUNNING
                 elif output.status == OutputStatus.RUNNING:

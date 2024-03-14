@@ -466,6 +466,16 @@ class Molten:
                 notify_info(self.nvim, "Opened in browser")
                 return
 
+    @pynvim.command("MoltenImagePopup", sync=True)  # type: ignore
+    @nvimui  # type: ignore
+    def command_image_popup(self) -> None:
+        molten_kernels = self._get_current_buf_kernels(True)
+        assert molten_kernels is not None
+
+        for kernel in molten_kernels:
+            if kernel.open_image_popup():
+                return
+
     @pynvim.command("MoltenEvaluateArgument", nargs="*", sync=True)  # type: ignore
     @nvimui
     def commnand_molten_evaluate_argument(self, args: List[str]) -> None:
@@ -488,6 +498,11 @@ class Molten:
             return
         _, lineno_begin, colno_begin, _ = self.nvim.funcs.getpos("'<")
         _, lineno_end, colno_end, _ = self.nvim.funcs.getpos("'>")
+
+        if lineno_begin == 0 or colno_begin == 0 or lineno_end == 0 or colno_end == 0:
+            notify_error(self.nvim, "No visual selection found")
+            return
+
         span = (
             (
                 lineno_begin - 1,
@@ -909,7 +924,7 @@ class Molten:
             if m.kernel_id == args[0]:
                 m.send_stdin(args[1])
 
-    @pynvim.function("MoltenUpdateInterface", sync=False)  # type: ignore
+    @pynvim.function("MoltenUpdateInterface", sync=True)  # type: ignore
     @nvimui  # type: ignore
     def function_update_interface(self, _: Any) -> None:
         self._update_interface()

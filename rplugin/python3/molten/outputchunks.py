@@ -11,6 +11,7 @@ from contextlib import AbstractContextManager
 from enum import Enum
 from abc import ABC, abstractmethod
 import re
+from datetime import datetime
 
 from pynvim import Nvim
 
@@ -178,6 +179,8 @@ class Output:
     status: OutputStatus
     success: bool
     old: bool
+    start_time: datetime
+    end_time: datetime
 
     _should_clear: bool
 
@@ -187,6 +190,9 @@ class Output:
         self.chunks = []
         self.success = True
         self.old = False
+
+        self.start_time = datetime.now()
+        self.end_time = None
 
         self._should_clear = False
 
@@ -290,32 +296,32 @@ def to_outputchunk(
         return TextLnOutputChunk(text)
 
     chunk = None
-    if options.image_provider != "none":
-        # handle these mimetypes first, since they require Molten to render them
-        special_mimetypes = [
-            ("image/svg+xml", _from_image_svgxml),
-            ("application/vnd.plotly.v1+json", _from_application_plotly),
-            ("text/latex", _from_latex),
-        ]
+    # if options.image_provider != "none":
+    # handle these mimetypes first, since they require Molten to render them
+    special_mimetypes = [
+        ("image/svg+xml", _from_image_svgxml),
+        ("application/vnd.plotly.v1+json", _from_application_plotly),
+        ("text/latex", _from_latex),
+    ]
 
-        for mimetype, process_func in special_mimetypes:
-            try:
-                maybe_data = None
-                if data is not None:
-                    maybe_data = data.get(mimetype)
-                if maybe_data is not None:
-                    chunk = process_func(maybe_data)  # type: ignore
+    for mimetype, process_func in special_mimetypes:
+        try:
+            maybe_data = None
+            if data is not None:
+                maybe_data = data.get(mimetype)
+            if maybe_data is not None:
+                chunk = process_func(maybe_data)  # type: ignore
+                break
+        except ImportError:
+            continue
+
+    if chunk is None and data is not None:
+        # handle arbitrary images
+        for mimetype in data.keys():
+            match mimetype.split("/"):
+                case ["image", extension]:
+                    chunk = _from_image(extension, data[mimetype])
                     break
-            except ImportError:
-                continue
-
-        if chunk is None and data is not None:
-            # handle arbitrary images
-            for mimetype in data.keys():
-                match mimetype.split("/"):
-                    case ["image", extension]:
-                        chunk = _from_image(extension, data[mimetype])
-                        break
 
     if chunk is None:
         # fallback to plain text if there's nothing else

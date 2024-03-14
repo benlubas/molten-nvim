@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any, List, Optional, Tuple, Union
 
 from pynvim import Nvim
@@ -45,6 +46,57 @@ class OutputBuffer:
 
     def _buffer_to_window_lineno(self, lineno: int) -> int:
         return self.lua.calculate_window_position(lineno)
+
+    def _get_header_text(self, output: Output) -> str:
+        if output.execution_count is None:
+            execution_count = "..."
+        else:
+            execution_count = str(output.execution_count)
+
+        if output.status == OutputStatus.HOLD:
+            status = "* On Hold"
+        elif output.status == OutputStatus.DONE:
+            if output.success:
+                status = "✓ Done"
+            else:
+                status = "✗ Failed"
+        elif output.status == OutputStatus.RUNNING:
+            status = "... Running"
+        else:
+            raise ValueError("bad output.status: %s" % output.status)
+
+        if output.old:
+            old = "[OLD] "
+        else:
+            old = ""
+
+        if not output.old and self.options.output_show_exec_time:
+            start = output.start_time
+            end = output.end_time if output.end_time is not None else datetime.now()
+            diff = end - start
+
+            days = diff.days
+            hours = diff.seconds // 3600
+            minutes = diff.seconds // 60
+            seconds = diff.seconds - hours * 3600 - minutes * 60
+            microseconds = diff.microseconds
+
+            time = ""
+
+            # Days
+            if days:
+                time += f"{days}d "
+            if hours:
+                time += f"{hours}hr "
+            if minutes:
+                time += f"{minutes}m "
+
+            # Microseconds is an int, roundabout way to round to 2 digits
+            time += f"{seconds}.{int(round(microseconds, -4) / 10000)}s"
+        else:
+            time = ""
+
+        return f"{old}Out[{execution_count}]: {status} {time}".rstrip()
 
     def enter(self, anchor: Position) -> bool:
         entered = False
@@ -146,7 +198,7 @@ class OutputBuffer:
     def show_virtual_output(self, anchor: Position) -> None:
         if self.displayed_status == OutputStatus.DONE and self.virt_text_id is not None:
             return
-
+        offset = self.calculate_offset(anchor) if self.options.cover_empty_lines else 0
         self.displayed_status = self.output.status
 
         buf = self.nvim.buffers[anchor.bufno]
@@ -161,7 +213,7 @@ class OutputBuffer:
         win = self.nvim.current.window
         win_info = self.nvim.funcs.getwininfo(win.handle)[0]
         win_col = win_info["wincol"]
-        win_row = anchor.lineno
+        win_row = anchor.lineno + offset
         win_width = win_info["width"] - win_info["textoff"]
         win_height = win_info["height"]
 
@@ -193,11 +245,42 @@ class OutputBuffer:
         )
         self.canvas.present()
 
+    def calculate_offset(self, anchor: Position) -> int:
+        offset = 0
+        lineno = anchor.lineno
+        while lineno > 0:
+            current_line = self.nvim.funcs.nvim_buf_get_lines(
+                anchor.bufno,
+                lineno,
+                lineno + 1,
+                False,
+            )[0]
+            is_comment = False
+            for x in self.options.cover_lines_starting_with:
+                if current_line.startswith(x):
+                    is_comment = True
+                    break
+            if current_line != "" and not is_comment:
+                return offset
+            else:
+                lineno -= 1
+                offset -= 1
+        # Only get here if current_pos.lineno == 0
+        return 0
+
     def show_floating_win(self, anchor: Position) -> None:
         win = self.nvim.current.window
         win_col = win.col
-        win_row = self._buffer_to_window_lineno(anchor.lineno + 1)
-        if win_row == 0:  # anchor position is off screen
+        offset = 0
+        if self.options.cover_empty_lines:
+            offset = self.calculate_offset(anchor)
+            win_row = (
+                self._buffer_to_window_lineno(anchor.lineno + offset) + 1
+            )
+        else:
+            win_row = self._buffer_to_window_lineno(anchor.lineno + 1)
+
+        if win_row <= 0:  # anchor position is off screen
             return
         win_width = win.width
         win_height = win.height
@@ -298,9 +381,12 @@ class OutputBuffer:
 
             if self.display_virt_lines is not None:
                 del self.display_virt_lines
+                self.display_virt_lines = None
 
-            if self.options.output_virt_lines:
+            if self.options.output_virt_lines or self.options.cover_empty_lines:
                 virt_lines_y = anchor.lineno
+                if self.options.cover_empty_lines:
+                    virt_lines_y += offset
                 virt_lines_height = max_height + border_h
                 if self.options.virt_lines_off_by_1:
                     virt_lines_y += 1

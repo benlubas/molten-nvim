@@ -31,15 +31,19 @@ class HL:
 
 
 class MoltenOptions:
+    auto_image_popup: bool
     auto_init_behavior: str
     auto_open_html_in_browser: bool
     auto_open_output: bool
+    cover_empty_lines: bool
+    cover_lines_starting_with: List[str]
     copy_output: bool
     enter_output_behavior: str
     image_provider: str
     limit_output_chars: int
     open_cmd: Optional[str]
     output_crop_border: bool
+    output_show_exec_time: bool
     output_show_more: bool
     output_virt_lines: bool
     output_win_border: Union[str, List[str]]
@@ -64,14 +68,18 @@ class MoltenOptions:
         self.hl = HL()
         # fmt: off
         CONFIG_VARS = [
+            ("molten_auto_image_popup", False),
             ("molten_auto_init_behavior", "init"), # "raise" or "init"
             ("molten_auto_open_html_in_browser", False),
             ("molten_auto_open_output", True),
+            ("molten_cover_empty_lines", False),
+            ("molten_cover_lines_starting_with", []),
             ("molten_copy_output", False),
             ("molten_enter_output_behavior", "open_then_enter"),
             ("molten_image_provider", "none"),
             ("molten_open_cmd", None),
             ("molten_output_crop_border", True),
+            ("molten_output_show_exec_time", True),
             ("molten_output_show_more", False),
             ("molten_output_virt_lines", False),
             ("molten_output_win_border", [ "", "━", "", "" ]),
