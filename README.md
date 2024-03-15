@@ -6,6 +6,8 @@ incredible notebook-like experience in neovim.
 
 https://github.com/benlubas/molten-nvim/assets/56943754/17ae81c0-306f-4496-bce8-99286e7f21ed
 
+![](~/Downloads/neovim.png)
+
 ## Feature Highlights
 
 - Send code to run asynchronously in the Jupyter kernel

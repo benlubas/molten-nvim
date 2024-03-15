@@ -1,3 +1,4 @@
+from typing import TypeAlias
 from pynvim import Nvim
 
 from pynvim.api import Buffer
@@ -7,8 +8,7 @@ from molten.options import MoltenOptions
 from molten.outputchunks import Output
 from molten.utils import notify_error
 
-Record = list[tuple[str, Output]]
-
+Record: TypeAlias = list[tuple[str, Output]]
 
 class HistoryBuffer:
     buf: Buffer | None

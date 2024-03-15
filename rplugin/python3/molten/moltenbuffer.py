@@ -240,11 +240,12 @@ class MoltenKernel:
                 # is an image.nvim issue but I looked into it and couldn't figure it out. so... hack
                 self.nvim.exec_lua("""
                     vim.loop.new_timer():start(250, 0, vim.schedule_wrap(function()
+                        print("update history")
                         vim.fn.MoltenUpdateHistory()
                     end))
                 """)
 
-                self.history.update_history_buffer(self.current_output, self.language)
+                # self.history.update_history_buffer(self.current_output, self.language)
 
             if starting_status != OutputStatus.DONE and output.status == OutputStatus.DONE:
                 if self.options.auto_open_html_in_browser:
