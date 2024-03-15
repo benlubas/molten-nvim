@@ -34,6 +34,7 @@ call remote#host#RegisterPlugin('python3', '/home/benlubas/github/molten-nvim/rp
       \ {'sync': v:true, 'name': 'MoltenExportOutput', 'type': 'command', 'opts': {'bang': '', 'nargs': '*'}},
       \ {'sync': v:true, 'name': 'MoltenGoto', 'type': 'command', 'opts': {'nargs': '*'}},
       \ {'sync': v:true, 'name': 'MoltenHideOutput', 'type': 'command', 'opts': {}},
+      \ {'sync': v:true, 'name': 'MoltenHistory', 'type': 'command', 'opts': {'nargs': '*'}},
       \ {'sync': v:true, 'name': 'MoltenImagePopup', 'type': 'command', 'opts': {}},
       \ {'sync': v:true, 'name': 'MoltenImportOutput', 'type': 'command', 'opts': {'nargs': '*'}},
       \ {'sync': v:true, 'name': 'MoltenInfo', 'type': 'command', 'opts': {}},
@@ -63,6 +64,7 @@ call remote#host#RegisterPlugin('python3', '/home/benlubas/github/molten-nvim/rp
       \ {'sync': v:true, 'name': 'MoltenOnWinScrolled', 'type': 'function', 'opts': {}},
       \ {'sync': v:true, 'name': 'MoltenStatusLineInit', 'type': 'function', 'opts': {}},
       \ {'sync': v:true, 'name': 'MoltenStatusLineKernels', 'type': 'function', 'opts': {}},
+      \ {'sync': v:true, 'name': 'MoltenUpdateHistory', 'type': 'function', 'opts': {}},
       \ {'sync': v:true, 'name': 'MoltenUpdateInterface', 'type': 'function', 'opts': {}},
       \ {'sync': v:true, 'name': 'MoltenUpdateOption', 'type': 'function', 'opts': {}},
      \ ])

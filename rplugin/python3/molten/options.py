@@ -1,7 +1,6 @@
 import os
 
 from pynvim import Nvim
-from typing import Optional, Union, List
 from dataclasses import dataclass
 
 from molten.utils import notify_error
@@ -36,22 +35,22 @@ class MoltenOptions:
     auto_open_html_in_browser: bool
     auto_open_output: bool
     cover_empty_lines: bool
-    cover_lines_starting_with: List[str]
+    cover_lines_starting_with: list[str]
     copy_output: bool
     enter_output_behavior: str
     image_provider: str
     limit_output_chars: int
-    open_cmd: Optional[str]
+    open_cmd: str | None
     output_crop_border: bool
     output_show_exec_time: bool
     output_show_more: bool
     output_virt_lines: bool
-    output_win_border: Union[str, List[str]]
+    output_win_border: str | list[str]
     output_win_cover_gutter: bool
     output_win_hide_on_leave: bool
     output_win_max_height: int
     output_win_max_width: int
-    output_win_style: Optional[str]
+    output_win_style: str | None
     save_path: str
     show_mimetype_debug: bool
     tick_rate: int

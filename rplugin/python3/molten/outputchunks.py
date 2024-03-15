@@ -1,12 +1,4 @@
-from typing import (
-    Optional,
-    Tuple,
-    List,
-    Dict,
-    Any,
-    Callable,
-    IO,
-)
+from typing import Any, Callable, IO
 from contextlib import AbstractContextManager
 from enum import Enum
 from abc import ABC, abstractmethod
@@ -22,10 +14,10 @@ from molten.utils import notify_error
 
 
 class OutputChunk(ABC):
-    jupyter_data: Optional[Dict[str, Any]] = None
-    jupyter_metadata: Optional[Dict[str, Any]] = None
+    jupyter_data: dict[str, Any] | None = None
+    jupyter_metadata: dict[str, Any] | None = None
     # extra keys that are used to write data to jupyter notebook files (ie. for error outputs)
-    extras: Dict[str, Any] = {}
+    extras: dict[str, Any] = {}
     output_type: str
 
     @abstractmethod
@@ -35,11 +27,11 @@ class OutputChunk(ABC):
         options: MoltenOptions,
         col: int,
         lineno: int,
-        shape: Tuple[int, int, int, int],
+        shape: tuple[int, int, int, int],
         canvas: Canvas,
         hard_wrap: bool,
         winnr: int | None = None,
-    ) -> Tuple[str, int]:
+    ) -> tuple[str, int]:
         pass
 
 
@@ -69,11 +61,11 @@ class TextOutputChunk(OutputChunk):
         options: MoltenOptions,
         col: int,
         _lineno: int,
-        shape: Tuple[int, int, int, int],
+        shape: tuple[int, int, int, int],
         _canvas: Canvas,
         hard_wrap: bool,
         winnr: int | None = None,
-    ) -> Tuple[str, int]:
+    ) -> tuple[str, int]:
         text = clean_up_text(self.text)
         extra_lines = 0
         if options.wrap_output:  # count the number of extra lines this will need when wrapped
@@ -111,17 +103,17 @@ class TextLnOutputChunk(TextOutputChunk):
 
 
 class BadOutputChunk(TextLnOutputChunk):
-    def __init__(self, mimetypes: List[str]):
+    def __init__(self, mimetypes: list[str]):
         super().__init__("<No usable MIMEtype! Received mimetypes %r>" % mimetypes)
 
 
 class MimetypesOutputChunk(TextLnOutputChunk):
-    def __init__(self, mimetypes: List[str]):
+    def __init__(self, mimetypes: list[str]):
         super().__init__("[DEBUG] Received mimetypes: %r" % mimetypes)
 
 
 class ErrorOutputChunk(TextLnOutputChunk):
-    def __init__(self, name: str, message: str, traceback: List[str]):
+    def __init__(self, name: str, message: str, traceback: list[str]):
         super().__init__(
             "\n".join(
                 [
@@ -151,18 +143,18 @@ class ImageOutputChunk(OutputChunk):
         _: MoltenOptions,
         col: int,
         lineno: int,
-        _shape: Tuple[int, int, int, int],
+        _shape: tuple[int, int, int, int],
         canvas: Canvas,
         virtual: bool,
         winnr: int | None = None,
-    ) -> Tuple[str, int]:
+    ) -> tuple[str, int]:
         self.img_identifier = canvas.add_image(
             self.img_path,
-            f"{'virt-' if virtual else ''}{self.img_path}",
-            0,
-            lineno + 1,
-            bufnr,
-            winnr,
+            f"{'virt-' if virtual else ''}{bufnr}-{self.img_path}",
+            x=0,
+            y=lineno + 1,
+            bufnr=bufnr,
+            winnr=winnr,
         )
         return "", canvas.img_size(self.img_identifier)["height"]
 
@@ -174,17 +166,17 @@ class OutputStatus(Enum):
 
 
 class Output:
-    execution_count: Optional[int]
-    chunks: List[OutputChunk]
+    execution_count: int | None
+    chunks: list[OutputChunk]
     status: OutputStatus
     success: bool
     old: bool
     start_time: datetime
-    end_time: datetime
+    end_time: datetime | None
 
     _should_clear: bool
 
-    def __init__(self, execution_count: Optional[int]):
+    def __init__(self, execution_count: int | None):
         self.execution_count = execution_count
         self.status = OutputStatus.HOLD
         self.chunks = []
@@ -195,6 +187,32 @@ class Output:
         self.end_time = None
 
         self._should_clear = False
+
+    def get_header_text(self) -> str:
+        if self.execution_count is None:
+            execution_count = "..."
+        else:
+            execution_count = str(self.execution_count)
+
+        if self.status == OutputStatus.HOLD:
+            status = "* On Hold"
+        elif self.status == OutputStatus.DONE:
+            if self.success:
+                status = "✓ Done"
+            else:
+                status = "✗ Failed"
+        elif self.status == OutputStatus.RUNNING:
+            status = "... Running"
+        else:
+            raise ValueError("bad Output.status: %s" % self.status)
+
+        if self.old:
+            old = "[OLD] "
+        else:
+            old = ""
+
+        return f"{old}Out[{execution_count}]: {status}"
+
 
     def merge_text_chunks(self):
         """Merge the last two chunks if they are text chunks, and text on a line before \r
@@ -215,10 +233,10 @@ def to_outputchunk(
     nvim: Nvim,
     alloc_file: Callable[
         [str, str],
-        "AbstractContextManager[Tuple[str, IO[bytes]]]",
+        "AbstractContextManager[tuple[str, IO[bytes]]]",
     ],
-    data: Dict[str, Any],
-    metadata: Dict[str, Any],
+    data: dict[str, Any],
+    metadata: dict[str, Any],
     options: MoltenOptions,
 ) -> OutputChunk:
     def _to_image_chunk(path: str) -> OutputChunk:
