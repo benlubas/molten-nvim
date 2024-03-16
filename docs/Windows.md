@@ -6,7 +6,7 @@ Windows is problematic.
 
 > [!WARNING]
 > The entire section is a hack, and can break when you update Molten. The file contents below are up to
-> date as of version 1.7.x
+> date as of version 1.8.x
 
 This plugin is a remote plugin, and there are reportedly problems with the `:UpdateRemotePlugins`
 command not generating the rplugin manifest file on Windows. This file is supposed to be
@@ -63,7 +63,7 @@ call remote#host#RegisterPlugin('python3', '/home/benlubas/github/molten-nvim/rp
       \ {'sync': v:true, 'name': 'MoltenOnWinScrolled', 'type': 'function', 'opts': {}},
       \ {'sync': v:true, 'name': 'MoltenStatusLineInit', 'type': 'function', 'opts': {}},
       \ {'sync': v:true, 'name': 'MoltenStatusLineKernels', 'type': 'function', 'opts': {}},
-      \ {'sync': v:false, 'name': 'MoltenUpdateInterface', 'type': 'function', 'opts': {}},
+      \ {'sync': v:true, 'name': 'MoltenUpdateInterface', 'type': 'function', 'opts': {}},
       \ {'sync': v:true, 'name': 'MoltenUpdateOption', 'type': 'function', 'opts': {}},
      \ ])
 ```
