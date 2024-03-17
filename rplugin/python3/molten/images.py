@@ -204,14 +204,16 @@ class WeztermCanvas(Canvas):
     """A canvas for using Wezterm's imgcat functionality to render images/plots"""
 
     nvim: Nvim
-    options: MoltenOptions
+    split_dir: str | None
+    split_size: int | None
     to_make_visible: Set[str]
     to_make_invisible: Set[str]
     visible: Set[str]
 
-    def __init__(self, nvim: Nvim, options: MoltenOptions):
+    def __init__(self, nvim: Nvim, split_dir: str | None, split_size: int | None):
         self.nvim = nvim
-        self.options = options
+        self.split_dir = split_dir
+        self.split_size = split_size
         self.images: dict = {}
         self.visible = set()
         self.to_make_visible = set()
@@ -234,6 +236,7 @@ class WeztermCanvas(Canvas):
         to_work_on = self.to_make_visible.difference(
             self.to_make_visible.intersection(self.to_make_invisible)
         )
+        self.to_make_invisible.difference_update(self.to_make_visible)
 
         for identifier in to_work_on:
             # TODO: Investigate how well adding the image size to the wezterm api call works or if i should just let wezterm autosize the image based on the split size.
@@ -272,18 +275,18 @@ class WeztermCanvas(Canvas):
     def remove_image(self, identifier: str) -> None:
         pass
 
-    def wezterm_split(self) -> None:
+    def wezterm_split(self) -> int:
         """Splits the terminal based on config preferences at molten init if supplied, otherwise resort to default values"""
-        self.image_pane = self.wezterm_api.wezterm_molten_init(self.initial_pane_id)
+        self.image_pane = self.wezterm_api.wezterm_molten_init(self.initial_pane_id, self.split_dir, str(self.split_size))
 
 
-def get_canvas_given_provider(name: str, nvim: Nvim, options: MoltenOptions) -> Canvas:
+def get_canvas_given_provider(name: str, nvim: Nvim, split_dir: str | None, split_size: int | None) -> Canvas:
     if name == "none":
         return NoCanvas()
     elif name == "image.nvim":
         return ImageNvimCanvas(nvim)
     elif name == "wezterm":
-        return WeztermCanvas(nvim, options)
+        return WeztermCanvas(nvim, split_dir, split_size)
     else:
         notify_warn(nvim, f"unknown image provider: `{name}`")
         return NoCanvas()

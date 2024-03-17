@@ -12,12 +12,15 @@ wezterm_api.get_pane_id = function()
   return current_pane_id
 end
 
-wezterm_api.wezterm_molten_init = function(initial_pane_id)
-  local direction = "bottom"
-  local size = "35"
-
+-- Split the current pane and return the new pane id
+--- type function
+--- @param initial_pane_id number, the pane id to split
+--- @param direction string, direction to split the pane
+--- @param size string, size of the new pane
+--- @return image_pane_id number the new pane id
+wezterm_api.wezterm_molten_init = function(initial_pane_id, direction, size)
   direction = "--" .. (direction or "bottom")
-  size = tostring(size or "35")
+  size = (size or "35")
 
   wezterm.exec_sync({ "cli", "split-pane", direction, "--percent", size })
   wezterm.exec_sync({ "cli", "activate-pane", "--pane-id", tostring(initial_pane_id) })
@@ -25,6 +28,12 @@ wezterm_api.wezterm_molten_init = function(initial_pane_id)
   return image_pane_id
 end
 
+-- Send an image to the image pane (terminal split)
+--- type function
+--- @param path string, path to the image
+--- @param image_pane_id number, the pane id of the image pane
+--- @param initial_pane_id number, the pane id of the initial pane
+--- @return nil
 wezterm_api.send_image = function(path, image_pane_id, initial_pane_id)
   local placeholder = "wezterm imgcat %s \r"
   local image = string.format(placeholder, path)
@@ -40,6 +49,10 @@ wezterm_api.send_image = function(path, image_pane_id, initial_pane_id)
   wezterm.exec_sync({ "cli", "activate-pane", "--pane-id", initial_pane_id })
 end
 
+-- Close the image pane
+--- type function
+--- @param image_pane_id number, the pane id of the image pane
+--- @return nil
 wezterm_api.close_image_pane = function(image_pane_id)
   wezterm.exec_sync({
     "cli",
