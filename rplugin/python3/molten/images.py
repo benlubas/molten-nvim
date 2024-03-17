@@ -277,7 +277,7 @@ class WeztermCanvas(Canvas):
 
     def wezterm_split(self) -> int:
         """Splits the terminal based on config preferences at molten init if supplied, otherwise resort to default values"""
-        self.image_pane = self.wezterm_api.wezterm_molten_init(self.initial_pane_id, self.split_dir, str(self.split_size))
+        self.image_pane = self.wezterm_api.wezterm_molten_init(self.initial_pane_id, self.split_dir, self.split_size)
 
 
 def get_canvas_given_provider(name: str, nvim: Nvim, split_dir: str | None, split_size: int | None) -> Canvas:

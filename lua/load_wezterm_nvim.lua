@@ -12,17 +12,47 @@ wezterm_api.get_pane_id = function()
   return current_pane_id
 end
 
+--- Validate the split direction
+--- type function
+--- @param direction string the direction to validate
+--- @return string validated direction if valid
+local validate_split_dir = function(direction)
+  local accepted_dirs = { "top", "bottom", "left", "right" }
+  --if direction not in accepted_dirs, return "bottom" else return direction
+  if not vim.tbl_contains(accepted_dirs, direction) then
+    vim.api.nvim_err_writeln(
+      "'molten_split_dir' must be one of 'top', 'bottom', 'left', or 'right', defaulting to 'bottom'"
+    )
+    return "bottom"
+  end
+  return direction
+end
+
+--- Validate the split size
+--- type function
+--- @param size number the size to validate
+--- @return number validated size if valid
+local validate_split_size = function(size)
+  if size < 0 or size > 100 or size == nil then
+    vim.api.nvim_err_writeln(
+      "'molten_split_size' must be a number between 0 and 100, defaulting to a 35% split."
+    )
+    return 35
+  end
+  return size
+end
+
 -- Split the current pane and return the new pane id
 --- type function
 --- @param initial_pane_id number, the pane id to split
 --- @param direction string, direction to split the pane
---- @param size string, size of the new pane
---- @return image_pane_id number the new pane id
+--- @param size number, size of the new pane
+--- @return number image_pane_id the new pane id
 wezterm_api.wezterm_molten_init = function(initial_pane_id, direction, size)
-  direction = "--" .. (direction or "bottom")
-  size = (size or "35")
+  direction = "--" .. (validate_split_dir(direction) or "bottom")
+  size = validate_split_size(size)
 
-  wezterm.exec_sync({ "cli", "split-pane", direction, "--percent", size })
+  wezterm.exec_sync({ "cli", "split-pane", direction, "--percent", tostring(size) })
   wezterm.exec_sync({ "cli", "activate-pane", "--pane-id", tostring(initial_pane_id) })
   local _, image_pane_id = wezterm.exec_sync({ "cli", "get-pane-direction", "Prev" })
   return image_pane_id
