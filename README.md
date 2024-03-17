@@ -34,6 +34,7 @@ window (or both)
   - `plotly` and `kaleido` (for displaying Plotly figures)
   - `pyperclip` if you want to use `molten_copy_output`
   - `nbformat` for importing and exporting output to jupyter notebooks files
+  - `pillow` for opening images with `:MoltenImagePopup`
 
 You can run `:checkhealth` to see what you have installed.
 

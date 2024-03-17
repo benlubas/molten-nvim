@@ -3,7 +3,6 @@ from datetime import datetime
 from typing import IO, Callable, List, Optional, Dict, Tuple
 from queue import Queue
 import hashlib
-from PIL import Image
 
 from pynvim import Nvim
 from pynvim.api import Buffer
@@ -146,10 +145,16 @@ class MoltenKernel:
         for chunk in output.chunks:
             if isinstance(chunk, ImageOutputChunk):
                 try:
+                    from PIL import Image
                     img = Image.open(chunk.img_path)
                     img.show(f"[{output.execution_count}] Molten Image")
                     if not silent:
                         notify_info(self.nvim, "Opened image popup")
+                except ModuleNotFoundError:
+                    if not silent:
+                        notify_error(
+                            self.nvim, "Failed to open image becuase module `PIL` was not found"
+                        )
                 except:
                     if not silent:
                         notify_error(

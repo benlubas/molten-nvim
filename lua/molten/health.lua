@@ -45,6 +45,7 @@ M.check = function()
   py_mod_check("kaleido", "kaleido", false)
   py_mod_check("pyperclip", "pyperclip", false)
   py_mod_check("nbformat", "nbformat", false)
+  py_mod_check("PIL", "pillow", false)
 end
 
 return M
