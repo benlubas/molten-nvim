@@ -3,8 +3,7 @@ from abc import ABC, abstractmethod
 
 from pynvim import Nvim
 
-from molten.options import MoltenOptions
-from molten.utils import notify_warn
+from molten.utils import notify_warn, MoltenException
 
 
 class Canvas(ABC):
@@ -280,12 +279,18 @@ class WeztermCanvas(Canvas):
         self.image_pane = self.wezterm_api.wezterm_molten_init(self.initial_pane_id, self.split_dir, self.split_size)
 
 
-def get_canvas_given_provider(name: str, nvim: Nvim, split_dir: str | None, split_size: int | None) -> Canvas:
+def get_canvas_given_provider(
+    name: str, nvim: Nvim, split_dir: str | None, split_size: int | None, auto_open_output: bool
+) -> Canvas:
     if name == "none":
         return NoCanvas()
     elif name == "image.nvim":
         return ImageNvimCanvas(nvim)
     elif name == "wezterm":
+        if auto_open_output:
+            raise MoltenException(
+                "'wezterm' as an image provider does not currently support molten_auto_open_output = true, please set it to false or use a different image provider"
+            )
         return WeztermCanvas(nvim, split_dir, split_size)
     else:
         notify_warn(nvim, f"unknown image provider: `{name}`")
