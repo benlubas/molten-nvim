@@ -63,7 +63,11 @@ class Molten:
         self.options = MoltenOptions(self.nvim)
 
         self.canvas = get_canvas_given_provider(
-            self.options.image_provider, self.nvim, self.options.split_direction, self.options.split_size
+            self.options.image_provider,
+            self.nvim,
+            self.options.split_direction,
+            self.options.split_size,
+            self.options.auto_open_output,
         )
 
         self.canvas.init()

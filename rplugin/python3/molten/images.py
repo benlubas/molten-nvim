@@ -217,7 +217,6 @@ class WeztermCanvas(Canvas):
         self.visible = set()
         self.to_make_visible = set()
         self.to_make_invisible = set()
-        self.next_id = 0
         self.initial_pane_id: int | None = None
         self.image_pane: int | None = None
 
@@ -231,15 +230,12 @@ class WeztermCanvas(Canvas):
         self.wezterm_api.close_image_pane(str(self.image_pane).strip())
 
     def present(self) -> None:
-        # images to both show and hide should be ignored
         to_work_on = self.to_make_visible.difference(
             self.to_make_visible.intersection(self.to_make_invisible)
         )
         self.to_make_invisible.difference_update(self.to_make_visible)
 
         for identifier in to_work_on:
-            # TODO: Investigate how well adding the image size to the wezterm api call works or if i should just let wezterm autosize the image based on the split size.
-            # size = self.img_size(identifier)
             self.wezterm_api.send_image(
                 identifier,
                 str(self.image_pane).strip(),
@@ -265,6 +261,7 @@ class WeztermCanvas(Canvas):
         _bufnr: int,
         _winnr: int,
     ) -> str | dict[str, str]:
+        """Adds an image to the queue to be rendered by Wezterm via the place method"""
         if path not in self.images:
             img = {"path": path, "id": identifier}
             self.to_make_visible.add(img["path"])
@@ -275,8 +272,13 @@ class WeztermCanvas(Canvas):
         pass
 
     def wezterm_split(self) -> int:
-        """Splits the terminal based on config preferences at molten init if supplied, otherwise resort to default values"""
-        self.image_pane = self.wezterm_api.wezterm_molten_init(self.initial_pane_id, self.split_dir, self.split_size)
+        """Splits the terminal based on config preferences at molten kernel init if
+        supplied, otherwise resort to default values. Returns the pane id of the new
+        split to allow sending/moving between the panes correctly.
+        """
+        self.image_pane = self.wezterm_api.wezterm_molten_init(
+            self.initial_pane_id, self.split_dir, self.split_size
+        )
 
 
 def get_canvas_given_provider(
