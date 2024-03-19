@@ -24,6 +24,7 @@ window (or both)
 - NeoVim 9.4+
 - Python 3.10+
 - [image.nvim](https://github.com/3rd/image.nvim) is only required if you want to render images
+- [wezterm.nvim](https://github.com/willothy/wezterm.nvim) is only required if you use [Wezterm](https://wezfurlong.org/wezterm/) and want to render images via a terminal split.
 - Required Python packages (can be installed in a venv. [read more](./docs/Virtual-Environments.md)):
   - [`pynvim`](https://github.com/neovim/pynvim) (for the Remote Plugin API)
   - [`jupyter_client`](https://github.com/jupyter/jupyter_client) (for interacting with Jupyter)
@@ -70,7 +71,9 @@ When your cursor is in a cell (i.e., you have an _active cell_), a floating wind
 below the cell, reporting output. This is the _floating output window_. (To see more about whether
 a window is shown or not, see `:MoltenShowOutput` and `g:molten_auto_open_output`). When you cursor
 is not in any cell, no cell is active. When your cursor leaves a cell, its floating output window
-will close.
+will close. 
+
+Currently, `g:molten_auto_open_output` is **not** compatible with ```g:molten_image_provider == "wezterm".``` If you want to render images or plots with "wezterm" as the image provider then you will need to set ```g:molten_auto_open_output = false```.
 
 Output may also be displayed as virtual text below a cell. Virtual text output will stay there until
 you re-run the cell or delete the cell.
@@ -178,7 +181,7 @@ variable, their values, and a brief description.
 | `g:molten_cover_lines_starting_with`          | (`{}`) \| array of str                                      | When `cover_empty_lines` is true, also covers lines starting with these strings |
 | `g:molten_copy_output`                        | `true` \| (`false`)                                         | Copy evaluation output to clipboard automatically (requires [`pyperclip`](#requirements))|
 | `g:molten_enter_output_behavior`              | (`"open_then_enter"`) \| `"open_and_enter"` \| `"no_open"`  | The behavior of [MoltenEnterOutput](#moltenenteroutput) |
-| `g:molten_image_provider`                     | (`"none"`) \| `"image.nvim"`                                | How images are displayed |
+| `g:molten_image_provider`                     | (`"none"`) \| `"image.nvim"` \| `"wezterm"` |                               | How images are displayed |
 | `g:molten_open_cmd`                           | (`nil`) \| Any command                                      | Defaults to `xdg-open` on Linux, `open` on Darwin, and `start` on Windows. But you can override it to whatever you want. The command is called like: `subprocess.run([open_cmd, filepath])` |
 | `g:molten_output_crop_border`                 | (`true`) \| `false`                                         | 'crops' the bottom border of the output window when it would otherwise just sit at the bottom of the screen |
 | `g:molten_output_show_exec_time`              | (`true`) \| `false`                                         | Shows the current amount of time since the cell has begun execution |
@@ -191,6 +194,8 @@ variable, their values, and a brief description.
 | `g:molten_output_win_max_width`               | (`999999`) \| int                                           | Max width of the output window |
 | `g:molten_output_win_style`                   | (`false`) \| `"minimal"`                                    | Value passed to the `style` option in `:h nvim_open_win()` |
 | `g:molten_save_path`                          | (`stdpath("data").."/molten"`) \| any path to a folder      | Where to save/load data with `:MoltenSave` and `:MoltenLoad` |
+| `g:molten_split_direction`                    | "right" \| "left" \| "top" \| "bottom" \| (`nil`)\|       | Direction of the terminal split created by wezterm. If left blank will default to "right". *Only applies if `g:molten_image_provider = "wezterm"`* |
+| `g:molten_split_size`                         | (`40`) \| int                                               | (0-100) % size of the screen dedicated to the output window. *Only applies if `g:molten_image_provider = "wezterm"`* |
 | `g:molten_tick_rate`                          | (`500`) \| `int`                                            | How often (in ms) we poll the kernel for updates. Determines how quickly the ui will update, if you want a snappier experience, you can set this to 150 or 200 |
 | `g:molten_use_border_highlights`              | `true` \| (`false`)                                         | When true, uses different highlights for output border depending on the state of the cell (running, done, error). see [highlights](#highlights) |
 | `g:molten_limit_output_chars`                 | (`1000000`) \| int                                          | Limit on the number of chars in an output. If you're lagging your editor with too much output text, decrease it |
