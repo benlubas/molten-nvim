@@ -21,9 +21,9 @@ local validate_split_dir = function(direction)
   --if direction not in accepted_dirs, return "bottom" else return direction
   if not vim.tbl_contains(accepted_dirs, direction) then
     vim.api.nvim_err_writeln(
-      "'molten_split_dir' must be one of 'top', 'bottom', 'left', or 'right', defaulting to 'bottom'"
+      "'molten_split_dir' must be one of 'top', 'bottom', 'left', or 'right', defaulting to 'right'"
     )
-    return "bottom"
+    return "right"
   end
   return direction
 end
@@ -37,7 +37,7 @@ local validate_split_size = function(size)
     vim.api.nvim_err_writeln(
       "'molten_split_size' must be a number between 0 and 100, defaulting to a 35% split."
     )
-    return 35
+    return 40
   end
   return size
 end
@@ -49,7 +49,7 @@ end
 --- @param size number, size of the new pane
 --- @return number image_pane_id the new pane id
 wezterm_api.wezterm_molten_init = function(initial_pane_id, direction, size)
-  direction = "--" .. (validate_split_dir(direction) or "bottom")
+  direction = "--" .. (validate_split_dir(direction) or "right")
   size = validate_split_size(size)
 
   wezterm.exec_sync({ "cli", "split-pane", direction, "--percent", tostring(size) })
