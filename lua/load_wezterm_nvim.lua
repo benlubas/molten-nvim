@@ -35,7 +35,7 @@ end
 local validate_split_size = function(size)
   if size < 0 or size > 100 or size == nil then
     vim.api.nvim_err_writeln(
-      "'molten_split_size' must be a number between 0 and 100, defaulting to a 35% split."
+      "'molten_split_size' must be a number between 0 and 100, defaulting to a 40% split."
     )
     return 40
   end

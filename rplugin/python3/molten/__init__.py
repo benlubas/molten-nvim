@@ -62,14 +62,7 @@ class Molten:
 
         self.options = MoltenOptions(self.nvim)
 
-        self.canvas = get_canvas_given_provider(
-            self.options.image_provider,
-            self.nvim,
-            self.options.split_direction,
-            self.options.split_size,
-            self.options.auto_open_output,
-        )
-
+        self.canvas = get_canvas_given_provider(self.nvim, self.options)
         self.canvas.init()
 
         self.highlight_namespace = self.nvim.funcs.nvim_create_namespace("molten-highlights")
@@ -874,7 +867,7 @@ class Molten:
             m.tick()
 
     @pynvim.function("MoltenTickInput", sync=False)  # type: ignore
-    @nvimui  #type: ignore
+    @nvimui  # type: ignore
     def function_molten_tick_input(self, _: Any) -> None:
         self._initialize_if_necessary()
 
@@ -886,7 +879,7 @@ class Molten:
             m.tick_input()
 
     @pynvim.function("MoltenSendStdin", sync=False)  # type: ignore
-    @nvimui  #type: ignore
+    @nvimui  # type: ignore
     def function_molten_send_stdin(self, args: Tuple[str, str]) -> None:
         molten_kernels = self._get_current_buf_kernels(False)
         if molten_kernels is None:

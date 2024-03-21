@@ -2,6 +2,7 @@ from typing import Dict, Set
 from abc import ABC, abstractmethod
 
 from pynvim import Nvim
+from molten.options import MoltenOptions
 
 from molten.utils import notify_warn, MoltenException
 
@@ -271,7 +272,7 @@ class WeztermCanvas(Canvas):
     def remove_image(self, identifier: str) -> None:
         pass
 
-    def wezterm_split(self) -> int:
+    def wezterm_split(self):
         """Splits the terminal based on config preferences at molten kernel init if
         supplied, otherwise resort to default values. Returns the pane id of the new
         split to allow sending/moving between the panes correctly.
@@ -282,18 +283,20 @@ class WeztermCanvas(Canvas):
 
 
 def get_canvas_given_provider(
-    name: str, nvim: Nvim, split_dir: str | None, split_size: int | None, auto_open_output: bool
+    nvim: Nvim, options: MoltenOptions
 ) -> Canvas:
+    name = options.image_provider
+
     if name == "none":
         return NoCanvas()
     elif name == "image.nvim":
         return ImageNvimCanvas(nvim)
     elif name == "wezterm":
-        if auto_open_output:
+        if options.auto_open_output:
             raise MoltenException(
                 "'wezterm' as an image provider does not currently support molten_auto_open_output = true, please set it to false or use a different image provider"
             )
-        return WeztermCanvas(nvim, split_dir, split_size)
+        return WeztermCanvas(nvim, options.split_direction, options.split_size)
     else:
         notify_warn(nvim, f"unknown image provider: `{name}`")
         return NoCanvas()
