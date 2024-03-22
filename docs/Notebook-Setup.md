@@ -202,10 +202,9 @@ We'll first want to define a new capture group `@code_cell` for the filetype we 
 run code in. Here's a very simple example for markdown, but you can do this with any
 filetype you want to have a code cell in:
 
+_located in: nvim/after/queries/markdown/textobjects.scm_
 ```scm
-;; located in: nvim/after/queries/markdown/textobjects.scm
-
-;extends
+;; extends
 
 (fenced_code_block (code_fence_content) @code_cell.inner) @code_cell.outer
 ```
