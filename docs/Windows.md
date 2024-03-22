@@ -107,7 +107,7 @@ a bit of a workaround, but it's the only other way to get images to render in th
 needing an external pop-up window like used with `:MoltenImagePopup`. You can find the instructions
 for downloading and setting up Wezterm [here](https://wezfurlong.org/wezterm/install/windows.html).
 
-![](wezterm.gif)
+![](https://github.com/akthe-at/assets/blob/main/wezterm.gif)
 
 The `vim.g.molten_image_provider = "wezterm"` option takes advantage of
 [wezterm.nvim](https://github.com/willothy/wezterm.nvim) under the hood to create splits, and send
