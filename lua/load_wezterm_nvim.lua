@@ -33,7 +33,7 @@ end
 --- @param size number the size to validate
 --- @return number validated size if valid
 local validate_split_size = function(size)
-  if size < 0 or size > 100 or size == nil then
+  if size == nil or size < 0 or size > 100 then
     vim.api.nvim_err_writeln(
       "'molten_split_size' must be a number between 0 and 100, defaulting to a 40% split."
     )
@@ -49,7 +49,7 @@ end
 --- @param size number, size of the new pane
 --- @return number image_pane_id the new pane id
 wezterm_api.wezterm_molten_init = function(initial_pane_id, direction, size)
-  direction = "--" .. (validate_split_dir(direction) or "right")
+  direction = "--" .. validate_split_dir(direction)
   size = validate_split_size(size)
 
   wezterm.exec_sync({ "cli", "split-pane", direction, "--percent", tostring(size) })
