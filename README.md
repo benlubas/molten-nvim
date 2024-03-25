@@ -221,6 +221,7 @@ method is significantly less buggy with large numbers of images and works on Win
 keep images next to the code they came from.
     - Configurable with the `g:molten_split_direction` and `g:molten_split_size` options.
     - Cannot be used with `g:molten_auto_open_output = true`
+    - Currently, the `wezterm` image provider does not integrate with **tmux**. There are issues with allowing images to passing through tmux to wezterm. If you are using tmux, you will need to use the `image.nvim` image provider.
 
 ### Status Line
 
