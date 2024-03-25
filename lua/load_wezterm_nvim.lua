@@ -63,11 +63,9 @@ end
 --- @param path string, path to the image
 --- @param image_pane_id number, the pane id of the image pane
 --- @param initial_pane_id number, the pane id of the initial pane
---- @param tmux_user boolean, whether to use tmux or not
 --- @return nil
-wezterm_api.send_image = function(path, image_pane_id, initial_pane_id, tmux_user)
-  local tmux_mod = tmux_user and "enable" or "detect"
-  local placeholder = "wezterm imgcat --tmux-passthru " .. tmux_mod .. " %s \r"
+wezterm_api.send_image = function(path, image_pane_id, initial_pane_id)
+  local placeholder = "wezterm imgcat --tmux-passthru detect %s \r"
   local image = string.format(placeholder, path)
   wezterm.exec_sync({ "cli", "activate-pane", "--pane-id", image_pane_id })
   wezterm.exec_sync({

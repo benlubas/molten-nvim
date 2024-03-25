@@ -206,16 +206,14 @@ class WeztermCanvas(Canvas):
     nvim: Nvim
     split_dir: str | None
     split_size: int | None
-    tmux_user: bool
     to_make_visible: Set[str]
     to_make_invisible: Set[str]
     visible: Set[str]
 
-    def __init__(self, nvim: Nvim, split_dir: str | None, split_size: int | None, tmux_user: bool):
+    def __init__(self, nvim: Nvim, split_dir: str | None, split_size: int | None):
         self.nvim = nvim
         self.split_dir = split_dir
         self.split_size = split_size
-        self.tmux_user = tmux_user
         self.images: dict = {}
         self.visible = set()
         self.to_make_visible = set()
@@ -280,11 +278,13 @@ class WeztermCanvas(Canvas):
         split to allow sending/moving between the panes correctly.
         """
         self.image_pane = self.wezterm_api.wezterm_molten_init(
-            self.initial_pane_id, self.split_dir, self.split_size, self.tmux_user
+            self.initial_pane_id, self.split_dir, self.split_size
         )
 
 
-def get_canvas_given_provider(nvim: Nvim, options: MoltenOptions) -> Canvas:
+def get_canvas_given_provider(
+    nvim: Nvim, options: MoltenOptions
+) -> Canvas:
     name = options.image_provider
 
     if name == "none":
@@ -296,7 +296,7 @@ def get_canvas_given_provider(nvim: Nvim, options: MoltenOptions) -> Canvas:
             raise MoltenException(
                 "'wezterm' as an image provider does not currently support molten_auto_open_output = true, please set it to false or use a different image provider"
             )
-        return WeztermCanvas(nvim, options.split_direction, options.split_size, options.tmux_user)
+        return WeztermCanvas(nvim, options.split_direction, options.split_size)
     else:
         notify_warn(nvim, f"unknown image provider: `{name}`")
         return NoCanvas()
