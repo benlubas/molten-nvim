@@ -20,8 +20,8 @@ local validate_split_dir = function(direction)
   local accepted_dirs = { "top", "bottom", "left", "right" }
   --if direction not in accepted_dirs, return "bottom" else return direction
   if not vim.tbl_contains(accepted_dirs, direction) then
-    vim.api.nvim_err_writeln(
-      "'molten_split_dir' must be one of 'top', 'bottom', 'left', or 'right', defaulting to 'right'"
+    vim.notify(
+      "[Molten] 'molten_split_dir' must be one of 'top', 'bottom', 'left', or 'right', defaulting to 'right'"
     )
     return "right"
   end
@@ -34,8 +34,8 @@ end
 --- @return number validated size if valid
 local validate_split_size = function(size)
   if size == nil or size < 0 or size > 100 then
-    vim.api.nvim_err_writeln(
-      "'molten_split_size' must be a number between 0 and 100, defaulting to a 40% split."
+    vim.notify(
+      "[Molten] 'molten_split_size' must be a number between 0 and 100, defaulting to a 40% split."
     )
     return 40
   end
