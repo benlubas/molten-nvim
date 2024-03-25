@@ -6,7 +6,7 @@ from itertools import chain
 import pynvim
 from pynvim.api import Buffer
 from molten.code_cell import CodeCell
-from molten.images import Canvas, get_canvas_given_provider
+from molten.images import Canvas, get_canvas_given_provider, WeztermCanvas
 from molten.info_window import create_info_window
 from molten.ipynb import export_outputs, get_default_import_export_file, import_outputs
 from molten.save_load import MoltenIOError, get_default_save_file, load, save
@@ -62,7 +62,7 @@ class Molten:
 
         self.options = MoltenOptions(self.nvim)
 
-        self.canvas = get_canvas_given_provider(self.options.image_provider, self.nvim)
+        self.canvas = get_canvas_given_provider(self.nvim, self.options)
         self.canvas.init()
 
         self.highlight_namespace = self.nvim.funcs.nvim_create_namespace("molten-highlights")
@@ -199,6 +199,8 @@ class Molten:
 
             self.add_kernel(self.nvim.current.buffer, kernel_id, molten)
             molten._doautocmd("MoltenInitPost")
+            if isinstance(self.canvas, WeztermCanvas):
+                self.canvas.wezterm_split()
 
             return molten
         except:

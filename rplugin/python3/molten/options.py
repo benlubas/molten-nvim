@@ -53,6 +53,8 @@ class MoltenOptions:
     output_win_max_width: int
     output_win_style: Optional[str]
     save_path: str
+    split_direction: str | None
+    split_size: int | None
     show_mimetype_debug: bool
     tick_rate: int
     use_border_highlights: bool
@@ -90,6 +92,8 @@ class MoltenOptions:
             ("molten_output_win_max_width", 999999),
             ("molten_output_win_style", False),
             ("molten_save_path", os.path.join(nvim.funcs.stdpath("data"), "molten")),
+            ("molten_split_direction", "right"),
+            ("molten_split_size", 40),
             ("molten_show_mimetype_debug", False),
             ("molten_tick_rate", 500),
             ("molten_use_border_highlights", False),

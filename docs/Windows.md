@@ -79,7 +79,8 @@ two windows issues that, when resolved, would theoretically allow it to work.
 
 ### Workarounds
 
-There are three workarounds, choose one
+There are four workarounds, choose one. The first two require/only work in WSL. The last two should
+work both with and without WSL.
 #### Uberzugpp
 
 Uberzugpp should work on WSL. You might have to configure it in a special way.
@@ -91,10 +92,49 @@ Uberzugpp should work on WSL. You might have to configure it in a special way.
 The title of that discussion says it all. This is a cursed method of using kitty in a graphical WSL
 session.
 
-#### Just use `:MoltenImagePopup`
+#### `:MoltenImagePopup`
 
-The MoltenImagePopup is the officially supported way to view images on windows. It's a far worse
-experience, but you can configure `vim.g.molten_auto_image_popup = true` to at least see images
-automatically when your code produces them.
+The first officially supported way to view images on Windows. It's a far worse experience compared
+to the other methods, but you can configure `vim.g.molten_auto_image_popup = true` to at least see
+images automatically when your code produces them. It's also very simple, and doesn't have any
+dependencies.
 
-This is the only method known to work without using WSL.
+#### Wezterm (via Wezterm.nvim)
+
+The second officially supported way to render images without the use of WSL on Windows is to use
+Wezterm as your terminal emulator and setting `vim.g.molten_image_provider = "wezterm"`. This is
+a bit of a workaround, but it's the only other way to get images to render in the terminal without
+needing an external pop-up window like used with `:MoltenImagePopup`. You can find the instructions
+for downloading and setting up Wezterm [here](https://wezfurlong.org/wezterm/install/windows.html).
+
+![](https://github.com/akthe-at/assets/blob/main/wezterm.gif)
+
+The `vim.g.molten_image_provider = "wezterm"` option takes advantage of
+[wezterm.nvim](https://github.com/willothy/wezterm.nvim) under the hood to create splits, and send
+images to wezterm's `imgcat` program automatically for you. This workflow style feels a little
+similar to how Rstudio handles plots, and it's a nice way to keep your code and output in the same
+window. If you want a quick glance at plots for fast iteration. If you want a larger more detailed
+view of your plots you may prefer to use the `:MoltenImagePopup` command instead.
+
+An example set of configuration options for molten-nvim (but not necessarily limited to) to use
+`Wezterm` as the `vim.g.molten_image_provider` option would look like this:
+
+```lua
+{
+  "benlubas/molten-nvim",
+  build = ":UpdateRemotePlugins",
+  dependencies = "willothy/wezterm.nvim",
+  init = function()
+    vim.g.molten_auto_open_output = false -- cannot be true if molten_image_provider = "wezterm"
+    vim.g.molten_output_show_more = true
+    vim.g.molten_image_provider = "wezterm"
+    vim.g.molten_output_virt_lines = true
+    vim.g.molten_split_direction = "right" --direction of the output window, options are "right", "left", "top", "bottom"
+    vim.g.molten_split_size = 40 --(0-100) % size of the screen dedicated to the output window
+    vim.g.molten_virt_text_output = true
+    vim.g.molten_use_border_highlights = true
+    vim.g.molten_virt_lines_off_by_1 = true
+    vim.g.molten_auto_image_popup = false
+  end,
+},
+```
