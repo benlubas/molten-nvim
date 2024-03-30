@@ -57,6 +57,10 @@ class JupyterRuntime:
                 jupyter_client.blocking.client.BlockingKernelClient,
             )
             self.kernel_client.start_channels()
+            self.kernel_client.connection_file = (
+                f"{self.kernel_client.data_dir}/runtime/kernel-{self.kernel_manager.kernel_id}.json"
+            )
+            self.kernel_client.write_connection_file()
         else:
             kernel_file = kernel_name
             self.external_kernel = True
@@ -85,6 +89,7 @@ class JupyterRuntime:
                 os.remove(path)
 
         if self.external_kernel is False:
+            self.kernel_client.cleanup_connection_file()
             self.kernel_client.shutdown()
 
     def interrupt(self) -> None:
@@ -229,14 +234,11 @@ class JupyterRuntime:
         return did_stuff
 
     def tick_input(self):
-        """ Tick to check input_requests """
+        """Tick to check input_requests"""
         if not self.is_ready:
             return
 
-        assert isinstance(
-            self.kernel_client,
-            jupyter_client.blocking.client.BlockingKernelClient
-        )
+        assert isinstance(self.kernel_client, jupyter_client.blocking.client.BlockingKernelClient)
 
         try:
             msg = self.kernel_client.get_stdin_msg(timeout=0)
@@ -246,8 +248,9 @@ class JupyterRuntime:
             pass
 
     def take_input(self, msg):
-        if msg['msg_type'] == "input_request":
-            self.nvim.lua._prompt_stdin(self.kernel_id, msg['content']['prompt'])
+        if msg["msg_type"] == "input_request":
+            self.nvim.lua._prompt_stdin(self.kernel_id, msg["content"]["prompt"])
+
 
 def get_available_kernels() -> List[str]:
     return list(jupyter_client.kernelspec.find_kernel_specs().keys())  # type: ignore
