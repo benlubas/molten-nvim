@@ -84,12 +84,12 @@ class JupyterRuntime:
         return self.state.value > RuntimeState.STARTING.value
 
     def deinit(self) -> None:
-        self.kernel_client.cleanup_connection_file()
         for path in self.allocated_files:
             if os.path.exists(path):
                 os.remove(path)
 
         if self.external_kernel is False:
+            self.kernel_client.cleanup_connection_file()
             self.kernel_client.shutdown()
 
     def interrupt(self) -> None:
