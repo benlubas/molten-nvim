@@ -57,7 +57,9 @@ class JupyterRuntime:
                 jupyter_client.blocking.client.BlockingKernelClient,
             )
             self.kernel_client.start_channels()
-            self.kernel_client.connection_file = f"{self.kernel_client.data_dir}/runtime/kernel-{kernel_name}.json"
+            self.kernel_client.connection_file = (
+                f"{self.kernel_client.data_dir}/runtime/kernel-{self.kernel_manager.kernel_id}.json"
+            )
             self.kernel_client.write_connection_file()
         else:
             kernel_file = kernel_name
