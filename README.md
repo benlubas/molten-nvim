@@ -73,9 +73,7 @@ When your cursor is in a cell (i.e., you have an _active cell_), a floating wind
 below the cell, reporting output. This is the _floating output window_. (To see more about whether
 a window is shown or not, see `:MoltenShowOutput` and `g:molten_auto_open_output`). When you cursor
 is not in any cell, no cell is active. When your cursor leaves a cell, its floating output window
-will close. 
-
-Currently, `g:molten_auto_open_output` is **not** compatible with ```g:molten_image_provider == "wezterm".``` If you want to render images or plots with "wezterm" as the image provider then you will need to set ```g:molten_auto_open_output = false```.
+will close.
 
 Output may also be displayed as virtual text below a cell. Virtual text output will stay there until
 you re-run the cell or delete the cell.
@@ -197,7 +195,7 @@ variable, their values, and a brief description.
 | `g:molten_output_win_style`                   | (`false`) \| `"minimal"`                                    | Value passed to the `style` option in `:h nvim_open_win()` |
 | `g:molten_save_path`                          | (`stdpath("data").."/molten"`) \| any path to a folder      | Where to save/load data with `:MoltenSave` and `:MoltenLoad` |
 | `g:molten_split_direction`                    | (`"right"`) \| `"left"` \| `"top"` \| `"bottom"` \|         | Direction of the terminal split created by wezterm. *Only applies if `g:molten_image_provider = "wezterm"`* |
-| `g:molten_split_size`                         | (`40`) \| int                                               | (0-100) % size of the screen dedicated to the output window. *Only applies if `g:molten_image_provider = "wezterm"`* |
+| `g:molten_split_size`                         | (`40`) \| int                                               | (0-100) % size of the screen dedicated to the output window. _Only applies if `g:molten_image_provider = "wezterm"`_ |
 | `g:molten_tick_rate`                          | (`500`) \| int                                              | How often (in ms) we poll the kernel for updates. Determines how quickly the ui will update, if you want a snappier experience, you can set this to 150 or 200 |
 | `g:molten_use_border_highlights`              | `true` \| (`false`)                                         | When true, uses different highlights for output border depending on the state of the cell (running, done, error). see [highlights](#highlights) |
 | `g:molten_limit_output_chars`                 | (`1000000`) \| int                                          | Limit on the number of chars in an output. If you're lagging your editor with too much output text, decrease it |
@@ -216,12 +214,14 @@ dependencies). It renders images in neovim inline with other cell output. This c
 experience, but it can be buggy with large numbers of images, and it does not work on Windows.
 
 - `wezterm` requires the [wezterm.nvim](https://willothy/wezterm.nvim) plugin (and the wezterm
-terminal emulator). It renders images in a wezterm split pane using wezterm's `imgcat` program. This
-method is significantly less buggy with large numbers of images and works on Windows, but it doesn't
-keep images next to the code they came from.
-    - Configurable with the `g:molten_split_direction` and `g:molten_split_size` options.
+  terminal emulator). It renders images in a wezterm split pane using wezterm's `imgcat` program. This
+  method is significantly less buggy with large numbers of images and works on Windows, but it doesn't
+  keep images next to the code they came from.
     - Cannot be used with `g:molten_auto_open_output = true`
-    - Currently, the `wezterm` image provider does not integrate with **tmux**. There are issues with allowing images to passing through tmux to wezterm. If you are using tmux, you will need to use the `image.nvim` image provider.
+    - Configurable with the `g:molten_split_direction` and `g:molten_split_size` options.
+    - Currently, the `wezterm` image provider does not integrate with **tmux**. There are issues
+      with allowing images to passing through tmux to wezterm. If you are using tmux, you will need to
+      use the `image.nvim` image provider.
 
 ### Status Line
 
