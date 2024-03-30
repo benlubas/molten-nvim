@@ -57,6 +57,8 @@ class JupyterRuntime:
                 jupyter_client.blocking.client.BlockingKernelClient,
             )
             self.kernel_client.start_channels()
+            self.kernel_client.connection_file = f"{self.kernel_client.data_dir}/runtime/kernel-{kernel_name}.json"
+            self.kernel_client.write_connection_file()
         else:
             kernel_file = kernel_name
             self.external_kernel = True
@@ -80,6 +82,7 @@ class JupyterRuntime:
         return self.state.value > RuntimeState.STARTING.value
 
     def deinit(self) -> None:
+        self.kernel_client.cleanup_connection_file()
         for path in self.allocated_files:
             if os.path.exists(path):
                 os.remove(path)
