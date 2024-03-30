@@ -234,14 +234,11 @@ class JupyterRuntime:
         return did_stuff
 
     def tick_input(self):
-        """ Tick to check input_requests """
+        """Tick to check input_requests"""
         if not self.is_ready:
             return
 
-        assert isinstance(
-            self.kernel_client,
-            jupyter_client.blocking.client.BlockingKernelClient
-        )
+        assert isinstance(self.kernel_client, jupyter_client.blocking.client.BlockingKernelClient)
 
         try:
             msg = self.kernel_client.get_stdin_msg(timeout=0)
@@ -251,8 +248,9 @@ class JupyterRuntime:
             pass
 
     def take_input(self, msg):
-        if msg['msg_type'] == "input_request":
-            self.nvim.lua._prompt_stdin(self.kernel_id, msg['content']['prompt'])
+        if msg["msg_type"] == "input_request":
+            self.nvim.lua._prompt_stdin(self.kernel_id, msg["content"]["prompt"])
+
 
 def get_available_kernels() -> List[str]:
     return list(jupyter_client.kernelspec.find_kernel_specs().keys())  # type: ignore
