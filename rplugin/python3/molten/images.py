@@ -2,8 +2,9 @@ from typing import Dict, Set
 from abc import ABC, abstractmethod
 
 from pynvim import Nvim
+from molten.options import MoltenOptions
 
-from molten.utils import notify_warn
+from molten.utils import notify_warn, MoltenException
 
 
 class Canvas(ABC):
@@ -199,11 +200,103 @@ class ImageNvimCanvas(Canvas):
         self.to_make_invisible.add(identifier)
 
 
-def get_canvas_given_provider(name: str, nvim: Nvim) -> Canvas:
+class WeztermCanvas(Canvas):
+    """A canvas for using Wezterm's imgcat functionality to render images/plots"""
+
+    nvim: Nvim
+    split_dir: str | None
+    split_size: int | None
+    to_make_visible: Set[str]
+    to_make_invisible: Set[str]
+    visible: Set[str]
+
+    def __init__(self, nvim: Nvim, split_dir: str | None, split_size: int | None):
+        self.nvim = nvim
+        self.split_dir = split_dir
+        self.split_size = split_size
+        self.images: dict = {}
+        self.visible = set()
+        self.to_make_visible = set()
+        self.to_make_invisible = set()
+        self.initial_pane_id: int | None = None
+        self.image_pane: int | None = None
+
+    def init(self) -> None:
+        self.nvim.exec_lua("_wezterm = require('load_wezterm_nvim').wezterm_api")
+        self.wezterm_api = self.nvim.lua._wezterm
+        self.initial_pane_id = self.wezterm_api.get_pane_id()
+
+    def deinit(self) -> None:
+        """Closes the terminal split that was opened with MoltenInit"""
+        self.wezterm_api.close_image_pane(str(self.image_pane).strip())
+
+    def present(self) -> None:
+        to_work_on = self.to_make_visible.difference(
+            self.to_make_visible.intersection(self.to_make_invisible)
+        )
+        self.to_make_invisible.difference_update(self.to_make_visible)
+
+        for identifier in to_work_on:
+            self.wezterm_api.send_image(
+                identifier,
+                str(self.image_pane).strip(),
+                str(self.initial_pane_id).strip(),
+            )
+
+        self.visible.update(self.to_make_visible)
+        self.to_make_invisible.clear()
+        self.to_make_visible.clear()
+
+    def clear(self) -> None:
+        pass
+
+    def img_size(self, _indentifier: str) -> Dict[str, int]:
+        return {"height": 0, "width": 0}
+
+    def add_image(
+        self,
+        path: str,
+        identifier: str,
+        _x: int,
+        _y: int,
+        _bufnr: int,
+        _winnr: int,
+    ) -> str | dict[str, str]:
+        """Adds an image to the queue to be rendered by Wezterm via the place method"""
+        if path not in self.images:
+            img = {"path": path, "id": identifier}
+            self.to_make_visible.add(img["path"])
+            return img
+        return path
+
+    def remove_image(self, identifier: str) -> None:
+        pass
+
+    def wezterm_split(self):
+        """Splits the terminal based on config preferences at molten kernel init if
+        supplied, otherwise resort to default values. Returns the pane id of the new
+        split to allow sending/moving between the panes correctly.
+        """
+        self.image_pane = self.wezterm_api.wezterm_molten_init(
+            self.initial_pane_id, self.split_dir, self.split_size
+        )
+
+
+def get_canvas_given_provider(
+    nvim: Nvim, options: MoltenOptions
+) -> Canvas:
+    name = options.image_provider
+
     if name == "none":
         return NoCanvas()
     elif name == "image.nvim":
         return ImageNvimCanvas(nvim)
+    elif name == "wezterm":
+        if options.auto_open_output:
+            raise MoltenException(
+                "'wezterm' as an image provider does not currently support molten_auto_open_output = true, please set it to false or use a different image provider"
+            )
+        return WeztermCanvas(nvim, options.split_direction, options.split_size)
     else:
         notify_warn(nvim, f"unknown image provider: `{name}`")
         return NoCanvas()

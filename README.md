@@ -10,7 +10,7 @@ https://github.com/benlubas/molten-nvim/assets/56943754/17ae81c0-306f-4496-bce8-
 
 - Send code to run asynchronously in the jupyter kernel
 - See output below the code in real time, without flicker, as virtual text or in a floating
-window (or both)
+  window (or both)
 - Renders images, plots, and LaTeX in neovim
 - Take input from stdin with `vim.ui.input`
 - Send code from multiple buffers to the same kernel
@@ -23,7 +23,10 @@ window (or both)
 
 - NeoVim 9.4+
 - Python 3.10+
-- [image.nvim](https://github.com/3rd/image.nvim) is only required if you want to render images
+- [image.nvim](https://github.com/3rd/image.nvim) is only required for the `image.nvim` image
+  provider
+- [wezterm.nvim](https://github.com/willothy/wezterm.nvim) is only required for the `wezterm` image
+  provider
 - Required Python packages (can be installed in a venv. [read more](./docs/Virtual-Environments.md)):
   - [`pynvim`](https://github.com/neovim/pynvim) (for the Remote Plugin API)
   - [`jupyter_client`](https://github.com/jupyter/jupyter_client) (for interacting with Jupyter)
@@ -178,7 +181,7 @@ variable, their values, and a brief description.
 | `g:molten_cover_lines_starting_with`          | (`{}`) \| array of str                                      | When `cover_empty_lines` is true, also covers lines starting with these strings |
 | `g:molten_copy_output`                        | `true` \| (`false`)                                         | Copy evaluation output to clipboard automatically (requires [`pyperclip`](#requirements))|
 | `g:molten_enter_output_behavior`              | (`"open_then_enter"`) \| `"open_and_enter"` \| `"no_open"`  | The behavior of [MoltenEnterOutput](#moltenenteroutput) |
-| `g:molten_image_provider`                     | (`"none"`) \| `"image.nvim"`                                | How images are displayed |
+| `g:molten_image_provider`                     | (`"none"`) \| `"image.nvim"` \| `"wezterm"` \|              | How images are displayed see [Images](#images) for more details |
 | `g:molten_open_cmd`                           | (`nil`) \| Any command                                      | Defaults to `xdg-open` on Linux, `open` on Darwin, and `start` on Windows. But you can override it to whatever you want. The command is called like: `subprocess.run([open_cmd, filepath])` |
 | `g:molten_output_crop_border`                 | (`true`) \| `false`                                         | 'crops' the bottom border of the output window when it would otherwise just sit at the bottom of the screen |
 | `g:molten_output_show_exec_time`              | (`true`) \| `false`                                         | Shows the current amount of time since the cell has begun execution |
@@ -191,14 +194,34 @@ variable, their values, and a brief description.
 | `g:molten_output_win_max_width`               | (`999999`) \| int                                           | Max width of the output window |
 | `g:molten_output_win_style`                   | (`false`) \| `"minimal"`                                    | Value passed to the `style` option in `:h nvim_open_win()` |
 | `g:molten_save_path`                          | (`stdpath("data").."/molten"`) \| any path to a folder      | Where to save/load data with `:MoltenSave` and `:MoltenLoad` |
-| `g:molten_tick_rate`                          | (`500`) \| `int`                                            | How often (in ms) we poll the kernel for updates. Determines how quickly the ui will update, if you want a snappier experience, you can set this to 150 or 200 |
+| `g:molten_split_direction`                    | (`"right"`) \| `"left"` \| `"top"` \| `"bottom"` \|         | Direction of the terminal split created by wezterm. *Only applies if `g:molten_image_provider = "wezterm"`* |
+| `g:molten_split_size`                         | (`40`) \| int                                               | (0-100) % size of the screen dedicated to the output window. _Only applies if `g:molten_image_provider = "wezterm"`_ |
+| `g:molten_tick_rate`                          | (`500`) \| int                                              | How often (in ms) we poll the kernel for updates. Determines how quickly the ui will update, if you want a snappier experience, you can set this to 150 or 200 |
 | `g:molten_use_border_highlights`              | `true` \| (`false`)                                         | When true, uses different highlights for output border depending on the state of the cell (running, done, error). see [highlights](#highlights) |
 | `g:molten_limit_output_chars`                 | (`1000000`) \| int                                          | Limit on the number of chars in an output. If you're lagging your editor with too much output text, decrease it |
 | `g:molten_virt_lines_off_by_1`                | `true` \| (`false`)                                         | Allows the output window to cover exactly one line of the regular buffer when `output_virt_lines` is true, also effects where `virt_text_output` is displayed. (useful for running code in a markdown file where that covered line will just be \`\`\`) |
 | `g:molten_virt_text_output`                   | `true` \| (`false`)                                         | When true, show output as virtual text below the cell, virtual text stays after leaving the cell. When true, output window doesn't open automatically on run. Effected by `virt_lines_off_by_1` |
-| `g:molten_virt_text_max_lines`                | (`12`) \| `int`                                             | Max height of the virtual text |
+| `g:molten_virt_text_max_lines`                | (`12`) \| int                                               | Max height of the virtual text |
 | `g:molten_wrap_output`                        | `true` \| (`false`)                                         | Wrap output text |
 | [DEBUG] `g:molten_show_mimetype_debug`        | `true` \| (`false`)                                         | Before any non-iostream output chunk, the mime-type for that output chunk is shown. Meant for debugging/plugin devlopment |
+
+### Images
+
+Molten has two image providers, `image.nvim` or `wezterm`:
+
+- `image.nvim` requires the [image.nvim](https://github.com/3rd/image.nvim) plugin (and it's
+dependencies). It renders images in neovim inline with other cell output. This creates a better
+experience, but it can be buggy with large numbers of images, and it does not work on Windows.
+
+- `wezterm` requires the [wezterm.nvim](https://willothy/wezterm.nvim) plugin (and the wezterm
+  terminal emulator). It renders images in a wezterm split pane using wezterm's `imgcat` program. This
+  method is significantly less buggy with large numbers of images and works on Windows, but it doesn't
+  keep images next to the code they came from.
+    - Cannot be used with `g:molten_auto_open_output = true`
+    - Configurable with the `g:molten_split_direction` and `g:molten_split_size` options.
+    - Currently, the `wezterm` image provider does not integrate with **tmux**. There are issues
+      with allowing images to passing through tmux to wezterm. If you are using tmux, you will need to
+      use the `image.nvim` image provider.
 
 ### Status Line
 

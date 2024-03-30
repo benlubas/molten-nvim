@@ -241,7 +241,8 @@ class MoltenKernel:
                 },
             )
             notify_info(
-                self.nvim, f"Kernel '{self.runtime.kernel_name}' (id: {self.kernel_id}) is ready."
+                self.nvim,
+                f"Kernel '{self.runtime.kernel_name}' (id: {self.kernel_id}) is ready.",
             )
 
     def tick_input(self) -> None:
