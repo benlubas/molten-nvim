@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.8.0](https://github.com/benlubas/molten-nvim/compare/v1.7.0...v1.8.0) (2024-03-30)
+
+
+### Features
+
+* execution time ([#153](https://github.com/benlubas/molten-nvim/issues/153)) ([12fc198](https://github.com/benlubas/molten-nvim/commit/12fc198e1dac89cde3e9512b2999972da01dc625))
+* wezterm image provider ([#162](https://github.com/benlubas/molten-nvim/issues/162)) ([4ef66a1](https://github.com/benlubas/molten-nvim/commit/4ef66a162222065f278a5ea92f19eaa9e8b7301c))
+* write connection file ([#176](https://github.com/benlubas/molten-nvim/issues/176)) ([5bc04c9](https://github.com/benlubas/molten-nvim/commit/5bc04c9b985ea7b9d13358b17d82f578021b332e))
+
+
+### Bug Fixes
+
+* catch error on nonexistant kernel init ([#172](https://github.com/benlubas/molten-nvim/issues/172)) ([2fffc76](https://github.com/benlubas/molten-nvim/commit/2fffc76616b645f8e0fff65a3acb89e5f38bd2a9))
+* don't require pillow unless it's used ([#164](https://github.com/benlubas/molten-nvim/issues/164)) ([ca725ae](https://github.com/benlubas/molten-nvim/commit/ca725ae7928b292bbda1fc90eeeae701026c6e83))
+* make sure there is a visual selection ([#159](https://github.com/benlubas/molten-nvim/issues/159)) ([7d8bd23](https://github.com/benlubas/molten-nvim/commit/7d8bd23e3b36bfc911f7af361f3e1c311c61e8e7))
+* make UpdateInterface sync ([#166](https://github.com/benlubas/molten-nvim/issues/166)) ([8d31d04](https://github.com/benlubas/molten-nvim/commit/8d31d04e18acc419f147452861ad5eb34b998276))
+
 ## [1.7.0](https://github.com/benlubas/molten-nvim/compare/v1.6.0...v1.7.0) (2024-02-23)
 
 
