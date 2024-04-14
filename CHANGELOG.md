@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.8.1](https://github.com/benlubas/molten-nvim/compare/v1.8.0...v1.8.1) (2024-04-14)
+
+
+### Bug Fixes
+
+* supply empty opts table to iter_matches ([#183](https://github.com/benlubas/molten-nvim/issues/183)) ([fb59bea](https://github.com/benlubas/molten-nvim/commit/fb59bea5b64e7259dc9bd7c5f54a0ca14c7005c6))
+* surface error when failing to start kernel ([#182](https://github.com/benlubas/molten-nvim/issues/182)) ([7d97cab](https://github.com/benlubas/molten-nvim/commit/7d97cab8d6f26e0ec1ab56004221ee25d3c6daeb))
+
 ## [1.8.0](https://github.com/benlubas/molten-nvim/compare/v1.7.0...v1.8.0) (2024-03-30)
 
 
