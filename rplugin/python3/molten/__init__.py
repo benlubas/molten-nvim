@@ -203,10 +203,9 @@ class Molten:
                 self.canvas.wezterm_split()
 
             return molten
-        except:
+        except Exception as e:
             notify_error(
-                self.nvim,
-                f"Could not initialize kernel named '{kernel_name}'."
+                self.nvim, f"Could not initialize kernel named '{kernel_name}'.\nCaused By: {e}"
             )
 
     def add_kernel(self, buffer: Buffer, kernel_id: str, kernel: MoltenKernel):
