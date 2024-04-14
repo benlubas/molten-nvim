@@ -14,7 +14,7 @@ M.remove_comments = function(str, lang)
   -- split content lines
   local lines = vim.split(str, '\n')
   -- iterate over query match metadata
-  for _, _, metadata in query:iter_matches(root, str, root:start(), root:end_()) do
+  for _, _, metadata in query:iter_matches(root, str, root:start(), root:end_(), {}) do
     local region = metadata[1].range
     local line = region[1] + 1
     local col_start = region[2]
