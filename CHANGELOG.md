@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.2](https://github.com/benlubas/molten-nvim/compare/v1.8.1...v1.8.2) (2024-04-19)
+
+
+### Bug Fixes
+
+* floating window column offset ([#186](https://github.com/benlubas/molten-nvim/issues/186)) ([cbaff48](https://github.com/benlubas/molten-nvim/commit/cbaff4847fc7a28398f8cc73ad4ab43a97d41486))
+
 ## [1.8.1](https://github.com/benlubas/molten-nvim/compare/v1.8.0...v1.8.1) (2024-04-14)
 
 
