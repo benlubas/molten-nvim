@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.3](https://github.com/benlubas/molten-nvim/compare/v1.8.2...v1.8.3) (2024-04-22)
+
+
+### Bug Fixes
+
+* bounds check call to screenpos ([#189](https://github.com/benlubas/molten-nvim/issues/189)) ([2739a9d](https://github.com/benlubas/molten-nvim/commit/2739a9d58c295b49086eac2f7489ab1b5ba1efd4))
+
 ## [1.8.2](https://github.com/benlubas/molten-nvim/compare/v1.8.1...v1.8.2) (2024-04-19)
 
 
