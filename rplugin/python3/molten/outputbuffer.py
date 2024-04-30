@@ -270,7 +270,7 @@ class OutputBuffer:
 
     def show_floating_win(self, anchor: Position) -> None:
         win = self.nvim.current.window
-        win_col = win.col
+        win_col = 0
         offset = 0
         if self.options.cover_empty_lines:
             offset = self.calculate_offset(anchor)
