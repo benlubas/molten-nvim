@@ -70,7 +70,7 @@ class OutputBuffer:
         else:
             old = ""
 
-        if not output.old and self.options.output_show_exec_time:
+        if not output.old and self.options.output_show_exec_time and output.start_time:
             start = output.start_time
             end = output.end_time if output.end_time is not None else datetime.now()
             diff = end - start
@@ -270,7 +270,7 @@ class OutputBuffer:
 
     def show_floating_win(self, anchor: Position) -> None:
         win = self.nvim.current.window
-        win_col = win.col
+        win_col = 0
         offset = 0
         if self.options.cover_empty_lines:
             offset = self.calculate_offset(anchor)
