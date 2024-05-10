@@ -1,4 +1,3 @@
-from typing import Dict
 from pynvim.api import Buffer, Nvim
 from molten.code_cell import CodeCell
 from molten.moltenbuffer import MoltenKernel
@@ -39,7 +38,7 @@ def import_outputs(nvim: Nvim, kernel: MoltenKernel, filepath: str):
     buffer_contents = buf[:]
     nb = nbformat.read(filepath, as_version=NOTEBOOK_VERSION)
 
-    molten_outputs: Dict[CodeCell, Output] = {}
+    molten_outputs: dict[CodeCell, Output] = {}
 
     for cell in nb["cells"]:
         if cell["cell_type"] != "code" or "outputs" not in cell:
@@ -90,7 +89,7 @@ def import_outputs(nvim: Nvim, kernel: MoltenKernel, filepath: str):
 
     failed = 0
     for span, output in molten_outputs.items():
-        if kernel.try_delete_overlapping_cells(span):
+        if kernel.merge_overlapping_cells(span):
             kernel.outputs[span] = OutputBuffer(
                 kernel.nvim,
                 kernel.canvas,

@@ -1,4 +1,4 @@
-from typing import Dict, Set
+from typing import Set
 from abc import ABC, abstractmethod
 
 from pynvim import Nvim
@@ -36,13 +36,13 @@ class Canvas(ABC):
         """
 
     @abstractmethod
-    def clear(self) -> None:
+    def clear(self, bufnr=None) -> None:
         """
         Clear all images from the canvas.
         """
 
     @abstractmethod
-    def img_size(self, identifier: str) -> Dict[str, int]:
+    def img_size(self, identifier: str) -> dict[str, int]:
         """
         Get the height of an image in terminal rows.
         """
@@ -102,10 +102,10 @@ class NoCanvas(Canvas):
     def present(self) -> None:
         pass
 
-    def clear(self) -> None:
+    def clear(self, bufnr=None) -> None:
         pass
 
-    def img_size(self, _indentifier: str) -> Dict[str, int]:
+    def img_size(self, _indentifier: str) -> dict[str, int]:
         return {"height": 0, "width": 0}
 
     def add_image(
@@ -164,11 +164,14 @@ class ImageNvimCanvas(Canvas):
         self.to_make_invisible.clear()
         self.to_make_visible.clear()
 
-    def clear(self) -> None:
+    def clear(self, bufnr=None) -> None:
+        cleared = set()
         for img in self.visible:
-            self.image_api.clear(img)
+            if self.image_api.clear(img, bufnr):
+                cleared.add(img)
+        self.visible.difference_update(cleared)
 
-    def img_size(self, identifier: str) -> Dict[str, int]:
+    def img_size(self, identifier: str) -> dict[str, int]:
         return self.image_api.image_size(identifier)
 
     def add_image(
@@ -250,7 +253,7 @@ class WeztermCanvas(Canvas):
     def clear(self) -> None:
         pass
 
-    def img_size(self, _indentifier: str) -> Dict[str, int]:
+    def img_size(self, _indentifier: str) -> dict[str, int]:
         return {"height": 0, "width": 0}
 
     def add_image(

@@ -1,5 +1,4 @@
 from functools import total_ordering
-from typing import List, Union
 
 from pynvim import Nvim
 from molten.position import DynamicPosition, Position
@@ -8,15 +7,15 @@ from molten.position import DynamicPosition, Position
 @total_ordering
 class CodeCell:
     nvim: Nvim
-    begin: Union[Position, DynamicPosition]
-    end: Union[Position, DynamicPosition]
+    begin: Position | DynamicPosition
+    end: Position | DynamicPosition
     bufno: int
 
     def __init__(
         self,
         nvim: Nvim,
-        begin: Union[Position, DynamicPosition],
-        end: Union[Position, DynamicPosition],
+        begin: Position | DynamicPosition,
+        end: Position | DynamicPosition,
     ):
         self.nvim = nvim
         self.begin = begin
@@ -24,7 +23,7 @@ class CodeCell:
         assert self.begin.bufno == self.end.bufno
         self.bufno = self.begin.bufno
 
-    def __contains__(self, pos: Union[Position, DynamicPosition]) -> bool:
+    def __contains__(self, pos: Position | DynamicPosition) -> bool:
         return self.bufno == pos.bufno and self.begin <= pos and pos < self.end
 
     def __lt__(self, other: "CodeCell") -> bool:
@@ -57,7 +56,7 @@ class CodeCell:
     def get_text(self, nvim: Nvim) -> str:
         assert self.begin.bufno == self.end.bufno
 
-        lines: List[str] = nvim.funcs.nvim_buf_get_lines(
+        lines: list[str] = nvim.funcs.nvim_buf_get_lines(
             self.bufno, self.begin.lineno, self.end.lineno + 1, False
         )
 

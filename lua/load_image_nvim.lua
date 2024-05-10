@@ -15,8 +15,8 @@ image_api.from_file = function(path, opts)
   if opts.window and opts.window == vim.NIL then
     opts.window = nil
   end
-  images[path] = image.from_file(path, opts or {})
-  return path
+  images[opts.id] = image.from_file(path, opts or {})
+  return opts.id
 end
 
 image_api.render = function(identifier, geometry)
@@ -25,9 +25,12 @@ image_api.render = function(identifier, geometry)
 
   -- a way to render images in windows when only their buffer is set
   if img.buffer and not img.window then
-    local buf_win = vim.fn.getbufinfo(img.buffer)[1].windows
-    if #buf_win > 0 then
-      img.window = buf_win[1]
+    local buf_info = vim.fn.getbufinfo(img.buffer)[1]
+    if buf_info then
+      local buf_win = buf_info.windows
+      if #buf_win > 0 then
+        img.window = buf_win[1]
+      end
     end
   end
 
@@ -36,13 +39,17 @@ image_api.render = function(identifier, geometry)
     img.window = nil
   end
 
-  if img.window then
+  if img.window and not img.is_rendered then
     img:render(geometry)
   end
 end
 
-image_api.clear = function(identifier)
-  images[identifier]:clear()
+image_api.clear = function(identifier, buf)
+  if (buf and images[identifier].buffer == buf) or buf == nil then
+    images[identifier]:clear()
+    return true
+  end
+  return false
 end
 
 image_api.clear_all = function()

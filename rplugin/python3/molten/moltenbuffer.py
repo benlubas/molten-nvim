@@ -1,6 +1,6 @@
 from contextlib import AbstractContextManager
 from datetime import datetime
-from typing import IO, Callable, List, Optional, Dict, Tuple
+from typing import IO, Callable
 from queue import Queue
 import hashlib
 
@@ -13,8 +13,9 @@ from molten.images import Canvas
 from molten.position import Position
 from molten.utils import notify_error, notify_info, notify_warn
 from molten.outputbuffer import OutputBuffer
-from molten.outputchunks import ImageOutputChunk, OutputChunk, OutputStatus
+from molten.outputchunks import ImageOutputChunk, Output, OutputChunk, OutputStatus
 from molten.runtime import JupyterRuntime
+from molten.history import HistoryBuffer
 
 
 class MoltenKernel:
@@ -25,18 +26,20 @@ class MoltenKernel:
     canvas: Canvas
     highlight_namespace: int
     extmark_namespace: int
-    buffers: List[Buffer]
+    buffers: list[Buffer]
 
     runtime: JupyterRuntime
 
     kernel_id: str
     """name unique to this specific jupyter runtime. Only used within Molten. Human Readable"""
 
-    outputs: Dict[CodeCell, OutputBuffer]
-    current_output: Optional[CodeCell]
+    outputs: dict[CodeCell, OutputBuffer]
+
+    history: HistoryBuffer
+    current_output: CodeCell | None
     queued_outputs: "Queue[CodeCell]"
 
-    selected_cell: Optional[CodeCell]
+    selected_cell: CodeCell | None
     should_show_floating_win: bool
     updating_interface: bool
 
@@ -65,6 +68,7 @@ class MoltenKernel:
         self.kernel_id = kernel_id
 
         self.outputs = {}
+        self.history = HistoryBuffer(nvim, options, self.canvas, self.highlight_namespace)
         self.current_output = None
         self.queued_outputs = Queue()
 
@@ -73,12 +77,12 @@ class MoltenKernel:
         self.updating_interface = False
 
         self.options = options
+        self.language = self.runtime.kernel_manager.kernel_spec.language  # type: ignore
 
-    def _doautocmd(self, autocmd: str, opts: Dict = {}) -> None:
+    def _doautocmd(self, autocmd: str, opts: dict = {}) -> None:
         assert " " not in autocmd
         opts["pattern"] = autocmd
         self.nvim.api.exec_autocmds("User", opts)
-        # self.nvim.command(f"doautocmd User {autocmd}")
 
     def add_nvim_buffer(self, buffer: Buffer) -> None:
         self.buffers.append(buffer)
@@ -106,13 +110,17 @@ class MoltenKernel:
         self.runtime.restart()
 
     def run_code(self, code: str, span: CodeCell) -> None:
-        if not self.try_delete_overlapping_cells(span):
+        if not self.merge_overlapping_cells(span):
             return
         self.runtime.run_code(code)
 
         self.outputs[span] = OutputBuffer(
             self.nvim, self.canvas, self.extmark_namespace, self.options
         )
+
+        output = self.outputs[span].output
+        self.history.add(span, code, output)
+
         self.queued_outputs.put(span)
 
         self.selected_cell = span
@@ -204,6 +212,9 @@ class MoltenKernel:
 
         return True
 
+    def get_history(self, query: str) -> None | dict[CodeCell, list[tuple[str, Output]]]:
+        self.history.get_history(query, self.selected_cell)
+
     def _check_if_done_running(self) -> None:
         # TODO: refactor
         is_idle = (self.current_output is None or not self.current_output in self.outputs) or (
@@ -213,6 +224,7 @@ class MoltenKernel:
         if is_idle and not self.queued_outputs.empty():
             key = self.queued_outputs.get_nowait()
             self.current_output = key
+
 
     def tick(self) -> None:
         self._check_if_done_running()
@@ -224,6 +236,21 @@ class MoltenKernel:
             output = self.outputs[self.current_output].output
             starting_status = output.status
             did_stuff = self.runtime.tick(output)
+
+            if starting_status != OutputStatus.DONE and output.status == OutputStatus.DONE:
+                if self.options.auto_open_html_in_browser:
+                    self.open_in_browser(silent=True)
+
+                # We have to delay this update b/c otherwise images glitch out. I'm pretty sure this
+                # is an image.nvim issue but I looked into it and couldn't figure it out. so... hack
+                self.nvim.exec_lua("""
+                    vim.loop.new_timer():start(250, 0, vim.schedule_wrap(function()
+                        print("update history")
+                        vim.fn.MoltenUpdateHistory()
+                    end))
+                """)
+
+                # self.history.update_history_buffer(self.current_output, self.language)
 
             if starting_status != OutputStatus.DONE and output.status == OutputStatus.DONE:
                 if self.options.auto_open_html_in_browser:
@@ -288,7 +315,7 @@ class MoltenKernel:
         for cell, output in self.outputs.items():
             output.clear_virt_output(cell.bufno)
 
-    def _get_selected_span(self) -> Optional[CodeCell]:
+    def _get_selected_span(self) -> CodeCell | None:
         current_position = self._get_cursor_position()
         selected = None
         for span in reversed(self.outputs.keys()):
@@ -298,15 +325,23 @@ class MoltenKernel:
 
         return selected
 
-    def try_delete_overlapping_cells(self, span: CodeCell) -> bool:
+    def merge_overlapping_cells(self, new_cell: CodeCell) -> bool:
         """Delete the code cells in this kernel that overlap with the given span, if overlapping
-        a currently running cell, return False
+        a currently running cell, return False. Re-associates history of deleted cell to the new
+        cell. If more than one cell is overwritten, more recent cell's history is placed entirely
+        after less recent cells.
         Returns:
             False if the span overlaps with a currently running cell, True otherwise
         """
-        for output_span in list(self.outputs.keys()):
-            if output_span.overlaps(span):
-                if not self._delete_cell(output_span):
+        for old_cell in list(self.outputs.keys()):
+            if old_cell.overlaps(new_cell):
+                hist = self.history.histories.get(old_cell) or []
+                if self._delete_cell(old_cell):
+                    if new_cell in self.history.histories:
+                        self.history.histories[new_cell] += hist
+                    else:
+                        self.history.histories[new_cell] = hist
+                else:
                     return False
         return True
 
@@ -324,6 +359,7 @@ class MoltenKernel:
         self.outputs[cell].clear_virt_output(cell.bufno)
         cell.clear_interface(self.highlight_namespace)
         del self.outputs[cell]
+        self.history.remove(cell)
         if self.current_output == cell:
             self.current_output = None
         if self.selected_cell == cell:
@@ -451,12 +487,12 @@ class MoltenKernel:
 
 
 def write_html_from_chunks(
-    chunks: List[OutputChunk],
+    chunks: list[OutputChunk],
     alloc_file: Callable[
         [str, str],
-        "AbstractContextManager[Tuple[str, IO[bytes]]]",
+        "AbstractContextManager[tuple[str, IO[bytes]]]",
     ],
-) -> Optional[str]:
+) -> str | None:
     """Build an HTML file from the given chunks.
     Returns: the filepath of the HTML file, or none if there is no HTML output in the chunks
     """

@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Tuple
 from itertools import chain
 
 import pynvim
@@ -30,22 +30,22 @@ class Molten:
     """
 
     nvim: Nvim
-    canvas: Optional[Canvas]
+    canvas: Canvas | None
     initialized: bool
 
     highlight_namespace: int
     extmark_namespace: int
 
-    timer: Optional[int]
-    input_timer: Optional[int]
+    timer: int | None
+    input_timer: int | None
 
     options: MoltenOptions
 
     # list of nvim buf numbers to a list of MoltenKernels 'attached' to that buffer
-    buffers: Dict[int, List[MoltenKernel]]
+    buffers: dict[int, list[MoltenKernel]]
     # list of kernel names to the MoltenKernel object that handles that kernel
     # duplicate names are sufixed with (n)
-    molten_kernels: Dict[str, MoltenKernel]
+    molten_kernels: dict[str, MoltenKernel]
 
     def __init__(self, nvim: Nvim):
         self.nvim = nvim
@@ -116,7 +116,7 @@ class Molten:
         if not self.initialized:
             self._initialize()
 
-    def _get_current_buf_kernels(self, requires_instance: bool) -> Optional[List[MoltenKernel]]:
+    def _get_current_buf_kernels(self, requires_instance: bool) -> list[MoltenKernel] | None:
         self._initialize_if_necessary()
 
         maybe_molten = self.buffers.get(self.nvim.current.buffer.number)
@@ -222,7 +222,7 @@ class Molten:
 
     @pynvim.command("MoltenInit", nargs="*", sync=True, complete="file")  # type: ignore
     @nvimui  # type: ignore
-    def command_init(self, args: List[str]) -> None:
+    def command_init(self, args: list[str]) -> None:
         self._initialize_if_necessary()
 
         shared = False
@@ -251,7 +251,7 @@ class Molten:
 
             self.nvim.lua._prompt_init(kernels, PROMPT)
 
-    def _deinit_buffer(self, molten_kernels: List[MoltenKernel]) -> None:
+    def _deinit_buffer(self, molten_kernels: list[MoltenKernel]) -> None:
         # Have to copy this to get around reference issues
         for kernel in [x for x in molten_kernels]:
             kernel.deinit()
@@ -284,7 +284,7 @@ class Molten:
 
         kernel.run_code(expr, cell)
 
-    def _get_sorted_buf_cells(self, kernels: List[MoltenKernel], bufnr: int) -> List[CodeCell]:
+    def _get_sorted_buf_cells(self, kernels: list[MoltenKernel], bufnr: int) -> list[CodeCell]:
         return sorted([x for x in chain(*[k.outputs.keys() for k in kernels]) if x.bufno == bufnr])
 
     @pynvim.command("MoltenDeinit", nargs=0, sync=True)  # type: ignore
@@ -304,7 +304,7 @@ class Molten:
     def command_info(self) -> None:
         create_info_window(self.nvim, self.molten_kernels, self.buffers, self.initialized)
 
-    def _do_evaluate(self, kernel_name: str, pos: Tuple[Tuple[int, int], Tuple[int, int]]) -> None:
+    def _do_evaluate(self, kernel_name: str, pos: tuple[tuple[int, int], tuple[int, int]]) -> None:
         self._initialize_if_necessary()
 
         kernels = self._get_current_buf_kernels(True)
@@ -331,7 +331,7 @@ class Molten:
         # from different kernels are disjoint
         for k in kernels:
             if k.kernel_id != kernel.kernel_id:
-                if not k.try_delete_overlapping_cells(span):
+                if not k.merge_overlapping_cells(span):
                     return
 
         kernel.run_code(code, span)
@@ -356,7 +356,7 @@ class Molten:
         return get_available_kernels()
 
     @pynvim.function("MoltenRunningKernels", sync=True)  # type: ignore
-    def function_list_running_kernels(self, args: List[Optional[bool]]) -> List[str]:
+    def function_list_running_kernels(self, args: list[bool | None]) -> list[str]:
         """List all the running kernels. When passed [True], returns only buf local kernels"""
         if not self.initialized:
             return []
@@ -380,7 +380,7 @@ class Molten:
 
     @pynvim.command("MoltenNext", sync=True, nargs="*")  # type: ignore
     @nvimui
-    def command_next(self, args: List[str]) -> None:
+    def command_next(self, args: list[str]) -> None:
         count = 1
         if len(args) > 0:
             try:
@@ -422,7 +422,7 @@ class Molten:
 
     @pynvim.command("MoltenGoto", sync=True, nargs="*")  # type: ignore
     @nvimui
-    def command_goto(self, args: List[str]) -> None:
+    def command_goto(self, args: list[str]) -> None:
         count = 1
         if len(args) > 0:
             try:
@@ -443,7 +443,7 @@ class Molten:
 
     @pynvim.command("MoltenPrev", sync=True, nargs="*")  # type: ignore
     @nvimui
-    def command_prev(self, args: List[str]) -> None:
+    def command_prev(self, args: list[str]) -> None:
         count = -1
         if len(args) > 0:
             try:
@@ -485,7 +485,7 @@ class Molten:
 
     @pynvim.command("MoltenEvaluateArgument", nargs="*", sync=True)  # type: ignore
     @nvimui
-    def commnand_molten_evaluate_argument(self, args: List[str]) -> None:
+    def commnand_molten_evaluate_argument(self, args: list[str]) -> None:
         if len(args) > 0 and args[0] in map(
             lambda x: x.kernel_id, self.buffers[self.nvim.current.buffer.number]
         ):
@@ -565,7 +565,7 @@ class Molten:
 
     @pynvim.command("MoltenEvaluateLine", nargs="*", sync=True)  # type: ignore
     @nvimui  # type: ignore
-    def command_evaluate_line(self, args: List[str]) -> None:
+    def command_evaluate_line(self, args: list[str]) -> None:
         _, lineno, _, _, _ = self.nvim.funcs.getcurpos()
         lineno -= 1
 
@@ -834,12 +834,49 @@ class Molten:
 
             raise MoltenException("Error while doing Molten IO: " + str(err))
 
+    @pynvim.command("MoltenHistory", nargs="*", sync=True)  # type: ignore
+    @nvimui  # type: ignore
+    def command_history(self, args) -> None:
+        """ MoltenHistory [kernel] cell/all """
+        kernels = self._get_current_buf_kernels(True)
+        assert kernels is not None
+
+        buf = self.nvim.current.buffer
+        if len(args) > 1:
+            query = args[1]
+        else:
+            query = "cell"
+
+        if len(args) > 0:
+            kernel = args[0]
+        else:
+            self.kernel_check(f"MoltenHistory %k {query}", buf)
+            return
+
+        for molten in kernels:
+            if molten.kernel_id == kernel:
+                if molten.selected_cell is not None:
+                    molten.history.open_split(molten.selected_cell, molten.language)
+
     # Internal functions which are exposed to VimScript
 
     @pynvim.function("MoltenBufLeave", sync=True)  # type: ignore
     @nvimui  # type: ignore
-    def function_clear_interface(self, _: List[Any]) -> None:
+    def function_clear_interface(self, _: list[Any]) -> None:
         self._clear_on_buf_leave()
+
+    @pynvim.function("MoltenUpdateHistory", sync=True)  # type: ignore
+    @nvimui  # type: ignore
+    def function_update_history(self, _: list[Any]) -> None:
+        self._initialize_if_necessary()
+
+        molten_kernels = self._get_current_buf_kernels(True)
+        assert molten_kernels is not None
+
+        for molten in molten_kernels:
+            if molten.selected_cell is not None:
+                molten.history.update_history_buffer(molten.selected_cell, molten.language)
+                return
 
     @pynvim.function("MoltenOnBufferUnload", sync=True)  # type: ignore
     @nvimui  # type: ignore
@@ -871,8 +908,8 @@ class Molten:
         for m in molten_kernels:
             m.tick()
 
-    @pynvim.function("MoltenTickInput", sync=False)  # type: ignore
-    @nvimui  # type: ignore
+    @pynvim.function("MoltenTickInput", sync=True)  # type: ignore
+    @nvimui  #type: ignore
     def function_molten_tick_input(self, _: Any) -> None:
         self._initialize_if_necessary()
 
@@ -884,7 +921,7 @@ class Molten:
             m.tick_input()
 
     @pynvim.function("MoltenSendStdin", sync=False)  # type: ignore
-    @nvimui  # type: ignore
+    @nvimui  #type: ignore
     def function_molten_send_stdin(self, args: Tuple[str, str]) -> None:
         molten_kernels = self._get_current_buf_kernels(False)
         if molten_kernels is None:
@@ -940,7 +977,7 @@ class Molten:
         )
 
     @pynvim.function("MoltenDefineCell", sync=True)
-    def function_molten_define_cell(self, args: List[int]) -> None:
+    def function_molten_define_cell(self, args: list[int]) -> None:
         if not args:
             return
 
