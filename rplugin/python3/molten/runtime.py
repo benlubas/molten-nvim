@@ -10,6 +10,7 @@ import json
 import jupyter_client
 from pynvim import Nvim
 
+from molten.utils import notify_error
 from molten.options import MoltenOptions
 from molten.outputchunks import (
     Output,
@@ -151,7 +152,14 @@ class JupyterRuntime:
             return True
         elif message_type == "status":
             execution_state = content["execution_state"]
-            assert execution_state != "starting"
+            if execution_state == "starting":
+                notify_error(
+                    self.nvim,
+                    f"Unexpected message status. Got `starting` when we didn't expect it. Here is the rest of the message:\n{content}",
+                )
+                self.state = RuntimeState.STARTING
+                return False
+
             if execution_state == "idle":
                 self.state = RuntimeState.IDLE
                 output.status = OutputStatus.DONE
