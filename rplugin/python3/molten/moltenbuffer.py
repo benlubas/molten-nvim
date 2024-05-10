@@ -93,10 +93,15 @@ class MoltenKernel:
 
     def restart(self, delete_outputs: bool = False) -> None:
         if delete_outputs:
-            self.outputs = {}
+            self.clear_virt_outputs()
             self.clear_interface()
             self.clear_open_output_windows()
-            self.clear_virt_outputs()
+            self.outputs = {}
+        else:
+            for output in self.outputs.values():
+                if output.output.status == OutputStatus.RUNNING:
+                    output.output.status = OutputStatus.DONE
+                    output.output.success = False
 
         self.runtime.restart()
 
