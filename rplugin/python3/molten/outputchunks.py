@@ -179,8 +179,8 @@ class Output:
     status: OutputStatus
     success: bool
     old: bool
-    start_time: datetime
-    end_time: datetime
+    start_time: datetime | None
+    end_time: datetime | None
 
     _should_clear: bool
 
@@ -191,7 +191,7 @@ class Output:
         self.success = True
         self.old = False
 
-        self.start_time = datetime.now()
+        self.start_time = None
         self.end_time = None
 
         self._should_clear = False
