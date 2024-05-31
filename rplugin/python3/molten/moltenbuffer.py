@@ -215,6 +215,7 @@ class MoltenKernel:
         was_ready = self.runtime.is_ready()
         if self.current_output is None or not self.current_output in self.outputs:
             did_stuff = self.runtime.tick(None)
+            starting_status = OutputStatus.HOLD
         else:
             output = self.outputs[self.current_output].output
             starting_status = output.status
