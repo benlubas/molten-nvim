@@ -172,7 +172,7 @@ class ImageNvimCanvas(Canvas):
                 "buffer": bufnr,
                 "with_virtual_padding": True,
                 "x": x,
-                "y": y,
+                "y": y - 1,
                 "window": winnr,
             },
         )
