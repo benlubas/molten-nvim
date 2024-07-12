@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.8.4](https://github.com/benlubas/molten-nvim/compare/v1.8.3...v1.8.4) (2024-07-02)
+
+
+### Bug Fixes
+
+* correct execution time for multiple cells ([#196](https://github.com/benlubas/molten-nvim/issues/196)) ([ab9351b](https://github.com/benlubas/molten-nvim/commit/ab9351baff839c2ea4b0c1b5d1ad8d4968c7f1c1))
+* mark running cells as failed+done on restart ([7f1c31d](https://github.com/benlubas/molten-nvim/commit/7f1c31d554e2b080678ef8855cfb19b86c183b8e))
+
 ## [1.8.3](https://github.com/benlubas/molten-nvim/compare/v1.8.2...v1.8.3) (2024-04-22)
 
 
