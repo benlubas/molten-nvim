@@ -291,7 +291,7 @@ class OutputBuffer:
         win_width -= border_w
 
         # Clear buffer:
-        self.nvim.funcs.deletebufline(self.display_buf.number, 1, "$")
+        self.display_buf.api.set_lines(0, -1, False, [])
 
         sign_col_width = 0
         text_off = self.nvim.funcs.getwininfo(win.handle)[0]["textoff"]
