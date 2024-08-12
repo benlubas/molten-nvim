@@ -57,9 +57,6 @@ def import_outputs(nvim: Nvim, kernel: MoltenKernel, filepath: str):
                 continue
 
             if nb_line >= len(nb_contents) - 1:
-                if len(cell["outputs"]) == 0:
-                    buf_line += 1
-                    break
                 # we're done. This is a match, we'll create the output
                 output = Output(cell["execution_count"])
                 output.old = True
