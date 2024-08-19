@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.8.5](https://github.com/benlubas/molten-nvim/compare/v1.8.4...v1.8.5) (2024-08-19)
+
+
+### Bug Fixes
+
+* clear float win buf with lua api ([#218](https://github.com/benlubas/molten-nvim/issues/218)) ([81aad33](https://github.com/benlubas/molten-nvim/commit/81aad335d46bd3fcd144ee6c798b026335921ed4))
+* **import:** create molten cells for code with no output ([#224](https://github.com/benlubas/molten-nvim/issues/224)) ([35c1941](https://github.com/benlubas/molten-nvim/commit/35c1941d8b631d19f3af725d470781b12ca55f3d))
+
 ## [1.8.4](https://github.com/benlubas/molten-nvim/compare/v1.8.3...v1.8.4) (2024-07-02)
 
 
