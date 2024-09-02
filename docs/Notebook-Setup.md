@@ -194,7 +194,7 @@ using Jupytext.
 
 #### Treesitter Text Objects
 
-[Treesitter text objects](importingexporting-outputs-tofrom-ipynb-files) help quickly
+[Treesitter text objects](https://github.com/nvim-treesitter/nvim-treesitter-textobjects) help quickly
 navigate cells, copy their contents, delete them, move them around, and run code with
 `:MoltenEvaluateOperator`.
 
