@@ -13,6 +13,9 @@ wrapper](https://gist.github.com/benlubas/5b5e38ae27d9bb8b5c756d8371e238e6). I w
 recommend a wrapper script of some kind if you are a python dev. If you're just installing these
 deps to use Molten with a non-python kernel, you can skip the wrapper without much worry.
 
+If you are using Anaconda or Miniconda as virtual environment manager, remind that your environment
+path is `CONDA_PREFIX` instead of `VIRTUAL_ENV`.
+
 ## Create a Virtual Environment
 
 We'll create a virtual environment called `neovim` that will contain all of our Molten (and other
@@ -72,7 +75,7 @@ initialize the correct kernel.
 
 ```lua
 vim.keymap.set("n", "<localleader>ip", function()
-  local venv = os.getenv("VIRTUAL_ENV")
+  local venv = os.getenv("VIRTUAL_ENV") or os.getenv("CONDA_PREFIX"):
   if venv ~= nil then
     -- in the form of /home/benlubas/.virtualenvs/VENV_NAME
     venv = string.match(venv, "/.+/(.+)")
