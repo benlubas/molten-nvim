@@ -277,18 +277,26 @@ We can make importing/exporting outputs seamless with a few autocommands:
 local imb = function(e) -- init molten buffer
     vim.schedule(function()
         local kernels = vim.fn.MoltenAvailableKernels()
+
+        -- if kernel runs on the venv or conda env, then use that kernel
+        local try_env_name = function()
+            return os.getenv("VIRTUAL_ENV") or os.getenv("CONDA_PREFIX")
+        end
+
         local try_kernel_name = function()
             local metadata = vim.json.decode(io.open(e.file, "r"):read("a"))["metadata"]
             return metadata.kernelspec.name
         end
-        local ok, kernel_name = pcall(try_kernel_name)
-        if not ok or not vim.tbl_contains(kernels, kernel_name) then
-            kernel_name = nil
-            local venv = os.getenv("VIRTUAL_ENV") or os.getenv("CONDA_PREFIX")
-            if venv ~= nil then
-                kernel_name = string.match(venv, "/.+/(.+)")
+
+        local _, kernel_name = pcall(try_kernel_name)
+        local env_ok, env_name = pcall(try_env_name)
+
+        if env_ok or not vim.tbl_contains(kernels, kernel_name) then
+            if env_name ~= nil then
+                kernel_name = string.match(env_name, "([^/\\]+)$")
             end
         end
+
         if kernel_name ~= nil and vim.tbl_contains(kernels, kernel_name) then
             vim.cmd(("MoltenInit %s"):format(kernel_name))
         end
