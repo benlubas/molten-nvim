@@ -16,12 +16,12 @@ other plugins that I don't use but will mention at the bottom.
 
 ## The promise:
 
-\> your friend sends you a jupyter notebook file
-\> `nvim friends_file.ipynb`
-\> you see a markdown representation of the notebook, including code outputs and images
-\> you edit the notebook, with LSP autocomplete, and format the code cells before running
-your new code, and all the cells below it, watching each cell output update as they run
-\> `:wq`
+\> your friend sends you a jupyter notebook file  
+\> `nvim friends_file.ipynb`  
+\> you see a markdown representation of the notebook, including code outputs and images  
+\> you edit the notebook, with LSP autocomplete, and format the code cells before running  
+your new code, and all the cells below it, watching each cell output update as they run  
+\> `:wq`  
 \> You send the `.ipynb` file, complete with your changes and the output of the code you
 ran, back to your friend
 
