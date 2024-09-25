@@ -254,6 +254,9 @@ def to_outputchunk(
 
     def _from_application_plotly(figure_json: Any) -> OutputChunk:
         from plotly.io import from_json
+        # NOTE: import this to cause an import exception which we catch. instead of a different
+        # error in `write_image`
+        import kaleido # type: ignore
         import json
 
         figure = from_json(json.dumps(figure_json))

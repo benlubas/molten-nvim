@@ -25,6 +25,11 @@ Then, in neovim I can run the command: `:MoltenInit
 connect to that kernel. You can then run code on this kernel like normal. When you leave neovim, the
 kernel will remain running.
 
+> [!NOTE]
+> If you get an error like `Caused By: [Errno 2] No such file or directory` when running the
+> command, you might have to create a directory yourself. This is because the Jupyter client assumes
+> that the folder exists when it might not. Simply create the folder, and you should be good to go!
+
 You can also start the server with
 
 ```bash
