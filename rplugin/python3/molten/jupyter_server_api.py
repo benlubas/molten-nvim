@@ -93,6 +93,8 @@ class JupyterAPIClient:
                         headers=self._headers)
         self._socket.close()
 
+    def cleanup_connection_file(self):
+        pass
 
 class JupyterAPIManager:
     def __init__(self,

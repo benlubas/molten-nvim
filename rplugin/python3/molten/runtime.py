@@ -44,12 +44,11 @@ class JupyterRuntime:
         self.nvim.exec_lua("_prompt_stdin = require('prompt').prompt_stdin")
 
         if kernel_name.startswith("http://") or kernel_name.startswith("https://"):
-            self.external_kernel = True
+            self.external_kernel = False
             self.kernel_manager = JupyterAPIManager(kernel_name)
             self.kernel_manager.start_kernel()
             self.kernel_client = self.kernel_manager.client()
             self.kernel_client.start_channels()
-
             self.options = options
         elif ".json" not in self.kernel_name:
             self.external_kernel = False
