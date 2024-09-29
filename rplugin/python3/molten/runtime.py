@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional, Tuple, List, Dict, Generator, IO, Any
 from contextlib import contextmanager
 from queue import Empty as EmptyQueueException
@@ -145,6 +146,7 @@ class JupyterRuntime:
                     return False
                 if output.status == OutputStatus.HOLD:
                     output.status = OutputStatus.RUNNING
+                    output.start_time = datetime.now()
                 elif output.status == OutputStatus.RUNNING:
                     output.status = OutputStatus.DONE
                 else:

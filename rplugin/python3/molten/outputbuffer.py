@@ -53,24 +53,27 @@ class OutputBuffer:
         else:
             execution_count = str(output.execution_count)
 
-        if output.status == OutputStatus.HOLD:
-            status = "* On Hold"
-        elif output.status == OutputStatus.DONE:
-            if output.success:
-                status = "✓ Done"
-            else:
-                status = "✗ Failed"
-        elif output.status == OutputStatus.RUNNING:
-            status = "... Running"
-        else:
-            raise ValueError("bad output.status: %s" % output.status)
+        match output.status:
+            case OutputStatus.HOLD:
+                status = "* On Hold"
+            case OutputStatus.DONE:
+                if output.success:
+                    status = "✓ Done"
+                else:
+                    status = "✗ Failed"
+            case OutputStatus.RUNNING:
+                status = "... Running"
+            case OutputStatus.NEW:
+                status = ""
+            case _:
+                raise ValueError("bad output.status: %s" % output.status)
 
         if output.old:
             old = "[OLD] "
         else:
             old = ""
 
-        if not output.old and self.options.output_show_exec_time:
+        if not output.old and self.options.output_show_exec_time and output.start_time:
             start = output.start_time
             end = output.end_time if output.end_time is not None else datetime.now()
             diff = end - start
@@ -96,7 +99,10 @@ class OutputBuffer:
         else:
             time = ""
 
-        return f"{old}Out[{execution_count}]: {status} {time}".rstrip()
+        if output.status == OutputStatus.NEW:
+            return f"Out[_]: Never Run"
+        else:
+            return f"{old}Out[{execution_count}]: {status} {time}".rstrip()
 
     def enter(self, anchor: Position) -> bool:
         entered = False
@@ -274,9 +280,7 @@ class OutputBuffer:
         offset = 0
         if self.options.cover_empty_lines:
             offset = self.calculate_offset(anchor)
-            win_row = (
-                self._buffer_to_window_lineno(anchor.lineno + offset) + 1
-            )
+            win_row = self._buffer_to_window_lineno(anchor.lineno + offset) + 1
         else:
             win_row = self._buffer_to_window_lineno(anchor.lineno + 1)
 
@@ -291,7 +295,7 @@ class OutputBuffer:
         win_width -= border_w
 
         # Clear buffer:
-        self.nvim.funcs.deletebufline(self.display_buf.number, 1, "$")
+        self.display_buf.api.set_lines(0, -1, False, [])
 
         sign_col_width = 0
         text_off = self.nvim.funcs.getwininfo(win.handle)[0]["textoff"]

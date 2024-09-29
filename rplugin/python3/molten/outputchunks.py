@@ -61,7 +61,7 @@ class TextOutputChunk(OutputChunk):
         self.output_type = "display_data"
 
     def __repr__(self) -> str:
-        return f"TextOutputChunk(\"{self.text}\")"
+        return f'TextOutputChunk("{self.text}")'
 
     def place(
         self,
@@ -169,8 +169,13 @@ class ImageOutputChunk(OutputChunk):
 
 class OutputStatus(Enum):
     HOLD = 0
+    """Waiting to run this cell"""
     RUNNING = 1
+    """Currently running, waiting for code to finish running"""
     DONE = 2
+    """Code has already been run"""
+    NEW = 3
+    """Cell was created, nothing run, no output"""
 
 
 class Output:
@@ -179,8 +184,8 @@ class Output:
     status: OutputStatus
     success: bool
     old: bool
-    start_time: datetime
-    end_time: datetime
+    start_time: datetime | None
+    end_time: datetime | None
 
     _should_clear: bool
 
@@ -191,7 +196,7 @@ class Output:
         self.success = True
         self.old = False
 
-        self.start_time = datetime.now()
+        self.start_time = None
         self.end_time = None
 
         self._should_clear = False
@@ -201,15 +206,16 @@ class Output:
         character, this is b/c outputs before a \r aren't shown, and so, should be deleted"""
         if (
             len(self.chunks) >= 2
-                and isinstance((c1 := self.chunks[-2]), TextOutputChunk)
-                and isinstance((c2 := self.chunks[-1]), TextOutputChunk)
+            and isinstance((c1 := self.chunks[-2]), TextOutputChunk)
+            and isinstance((c2 := self.chunks[-1]), TextOutputChunk)
         ):
             c1.text += c2.text
             c1.text = "\n".join([re.sub(r".*\r", "", x) for x in c1.text.split("\n")[:-1]])
-            c1.jupyter_data = { "text/plain": c1.text }
+            c1.jupyter_data = {"text/plain": c1.text}
             self.chunks.pop()
         elif len(self.chunks) > 0 and isinstance((c1 := self.chunks[0]), TextOutputChunk):
             c1.text = "\n".join([re.sub(r".*\r", "", x) for x in c1.text.split("\n")[:-1]])
+
 
 def to_outputchunk(
     nvim: Nvim,
@@ -246,6 +252,9 @@ def to_outputchunk(
 
     def _from_application_plotly(figure_json: Any) -> OutputChunk:
         from plotly.io import from_json
+        # NOTE: import this to cause an import exception which we catch. instead of a different
+        # error in `write_image`
+        import kaleido # type: ignore
         import json
 
         figure = from_json(json.dumps(figure_json))

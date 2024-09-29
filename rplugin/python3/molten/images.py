@@ -36,12 +36,6 @@ class Canvas(ABC):
         """
 
     @abstractmethod
-    def clear(self) -> None:
-        """
-        Clear all images from the canvas.
-        """
-
-    @abstractmethod
     def img_size(self, identifier: str) -> Dict[str, int]:
         """
         Get the height of an image in terminal rows.
@@ -102,9 +96,6 @@ class NoCanvas(Canvas):
     def present(self) -> None:
         pass
 
-    def clear(self) -> None:
-        pass
-
     def img_size(self, _indentifier: str) -> Dict[str, int]:
         return {"height": 0, "width": 0}
 
@@ -131,7 +122,6 @@ class ImageNvimCanvas(Canvas):
 
     def __init__(self, nvim: Nvim):
         self.nvim = nvim
-        self.images = {}
         self.visible = set()
         self.to_make_visible = set()
         self.to_make_invisible = set()
@@ -145,7 +135,6 @@ class ImageNvimCanvas(Canvas):
 
     def deinit(self) -> None:
         self.image_api.clear_all()
-        self.images.clear()
 
     def present(self) -> None:
         # images to both show and hide should be ignored
@@ -164,10 +153,6 @@ class ImageNvimCanvas(Canvas):
         self.to_make_invisible.clear()
         self.to_make_visible.clear()
 
-    def clear(self) -> None:
-        for img in self.visible:
-            self.image_api.clear(img)
-
     def img_size(self, identifier: str) -> Dict[str, int]:
         return self.image_api.image_size(identifier)
 
@@ -180,21 +165,19 @@ class ImageNvimCanvas(Canvas):
         bufnr: int,
         winnr: int | None = None,
     ) -> str:
-        if path not in self.images:
-            img = self.image_api.from_file(
-                path,
-                {
-                    "id": identifier,
-                    "buffer": bufnr,
-                    "with_virtual_padding": True,
-                    "x": x,
-                    "y": y,
-                    "window": winnr,
-                },
-            )
-            self.to_make_visible.add(img)
-            return img
-        return path
+        img = self.image_api.from_file(
+            path,
+            {
+                "id": identifier,
+                "buffer": bufnr,
+                "with_virtual_padding": True,
+                "x": x,
+                "y": y,
+                "window": winnr,
+            },
+        )
+        self.to_make_visible.add(img)
+        return img
 
     def remove_image(self, identifier: str) -> None:
         self.to_make_invisible.add(identifier)
@@ -214,7 +197,6 @@ class WeztermCanvas(Canvas):
         self.nvim = nvim
         self.split_dir = split_dir
         self.split_size = split_size
-        self.images: dict = {}
         self.visible = set()
         self.to_make_visible = set()
         self.to_make_invisible = set()
@@ -247,9 +229,6 @@ class WeztermCanvas(Canvas):
         self.to_make_invisible.clear()
         self.to_make_visible.clear()
 
-    def clear(self) -> None:
-        pass
-
     def img_size(self, _indentifier: str) -> Dict[str, int]:
         return {"height": 0, "width": 0}
 
@@ -263,11 +242,9 @@ class WeztermCanvas(Canvas):
         _winnr: int,
     ) -> str | dict[str, str]:
         """Adds an image to the queue to be rendered by Wezterm via the place method"""
-        if path not in self.images:
-            img = {"path": path, "id": identifier}
-            self.to_make_visible.add(img["path"])
-            return img
-        return path
+        img = {"path": path, "id": identifier}
+        self.to_make_visible.add(img["path"])
+        return img
 
     def remove_image(self, identifier: str) -> None:
         pass

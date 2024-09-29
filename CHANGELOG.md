@@ -1,5 +1,28 @@
 # Changelog
 
+## [1.8.5](https://github.com/benlubas/molten-nvim/compare/v1.8.4...v1.8.5) (2024-08-19)
+
+
+### Bug Fixes
+
+* clear float win buf with lua api ([#218](https://github.com/benlubas/molten-nvim/issues/218)) ([81aad33](https://github.com/benlubas/molten-nvim/commit/81aad335d46bd3fcd144ee6c798b026335921ed4))
+* **import:** create molten cells for code with no output ([#224](https://github.com/benlubas/molten-nvim/issues/224)) ([35c1941](https://github.com/benlubas/molten-nvim/commit/35c1941d8b631d19f3af725d470781b12ca55f3d))
+
+## [1.8.4](https://github.com/benlubas/molten-nvim/compare/v1.8.3...v1.8.4) (2024-07-02)
+
+
+### Bug Fixes
+
+* correct execution time for multiple cells ([#196](https://github.com/benlubas/molten-nvim/issues/196)) ([ab9351b](https://github.com/benlubas/molten-nvim/commit/ab9351baff839c2ea4b0c1b5d1ad8d4968c7f1c1))
+* mark running cells as failed+done on restart ([7f1c31d](https://github.com/benlubas/molten-nvim/commit/7f1c31d554e2b080678ef8855cfb19b86c183b8e))
+
+## [1.8.3](https://github.com/benlubas/molten-nvim/compare/v1.8.2...v1.8.3) (2024-04-22)
+
+
+### Bug Fixes
+
+* bounds check call to screenpos ([#189](https://github.com/benlubas/molten-nvim/issues/189)) ([2739a9d](https://github.com/benlubas/molten-nvim/commit/2739a9d58c295b49086eac2f7489ab1b5ba1efd4))
+
 ## [1.8.2](https://github.com/benlubas/molten-nvim/compare/v1.8.1...v1.8.2) (2024-04-19)
 
 
