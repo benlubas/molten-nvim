@@ -1,11 +1,11 @@
 import json
-import uuid
 import re
 import time
+import uuid
 from queue import Empty as EmptyQueueException
-from typing import Any, Dict
-from threading import Thread
 from queue import Queue
+from threading import Thread
+from typing import Any, Dict
 from urllib.parse import urlparse
 
 import requests
@@ -34,11 +34,17 @@ class JupyterAPIClient:
             response = requests.get(self._kernel_api_base,
                                     headers=self._headers)
             response = json.loads(response.text)
-            if response["execution_state"] == "idle":
-                return
 
-            if time.time() - start > timeout:
+            if response["execution_state"] != "idle" and time.time() - start > timeout:
                 raise RuntimeError
+
+            # Discard unnecessary messages.
+            while True:
+                try:
+                    response = self.get_iopub_msg()
+                except EmptyQueueException:
+                    return
+
 
     def start_channels(self) -> None:
         parsed_url = urlparse(self._base_url)
@@ -96,7 +102,6 @@ class JupyterAPIManager:
         self._base_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
 
         token_part = re.search(r"token=(.*)", parsed_url.query)
-
         if token_part:
             token = token_part.groups()[0]
             self._headers = {'Authorization': 'token ' + token}
