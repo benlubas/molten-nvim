@@ -57,13 +57,15 @@ def import_outputs(nvim: Nvim, kernel: MoltenKernel, filepath: str):
                 continue
 
             if nb_line >= len(nb_contents) - 1:
-                if len(cell["outputs"]) == 0:
-                    buf_line += 1
-                    break
                 # we're done. This is a match, we'll create the output
                 output = Output(cell["execution_count"])
                 output.old = True
                 output.success = True
+                if output.execution_count:
+                    output.status = OutputStatus.DONE
+                else:
+                    output.status = OutputStatus.NEW
+
                 for output_data in cell["outputs"]:
                     m_chunk, success = handle_output_types(nvim, output_data.get("output_type"), kernel, output_data)
                     output.chunks.append(m_chunk)
@@ -97,7 +99,6 @@ def import_outputs(nvim: Nvim, kernel: MoltenKernel, filepath: str):
                 kernel.extmark_namespace,
                 kernel.options,
             )
-            output.status = OutputStatus.DONE
             kernel.outputs[span].output = output
             kernel.update_interface()
         else:

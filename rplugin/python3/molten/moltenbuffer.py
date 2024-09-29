@@ -93,10 +93,15 @@ class MoltenKernel:
 
     def restart(self, delete_outputs: bool = False) -> None:
         if delete_outputs:
-            self.outputs = {}
+            self.clear_virt_outputs()
             self.clear_interface()
             self.clear_open_output_windows()
-            self.clear_virt_outputs()
+            self.outputs = {}
+        else:
+            for output in self.outputs.values():
+                if output.output.status == OutputStatus.RUNNING:
+                    output.output.status = OutputStatus.DONE
+                    output.output.success = False
 
         self.runtime.restart()
 
@@ -146,6 +151,7 @@ class MoltenKernel:
             if isinstance(chunk, ImageOutputChunk):
                 try:
                     from PIL import Image
+
                     img = Image.open(chunk.img_path)
                     img.show(f"[{output.execution_count}] Molten Image")
                     if not silent:
@@ -455,17 +461,30 @@ def write_html_from_chunks(
     """Build an HTML file from the given chunks.
     Returns: the filepath of the HTML file, or none if there is no HTML output in the chunks
     """
-    html = ""
+    text_html = ""
+    plotly_data = []
     for chunk in chunks:
-        if (
-            chunk.output_type == "display_data"
-            and chunk.jupyter_data
-            and "text/html" in chunk.jupyter_data
-        ):
-            html += chunk.jupyter_data["text/html"]
+        if chunk.output_type == "display_data" and chunk.jupyter_data:
+            if "application/vnd.plotly.v1+json" in chunk.jupyter_data:
+                plotly_data.append(chunk.jupyter_data["application/vnd.plotly.v1+json"])
+            if "text/html" in chunk.jupyter_data:
+                text_html += chunk.jupyter_data["text/html"]
 
-    if html != "":
+    if len(plotly_data) > 0:
+        try:
+            import plotly.graph_objects as go
+
+            html_str = go.Figure(plotly_data[0]["data"]).to_html(
+                include_plotlyjs="cdn", full_html=False
+            )
+            with alloc_file("html", "w") as (path, file):
+                file.write(html_str)  # type: ignore
+            return path
+        except:
+            pass
+
+    if text_html != "":
         with alloc_file("html", "w") as (path, file):
-            file.write(html)  # type: ignore
+            file.write(text_html)  # type: ignore
         return path
     return None
