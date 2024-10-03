@@ -19,7 +19,7 @@ other plugins that I don't use but will mention at the bottom.
 \> your friend sends you a jupyter notebook file  
 \> `nvim friends_file.ipynb`  
 \> you see a markdown representation of the notebook, including code outputs and images  
-\> you edit the notebook, with LSP autocomplete, and format the code cells before running
+\> you edit the notebook, with LSP autocomplete, and format the code cells before running  
 your new code, and all the cells below it, watching each cell output update as they run  
 \> `:wq`  
 \> You send the `.ipynb` file, complete with your changes and the output of the code you
@@ -104,7 +104,7 @@ The neovim plugin [quarto-nvim](https://github.com/quarto-dev/quarto-nvim) provi
 
 <details>
   <summary>Sample configuration for quarto-nvim</summary>
-  
+
 ```lua
 local quarto = require("quarto")
 quarto.setup({
@@ -284,7 +284,7 @@ local imb = function(e) -- init molten buffer
         local ok, kernel_name = pcall(try_kernel_name)
         if not ok or not vim.tbl_contains(kernels, kernel_name) then
             kernel_name = nil
-            local venv = os.getenv("VIRTUAL_ENV")
+            local venv = os.getenv("VIRTUAL_ENV") or os.getenv("CONDA_PREFIX")
             if venv ~= nil then
                 kernel_name = string.match(venv, "/.+/(.+)")
             end
