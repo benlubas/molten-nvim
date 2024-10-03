@@ -594,7 +594,10 @@ class Molten:
                 "Molten is not initialized in this buffer; run `:MoltenInit` to initialize."
             )
         elif len(kernels) == 1:
-            c = command.replace("%k", kernels[0].kernel_id)
+            import re
+            pat = r'(^|[^\\])%k'
+            c = re.sub(pat, lambda x: x[1] + kernels[0].kernel_id, command)
+            c = c.replace(r"\%k", "%k") # un-escape escaped chars
             self.nvim.command(c)
         else:
             PROMPT = "Please select a kernel:"
@@ -725,6 +728,7 @@ class Molten:
         if len(args) > 1:
             kernel = args[1]
         else:
+            path = path.replace("%k", r"\%k")
             self.kernel_check(f"MoltenImportOutput {path} %k", buf)
             return
 
@@ -750,6 +754,7 @@ class Molten:
         if len(args) > 1:
             kernel = args[1]
         else:
+            path = path.replace("%k", r"\%k")
             self.kernel_check(f"MoltenExportOutput{'!' if bang else ''} {path} %k", buf)
             return
 
@@ -773,6 +778,7 @@ class Molten:
         if len(args) > 1:
             kernel = args[1]
         else:
+            path = path.replace("%k", r"\%k")
             self.kernel_check(f"MoltenSave {path} %k", buf)
             return
 
