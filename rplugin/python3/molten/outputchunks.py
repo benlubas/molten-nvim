@@ -148,14 +148,18 @@ class ImageOutputChunk(OutputChunk):
     def place(
         self,
         bufnr: int,
-        _: MoltenOptions,
-        col: int,
+        options: MoltenOptions,
+        _col: int,
         lineno: int,
         _shape: Tuple[int, int, int, int],
         canvas: Canvas,
         virtual: bool,
         winnr: int | None = None,
     ) -> Tuple[str, int]:
+        loc = options.image_location
+        if not (loc == "both" or (loc == "virt" and virtual) or (loc == "float" and not virtual)):
+            return "", 0
+
         self.img_identifier = canvas.add_image(
             self.img_path,
             f"{'virt-' if virtual else ''}{self.img_path}",
@@ -254,9 +258,10 @@ def to_outputchunk(
 
     def _from_application_plotly(figure_json: Any) -> OutputChunk:
         from plotly.io import from_json
+
         # NOTE: import this to cause an import exception which we catch. instead of a different
         # error in `write_image`
-        import kaleido # type: ignore
+        import kaleido  # type: ignore
         import json
 
         figure = from_json(json.dumps(figure_json))
