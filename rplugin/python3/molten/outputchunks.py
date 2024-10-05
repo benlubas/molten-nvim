@@ -160,11 +160,13 @@ class ImageOutputChunk(OutputChunk):
             self.img_path,
             f"{'virt-' if virtual else ''}{self.img_path}",
             0,
-            lineno + 1,
+            lineno,
             bufnr,
             winnr,
         )
-        return "", canvas.img_size(self.img_identifier)["height"]
+        # images are rendered into virtual lines following the current line,
+        # which also needs to exist as the extmark is placed there
+        return " \n", canvas.img_size(self.img_identifier)["height"]
 
 
 class OutputStatus(Enum):

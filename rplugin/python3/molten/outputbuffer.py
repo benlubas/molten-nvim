@@ -159,7 +159,7 @@ class OutputBuffer:
             )
 
     def build_output_text(self, shape, buf: int, virtual: bool) -> Tuple[List[str], int]:
-        lineno = 0
+        lineno = 1 # we add a status line at the top in the end
         lines_str = ""
         # images are rendered with virtual lines by image.nvim
         virtual_lines = 0
