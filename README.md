@@ -38,6 +38,7 @@ https://github.com/benlubas/molten-nvim/assets/56943754/17ae81c0-306f-4496-bce8-
   - `pyperclip` if you want to use `molten_copy_output`
   - `nbformat` for importing and exporting output to jupyter notebooks files
   - `pillow` for opening images with `:MoltenImagePopup`
+  - `requests` and `websocket-client` for connecting to the Jupyter Server API via HTTP and WebSocket with `:MoltenInit <Jupyter server URL>`
 
 You can run `:checkhealth` to see what you have installed.
 
