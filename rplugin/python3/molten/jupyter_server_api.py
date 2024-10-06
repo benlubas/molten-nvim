@@ -5,10 +5,7 @@ from queue import Empty as EmptyQueueException
 from queue import Queue
 from threading import Thread
 from typing import Any, Dict
-from urllib.parse import urlparse, parse_qs
-
-import requests
-import websocket
+from urllib.parse import parse_qs, urlparse
 
 from molten.runtime_state import RuntimeState
 
@@ -24,13 +21,16 @@ class JupyterAPIClient:
 
         self._recv_queue: Queue[Dict[str, Any]] = Queue()
 
+        import requests
+        self.requests = requests
+
     def get_stdin_msg(self, **kwargs):
         return None
 
     def wait_for_ready(self, timeout: float = 0.):
         start = time.time()
         while True:
-            response = requests.get(self._kernel_api_base,
+            response = self.requests.get(self._kernel_api_base,
                                     headers=self._headers)
             response = json.loads(response.text)
 
@@ -46,6 +46,8 @@ class JupyterAPIClient:
 
 
     def start_channels(self) -> None:
+        import websocket
+
         parsed_url = urlparse(self._base_url)
         self._socket = websocket.create_connection(f"ws://{parsed_url.hostname}:{parsed_url.port}"
                                                    f"/api/kernels/{self._kernel_info['id']}/channels",
@@ -88,7 +90,7 @@ class JupyterAPIClient:
         self._socket.send(message)
 
     def shutdown(self):
-        requests.delete(self._kernel_api_base,
+        self.requests.delete(self._kernel_api_base,
                         headers=self._headers)
 
     def cleanup_connection_file(self):
@@ -103,14 +105,17 @@ class JupyterAPIManager:
 
         token = parse_qs(parsed_url.query).get("token")
         if token:
-            self._headers = {'Authorization': f'token {token}'}
+            self._headers = {'Authorization': f'token {token[0]}'}
         else:
             # Run notebook with --NotebookApp.disable_check_xsrf="True".
             self._headers = {}
 
+        import requests
+        self.requests = requests
+
     def start_kernel(self) -> None:
         url = f"{self._base_url}/api/kernels"
-        response = requests.post(url,
+        response = self.requests.post(url,
                                  headers=self._headers)
         self._kernel_info = json.loads(response.text)
         assert "id" in self._kernel_info, "Could not connect to Jupyter Server API. The URL specified may be incorrect."
@@ -122,10 +127,10 @@ class JupyterAPIManager:
                                 headers=self._headers)
 
     def interrupt_kernel(self) -> None:
-        requests.post(f"{self._kernel_api_base}/interrupt",
+        self.requests.post(f"{self._kernel_api_base}/interrupt",
                       headers=self._headers)
 
     def restart_kernel(self) -> None:
         self.state = RuntimeState.STARTING
-        requests.post(f"{self._kernel_api_base}/restart",
+        self.requests.post(f"{self._kernel_api_base}/restart",
                       headers=self._headers)
