@@ -1,12 +1,11 @@
 import json
-import re
 import time
 import uuid
 from queue import Empty as EmptyQueueException
 from queue import Queue
 from threading import Thread
 from typing import Any, Dict
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
 
 import requests
 import websocket
@@ -91,7 +90,6 @@ class JupyterAPIClient:
     def shutdown(self):
         requests.delete(self._kernel_api_base,
                         headers=self._headers)
-        self._socket.close()
 
     def cleanup_connection_file(self):
         pass
@@ -103,10 +101,9 @@ class JupyterAPIManager:
         parsed_url = urlparse(url)
         self._base_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
 
-        token_part = re.search(r"token=(.*)", parsed_url.query)
-        if token_part:
-            token = token_part.groups()[0]
-            self._headers = {'Authorization': 'token ' + token}
+        token = parse_qs(parsed_url.query).get("token")
+        if token:
+            self._headers = {'Authorization': f'token {token}'}
         else:
             # Run notebook with --NotebookApp.disable_check_xsrf="True".
             self._headers = {}
