@@ -1,6 +1,5 @@
 from datetime import datetime
 from typing import Optional, Tuple, List, Dict, Generator, IO, Any
-from enum import Enum
 from contextlib import contextmanager
 from queue import Empty as EmptyQueueException
 import os
@@ -20,12 +19,8 @@ from molten.outputchunks import (
     to_outputchunk,
     clean_up_text,
 )
-
-
-class RuntimeState(Enum):
-    STARTING = 0
-    IDLE = 1
-    RUNNING = 2
+from molten.runtime_state import RuntimeState
+from molten.jupyter_server_api import JupyterAPIClient, JupyterAPIManager
 
 
 class JupyterRuntime:
@@ -33,8 +28,8 @@ class JupyterRuntime:
     kernel_name: str
     kernel_id: str
 
-    kernel_manager: jupyter_client.KernelManager  # type: ignore
-    kernel_client: jupyter_client.KernelClient  # type: ignore
+    kernel_manager: jupyter_client.KernelManager | JupyterAPIManager  # type: ignore
+    kernel_client: jupyter_client.KernelClient | JupyterAPIClient  # type: ignore
 
     allocated_files: List[str]
 
@@ -48,7 +43,14 @@ class JupyterRuntime:
         self.nvim = nvim
         self.nvim.exec_lua("_prompt_stdin = require('prompt').prompt_stdin")
 
-        if ".json" not in self.kernel_name:
+        if kernel_name.startswith("http://") or kernel_name.startswith("https://"):
+            self.external_kernel = False
+            self.kernel_manager = JupyterAPIManager(kernel_name)
+            self.kernel_manager.start_kernel()
+            self.kernel_client = self.kernel_manager.client()
+            self.kernel_client.start_channels()
+            self.options = options
+        elif ".json" not in self.kernel_name:
             self.external_kernel = False
             self.kernel_manager = jupyter_client.manager.KernelManager(kernel_name=kernel_name)
             self.kernel_manager.start_kernel()
@@ -204,7 +206,10 @@ class JupyterRuntime:
 
         assert isinstance(
             self.kernel_client,
-            jupyter_client.blocking.client.BlockingKernelClient,
+            (
+                jupyter_client.blocking.client.BlockingKernelClient,
+                JupyterAPIClient,
+            ),
         )
 
         if not self.is_ready():
@@ -240,7 +245,11 @@ class JupyterRuntime:
         if not self.is_ready:
             return
 
-        assert isinstance(self.kernel_client, jupyter_client.blocking.client.BlockingKernelClient)
+        assert isinstance(
+            self.kernel_client,
+            (jupyter_client.blocking.client.BlockingKernelClient,
+             JupyterAPIClient),
+        )
 
         try:
             msg = self.kernel_client.get_stdin_msg(timeout=0)
