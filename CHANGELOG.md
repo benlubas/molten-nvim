@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.9.0](https://github.com/benlubas/molten-nvim/compare/v1.8.5...v1.9.0) (2024-10-07)
+
+
+### Features
+
+* add jupyter api runtime ([#244](https://github.com/benlubas/molten-nvim/issues/244)) ([047bf41](https://github.com/benlubas/molten-nvim/commit/047bf41c7cdb66c75de07e22babe8961857def76))
+* molten_image_location ([#248](https://github.com/benlubas/molten-nvim/issues/248)) ([f2e9ba9](https://github.com/benlubas/molten-nvim/commit/f2e9ba9d229fbc847b7f19da68744954513aff11))
+* OpenInBrowser works with plotly plots ([#240](https://github.com/benlubas/molten-nvim/issues/240)) ([92b2599](https://github.com/benlubas/molten-nvim/commit/92b2599ef813b188391d5f00f5f94ce22ecd2598))
+
+
+### Bug Fixes
+
+* % sign file encoding issues ([#246](https://github.com/benlubas/molten-nvim/issues/246)) ([42d7bd7](https://github.com/benlubas/molten-nvim/commit/42d7bd775d7f64995f6a0073da1320d52041191e))
+* match lines added by image.nvim ([#201](https://github.com/benlubas/molten-nvim/issues/201)) ([d643729](https://github.com/benlubas/molten-nvim/commit/d64372964190345c5a4da3639719d0dbe20a2791))
+
 ## [1.8.5](https://github.com/benlubas/molten-nvim/compare/v1.8.4...v1.8.5) (2024-08-19)
 
 
