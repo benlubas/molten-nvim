@@ -241,7 +241,9 @@ def to_outputchunk(
         import base64
 
         with alloc_file(extension, "wb") as (path, file):
-            file.write(base64.b64decode(str(imgdata)))
+            s = str(imgdata)
+            s += "=" * ((4 - len(s) % 4) % 4)
+            file.write(base64.b64decode(s))
         return _to_image_chunk(path)
 
     def _from_image_svgxml(svg: str) -> OutputChunk:
