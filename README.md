@@ -211,7 +211,7 @@ variable, their values, and a brief description.
 
 Molten has two image providers, `image.nvim` or `wezterm`:
 
-- `image.nvim` requires the [image.nvim](https://github.com/3rd/image.nvim) plugin (and it's
+- `image.nvim` requires the [image.nvim](https://github.com/3rd/image.nvim) plugin (and its
 dependencies). It renders images in neovim inline with other cell output. This creates a better
 experience, but it can be buggy with large numbers of images, and it does not work on Windows.
 
