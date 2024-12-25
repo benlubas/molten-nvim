@@ -125,7 +125,8 @@ class OutputBuffer:
 
     def clear_float_win(self) -> None:
         if self.display_win is not None:
-            self.nvim.funcs.nvim_win_close(self.display_win, True)
+            if self.display_win.valid:
+                self.nvim.funcs.nvim_win_close(self.display_win, True)
             self.display_win = None
             redraw = False
             for chunk in self.output.chunks:
