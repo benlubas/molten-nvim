@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.1](https://github.com/benlubas/molten-nvim/compare/v1.9.0...v1.9.1) (2024-12-25)
+
+
+### Bug Fixes
+
+* check if float window is valid before closing ([#267](https://github.com/benlubas/molten-nvim/issues/267)) ([8117716](https://github.com/benlubas/molten-nvim/commit/8117716aa08156dcdee7233c0fc34f79f597bc75))
+
 ## [1.9.0](https://github.com/benlubas/molten-nvim/compare/v1.8.5...v1.9.0) (2024-10-07)
 
 
