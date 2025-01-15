@@ -55,7 +55,7 @@ wezterm_api.wezterm_molten_init = function(initial_pane_id, direction, size)
   wezterm.exec_sync({ "cli", "split-pane", direction, "--percent", tostring(size) })
   wezterm.exec_sync({ "cli", "activate-pane", "--pane-id", tostring(initial_pane_id) })
   local _, image_pane_id = wezterm.exec_sync({ "cli", "get-pane-direction", "Prev" })
-  return image_pane_id
+  return tonumber(image_pane_id, 10)
 end
 
 -- Send an image to the image pane (terminal split)
@@ -67,16 +67,16 @@ end
 wezterm_api.send_image = function(path, image_pane_id, initial_pane_id)
   local placeholder = "wezterm imgcat --tmux-passthru detect %s \r"
   local image = string.format(placeholder, path)
-  wezterm.exec_sync({ "cli", "activate-pane", "--pane-id", image_pane_id })
+  wezterm.exec_sync({ "cli", "activate-pane", "--pane-id", tostring(image_pane_id) })
   wezterm.exec_sync({
     "cli",
     "send-text",
     "--pane-id",
-    image_pane_id,
+    tostring(image_pane_id),
     "--no-paste",
     image,
   })
-  wezterm.exec_sync({ "cli", "activate-pane", "--pane-id", initial_pane_id })
+  wezterm.exec_sync({ "cli", "activate-pane", "--pane-id", tostring(initial_pane_id) })
 end
 
 -- Close the image pane
@@ -88,7 +88,7 @@ wezterm_api.close_image_pane = function(image_pane_id)
     "cli",
     "send-text",
     "--pane-id",
-    image_pane_id,
+    tostring(image_pane_id),
     "--no-paste",
     "wezterm cli kill-pane --pane-id " .. image_pane_id .. "\r",
   })
