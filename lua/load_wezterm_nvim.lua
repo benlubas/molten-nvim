@@ -22,7 +22,7 @@ local validate_split_dir = function(direction)
   if not vim.tbl_contains(accepted_dirs, direction) then
     vim.notify(
       "[Molten] 'molten_split_dir' must be one of 'top', 'bottom', 'left', or 'right', defaulting to 'right'",
-      3
+      vim.log.levels.WARN()
     )
     return "right"
   end
@@ -37,7 +37,7 @@ local validate_split_size = function(size)
   if size == nil or size < 0 or size > 100 then
     vim.notify(
       "[Molten] 'molten_split_size' must be a number between 0 and 100, defaulting to a 40% split.",
-      3
+      vim.log.levels.WARN()
     )
     return 40
   end
