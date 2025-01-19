@@ -1,7 +1,7 @@
 -- loads the wezterm.nvim plugin and exposes methods to the python remote plugin
 local ok, wezterm = pcall(require, "wezterm")
 if not ok then
-  vim.api.nvim_err_writeln("[Molten] `wezterm.nvim` not found")
+  vim.api.nvim_echo({ { "[Molten] `wezterm.nvim` not found" } }, true, { err = true })
   return
 end
 
@@ -21,7 +21,8 @@ local validate_split_dir = function(direction)
   --if direction not in accepted_dirs, return "bottom" else return direction
   if not vim.tbl_contains(accepted_dirs, direction) then
     vim.notify(
-      "[Molten] 'molten_split_dir' must be one of 'top', 'bottom', 'left', or 'right', defaulting to 'right'"
+      "[Molten] 'molten_split_dir' must be one of 'top', 'bottom', 'left', or 'right', defaulting to 'right'",
+      vim.log.levels.WARN
     )
     return "right"
   end
@@ -35,7 +36,8 @@ end
 local validate_split_size = function(size)
   if size == nil or size < 0 or size > 100 then
     vim.notify(
-      "[Molten] 'molten_split_size' must be a number between 0 and 100, defaulting to a 40% split."
+      "[Molten] 'molten_split_size' must be a number between 0 and 100, defaulting to a 40% split.",
+      vim.log.levels.WARN
     )
     return 40
   end
