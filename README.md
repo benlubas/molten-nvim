@@ -17,7 +17,7 @@ https://github.com/benlubas/molten-nvim/assets/56943754/17ae81c0-306f-4496-bce8-
 - Send code from the same buffer to multiple kernels
 - Supports any language with a Jupyter Kernel (in theory, they haven't all been tested)
 - Python virtual environment support
-- Import and Export outputs to and from jupyter notebook files
+- Import and Export outputs to and from jupyter notebook files (**does not convert ipynb to plaintext**)
 
 ## Requirements
 
