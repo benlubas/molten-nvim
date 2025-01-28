@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.9.2](https://github.com/benlubas/molten-nvim/compare/v1.9.1...v1.9.2) (2025-01-28)
+
+
+### Bug Fixes
+
+* ensure virtual text is visible at end of file ([#278](https://github.com/benlubas/molten-nvim/issues/278)) ([e458c1f](https://github.com/benlubas/molten-nvim/commit/e458c1f9466b8942e18b517a317478131a509b77))
+* replace deprecated nvim_err_writeln ([#271](https://github.com/benlubas/molten-nvim/issues/271)) ([cc3643c](https://github.com/benlubas/molten-nvim/commit/cc3643cc2bd6ec834f9a9fde8a377fffb3114103))
+* type mismatch between annotations and return types ([#272](https://github.com/benlubas/molten-nvim/issues/272)) ([9e92f2b](https://github.com/benlubas/molten-nvim/commit/9e92f2b780352599a2279424b38095d1f52e2ba7))
+
 ## [1.9.1](https://github.com/benlubas/molten-nvim/compare/v1.9.0...v1.9.1) (2024-12-25)
 
 
