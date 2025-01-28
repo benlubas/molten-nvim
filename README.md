@@ -67,6 +67,10 @@ automatically if there is only one option).
 When you execute some code, it will create a _cell_. You can recognize a cell because it will be
 highlighted when your cursor is in it.
 
+> [!NOTE] 
+> A molten cell is **not** a markdown cell. Molten has **no** awareness of the type of file it's
+> running code from. It doesn't need to know.
+
 A cell is delimited using two extmarks (see `:h api-extended-marks`), so each cell will adjust when
 editing text within its boundaries.
 
