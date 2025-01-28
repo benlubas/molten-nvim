@@ -223,11 +223,12 @@ class OutputBuffer:
         win_row = anchor.lineno + offset
         win_width = win_info["width"] - win_info["textoff"]
         win_height = win_info["height"]
+        last = self.nvim.funcs.line("$")
 
-        if self.options.virt_lines_off_by_1:
+        if self.options.virt_lines_off_by_1 and win_row < last - 1:
             win_row += 1
 
-        if win_row > (last := self.nvim.funcs.line("$")):
+        if win_row > last:
             win_row = last
 
         shape = (
