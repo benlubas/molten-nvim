@@ -63,6 +63,15 @@ scp 1.2.3.4:/tmp/remote-julia.json /tmp/remote-julia.json
 
 And finally run `:MoltenInit /tmp/remote-julia.json` in neovim.
 
+## MoltenDelete
+
+The `MoltenDelete` command has two forms:
+
+- `:MoltenDelete` - Deletes only the currently selected/active cell
+- `:MoltenDelete!` - Deletes all cells in the current buffer, for all kernels
+
+The bang version is useful when you want to quickly clear all outputs and cell definitions from your buffer. This is similar to `MoltenRestart!` but doesn't restart the kernel - it just removes all cell definitions and their outputs.
+
 ## Importing/Exporting Outputs to/from ipynb files
 
 > [!NOTE]
