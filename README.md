@@ -123,7 +123,7 @@ kernel is attached to the buffer. This is configurable with the `molten_auto_ini
 | `MoltenEvaluateOperator`  | `[kernel]`            | Evaluate text selected by the following operator. see [Keybindings](#keybindings) for useage |
 | `MoltenEvaluateArgument`  | `[kernel] code`       | Evaluate given code in the given kernel |
 | `MoltenReevaluateCell`    | none                  | Re-evaluate the active cell (including new code) with the same kernel that it was originally evaluated with |
-| `MoltenDelete`            | none                  | Delete the active cell (does nothing if there is no active cell) |
+| `MoltenDelete`            | `[!]`                 | Delete the active cell (does nothing if there is no active cell). With bang (`!`), deletes all cells in the current buffer |
 | `MoltenShowOutput`        | none                  | Shows the output window for the active cell |
 | `MoltenHideOutput`        | none                  | Hide currently open output window |
 | `MoltenEnterOutput`       | none                  | Move into the active cell's output window. Opens but does not enter the output if it's not open. **must be called with `noautocmd`** (see [Keybindings](#keybindings) for example) |

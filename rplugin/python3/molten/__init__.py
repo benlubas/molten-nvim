@@ -665,14 +665,17 @@ class Molten:
                 return
         notify_error(self.nvim, f"Unable to find kernel: {kernel}")
 
-    @pynvim.command("MoltenDelete", nargs=0, sync=True)  # type: ignore
+    @pynvim.command("MoltenDelete", nargs=0, sync=True, bang=True)  # type: ignore
     @nvimui  # type: ignore
-    def command_delete(self) -> None:
+    def command_delete(self, bang) -> None:
         molten_kernels = self._get_current_buf_kernels(True)
         assert molten_kernels is not None
 
         for molten in molten_kernels:
-            if molten.selected_cell is not None:
+            if bang:
+                # Delete all cells in current buffer
+                molten.clear_buffer(self.nvim.current.buffer.number)
+            elif molten.selected_cell is not None:
                 molten.delete_current_cell()
                 return
 
