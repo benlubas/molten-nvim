@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.0](https://github.com/benlubas/molten-nvim/compare/v1.9.2...v1.10.0) (2025-02-17)
+
+
+### Features
+
+* Add support for deleting all cells with MoltenDelete! ([#286](https://github.com/benlubas/molten-nvim/issues/286)) ([e6847d0](https://github.com/benlubas/molten-nvim/commit/e6847d01b5540750f39543d30262da5454d373d1))
+
 ## [1.9.2](https://github.com/benlubas/molten-nvim/compare/v1.9.1...v1.9.2) (2025-01-28)
 
 
