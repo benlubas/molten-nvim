@@ -673,11 +673,8 @@ class Molten:
 
         for molten in molten_kernels:
             if bang:
-                # Delete all cells by selecting and deleting each one
-                for cell in list(molten.outputs.keys()):
-                    molten.selected_cell = cell
-                    molten.delete_current_cell()
-                return
+                # Delete all cells in current buffer
+                molten.clear_buffer(self.nvim.current.buffer.number)
             elif molten.selected_cell is not None:
                 molten.delete_current_cell()
                 return

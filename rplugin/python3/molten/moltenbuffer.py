@@ -343,6 +343,12 @@ class MoltenKernel:
             if span.empty():
                 self._delete_cell(span, quiet=True)
 
+    def clear_buffer(self, buffer_number: int) -> None:
+        """Delete all cells from this kernel that are in the given buffer"""
+        for cell in list(self.outputs.keys()):
+            if cell.bufno == buffer_number:
+                self._delete_cell(cell, quiet=True)
+
     def update_interface(self) -> None:
         buffer_numbers = [buf.number for buf in self.buffers]
         if self.nvim.current.buffer.number not in buffer_numbers:
