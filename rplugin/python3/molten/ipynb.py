@@ -1,12 +1,13 @@
+import os
 from typing import Dict
+
 from pynvim.api import Buffer, Nvim
+
 from molten.code_cell import CodeCell
 from molten.moltenbuffer import MoltenKernel
-import os
 from molten.outputbuffer import OutputBuffer
 from molten.outputchunks import ErrorOutputChunk, Output, OutputStatus, to_outputchunk
 from molten.position import DynamicPosition
-
 from molten.utils import MoltenException, notify_error, notify_info, notify_warn
 
 NOTEBOOK_VERSION = 4
@@ -180,22 +181,23 @@ def export_outputs(nvim: Nvim, kernel: MoltenKernel, filepath: str, overwrite: b
 
             if compare_contents(nvim, nb_cell, code_cell, lang):
                 matched = True
-                outputs = []
-                for chunk in output.output.chunks:
-                    if chunk.jupyter_metadata is not None:
-                        output_cell = nbformat.v4.new_output(
+                outputs = [
+                    (
+                        nbformat.v4.new_output(
+                            chunk.output_type,
+                            chunk.jupyter_data,
+                            **chunk.extras,
+                        )
+                        if chunk.jupyter_metadata is None
+                        else nbformat.v4.new_output(
                             chunk.output_type,
                             chunk.jupyter_data,
                             metadata=chunk.jupyter_metadata,
                             **chunk.extras,
                         )
-                    else:
-                        output_cell = nbformat.v4.new_output(
-                            chunk.output_type,
-                            chunk.jupyter_data,
-                            **chunk.extras,
-                        )
-                    outputs.append(output_cell)
+                    )
+                    for chunk in output.output.chunks
+                ]
 
                 nb_cell["outputs"] = outputs
                 nb_cell["execution_count"] = output.output.execution_count
