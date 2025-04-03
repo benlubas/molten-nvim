@@ -67,7 +67,9 @@ def import_outputs(nvim: Nvim, kernel: MoltenKernel, filepath: str):
                     output.status = OutputStatus.NEW
 
                 for output_data in cell["outputs"]:
-                    m_chunk, success = handle_output_types(nvim, output_data.get("output_type"), kernel, output_data)
+                    m_chunk, success = handle_output_types(
+                        nvim, output_data.get("output_type"), kernel, output_data
+                    )
                     output.chunks.append(m_chunk)
                     output.success &= success
 
@@ -115,6 +117,7 @@ def import_outputs(nvim: Nvim, kernel: MoltenKernel, filepath: str):
             nvim, f"Failed to load output for {failed} running cell that would be overridden"
         )
 
+
 def handle_output_types(nvim: Nvim, output_type: str, kernel: MoltenKernel, output_data):
     chunk = None
     success = True
@@ -123,13 +126,17 @@ def handle_output_types(nvim: Nvim, output_type: str, kernel: MoltenKernel, outp
             chunk = to_outputchunk(
                 nvim,
                 kernel.runtime._alloc_file,
-                { "text/plain": output_data.get("text") },
+                {"text/plain": output_data.get("text")},
                 output_data.get("metadata"),
                 kernel.options,
             )
         case "error":
-            chunk = ErrorOutputChunk(output_data["ename"], output_data["evalue"], output_data["traceback"])
-            chunk.extras = output_data
+            chunk = ErrorOutputChunk(
+                output_data["ename"], output_data["evalue"], output_data["traceback"]
+            )
+            chunk.extras = {
+                key: value for key, value in output_data.items() if key != "output_type"
+            }
             success = False
         case _:
             chunk = to_outputchunk(
@@ -140,6 +147,7 @@ def handle_output_types(nvim: Nvim, output_type: str, kernel: MoltenKernel, outp
                 kernel.options,
             )
     return chunk, success
+
 
 def export_outputs(nvim: Nvim, kernel: MoltenKernel, filepath: str, overwrite: bool):
     """Export outputs of the current file/kernel to a .ipynb file with the given name."""
@@ -172,21 +180,23 @@ def export_outputs(nvim: Nvim, kernel: MoltenKernel, filepath: str, overwrite: b
 
             if compare_contents(nvim, nb_cell, code_cell, lang):
                 matched = True
-                outputs = [
-                    nbformat.v4.new_output(
-                        chunk.output_type,
-                        chunk.jupyter_data,
-                        **chunk.extras,
-                    )
-                    if chunk.jupyter_metadata is None
-                    else nbformat.v4.new_output(
-                        chunk.output_type,
-                        chunk.jupyter_data,
-                        metadata=chunk.jupyter_metadata,
-                        **chunk.extras,
-                    )
-                    for chunk in output.output.chunks
-                ]
+                outputs = []
+                for chunk in output.output.chunks:
+                    if chunk.jupyter_metadata is not None:
+                        output_cell = nbformat.v4.new_output(
+                            chunk.output_type,
+                            chunk.jupyter_data,
+                            metadata=chunk.jupyter_metadata,
+                            **chunk.extras,
+                        )
+                    else:
+                        output_cell = nbformat.v4.new_output(
+                            chunk.output_type,
+                            chunk.jupyter_data,
+                            **chunk.extras,
+                        )
+                    outputs.append(output_cell)
+
                 nb_cell["outputs"] = outputs
                 nb_cell["execution_count"] = output.output.execution_count
                 break  # break out of the while loop
