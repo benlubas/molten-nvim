@@ -1,5 +1,10 @@
 # Molten
 
+> [!WARNING]
+> Molten is a remove plugin [read
+> this](https://github.com/benlubas/molten-nvim/blob/main/docs/Not-So-Quick-Start-Guide.md#a-note-on-remote-plugins)
+> if you don't know what that means
+
 Molten is a fork of [Magma](https://www.github.com/dccsillag/magma-nvim), a plugin for running code
 interactively with the jupyter kernel. Molten provides an excellent repl-like experience, and an
 incredible notebook-like experience in neovim.
