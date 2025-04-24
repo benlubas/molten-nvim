@@ -140,6 +140,12 @@ mangers (like Lazy for example) automatically.
 But if things aren't working, make sure that you run that command and then restart your editor.
 
 > [!WARNING]
+> Many neovim distros disable remote plugsins in the name of performance (even regular users who
+> unknowingly copy snippets they don't understand may have remote plugins disabled). Obviously this
+> will prevent molten from working 
+
+
+> [!WARNING]
 > Windows users see [the windows page](./Windows.md)
 
 ### Customize
