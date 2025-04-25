@@ -1,7 +1,7 @@
 # Molten
 
 > [!WARNING]
-> Molten is a remove plugin [read
+> Molten is a remote plugin [read
 > this](https://github.com/benlubas/molten-nvim/blob/main/docs/Not-So-Quick-Start-Guide.md#a-note-on-remote-plugins)
 > if you don't know what that means
 
