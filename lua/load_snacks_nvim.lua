@@ -13,8 +13,9 @@ snacks_api.from_file = function(path, opts)
   opts.opts = {
     inline = true,
     pos = { opts.y, opts.x },
-    max_height = opts.max_height,
-    max_width = opts.max_width,
+    -- Control max size by snacks config
+    max_width = snacks.config.image.doc.max_width,
+    max_height = snacks.config.image.doc.max_height,
   }
   opts.placement = nil
 
@@ -32,7 +33,7 @@ end
 
 snacks_api.clear = function(identifier)
   local img = images[identifier]
-  if img and img.placeement then
+  if img and img.placement then
     img.placement:close()
     img.placement = nil
   end

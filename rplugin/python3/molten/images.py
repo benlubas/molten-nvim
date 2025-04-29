@@ -313,9 +313,7 @@ class SnacksCanvas(Canvas):
                 "id": identifier,
                 "buffer": bufnr,
                 "x": x,
-                "y": y,
-                "max_width": 9999999,
-                "max_height": 9999999,
+                "y": y + 1,
             },
         )
         self.to_make_visible.add(img)
