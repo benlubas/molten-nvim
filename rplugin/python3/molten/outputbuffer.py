@@ -36,6 +36,7 @@ class OutputBuffer:
         self.display_buf = self.nvim.buffers[self.nvim.funcs.nvim_create_buf(False, True)]
         self.display_win = None
         self.display_virt_lines = None
+        self.virt_hidden: bool = False
         self.extmark_namespace = extmark_namespace
         self.virt_text_id = None
         self.displayed_status = OutputStatus.HOLD
@@ -141,8 +142,15 @@ class OutputBuffer:
 
     def clear_virt_output(self, bufnr: int) -> None:
         if self.virt_text_id is not None:
+            # remove the extmark…
             self.nvim.funcs.nvim_buf_del_extmark(bufnr, self.extmark_namespace, self.virt_text_id)
-        # clear the image too
+            # …and clear our flag so show_virtual_output can re-add it
+            self.virt_text_id = None
+            # (optional) reset displayed_status so your guard won’t block:
+            # self.displayed_status = OutputStatus.NEW
+            self.virt_hidden = True
+
+        # clear any inline images, etc.
         redraw = False
         for chunk in self.output.chunks:
             if isinstance(chunk, ImageOutputChunk) and chunk.img_identifier is not None:
@@ -150,6 +158,16 @@ class OutputBuffer:
                 redraw = True
         if redraw:
             self.canvas.present()
+
+    def toggle_virtual_output(self, anchor: Position) -> None:
+        if self.virt_hidden:
+            # currently suppressed ⇒ un‐suppress and show
+            self.virt_hidden = False
+            self.show_virtual_output(anchor)
+        else:
+            # currently visible (or default) ⇒ hide and suppress
+            self.clear_virt_output(anchor.bufno)
+            # clear_virtual_output already set virt_hidden=True
 
     def set_win_option(self, option: str, value) -> None:
         if self.display_win:
@@ -203,6 +221,8 @@ class OutputBuffer:
         return lines, len(lines) - 1 + virtual_lines
 
     def show_virtual_output(self, anchor: Position) -> None:
+        if self.virt_hidden:
+            return
         if self.displayed_status == OutputStatus.DONE and self.virt_text_id is not None:
             return
         offset = self.calculate_offset(anchor) if self.options.cover_empty_lines else 0
