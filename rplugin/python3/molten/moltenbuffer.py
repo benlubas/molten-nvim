@@ -41,6 +41,7 @@ class MoltenKernel:
     updating_interface: bool
 
     options: MoltenOptions
+    output_statuses: Dict[Optional[CodeCell], OutputStatus]
 
     def __init__(
         self,
@@ -69,6 +70,7 @@ class MoltenKernel:
         self.queued_outputs = Queue()
 
         self.selected_cell = None
+        self.output_statuses = {}
         self.should_show_floating_win = False
         self.updating_interface = False
 
@@ -108,6 +110,7 @@ class MoltenKernel:
     def run_code(self, code: str, span: CodeCell) -> None:
         if not self.try_delete_overlapping_cells(span):
             return
+        self.output_statuses[span] = OutputStatus.RUNNING
         self.runtime.run_code(code)
 
         self.outputs[span] = OutputBuffer(
@@ -233,6 +236,13 @@ class MoltenKernel:
                     self.open_image_popup(silent=True)
 
                 output.end_time = datetime.now()
+
+                # HACK: Update the interface here to avoid the incomplete
+                # update such as the status in output is still `Running`
+                # when it's already done.
+                self.update_interface()
+                # Update the output status
+                self.output_statuses[self.current_output] = output.status
 
         if self.options.output_show_exec_time or did_stuff:
             self.update_interface()
@@ -372,7 +382,11 @@ class MoltenKernel:
 
         self.selected_cell = new_selected_cell
 
-        if self.selected_cell is not None:
+        if (
+            self.selected_cell is not None
+            # Prevent from rendering when it's done
+            and self.output_statuses.get(self.selected_cell, None) != OutputStatus.DONE
+        ):
             self._show_selected(self.selected_cell)
 
         if self.options.virt_text_output:

@@ -160,7 +160,7 @@ class OutputBuffer:
             )
 
     def build_output_text(self, shape, buf: int, virtual: bool) -> Tuple[List[str], int]:
-        lineno = 1 # we add a status line at the top in the end
+        lineno = 1  # we add a status line at the top in the end
         lines_str = ""
         # images are rendered with virtual lines by image.nvim
         virtual_lines = 0
@@ -198,6 +198,10 @@ class OutputBuffer:
         # Remove trailing empty lines
         while len(lines) > 0 and lines[-1] == "":
             lines.pop()
+
+        # HACK: add an extra line for snacks image in windows
+        if self.options.image_provider == "snacks.nvim":
+            lines.append("")
 
         lines.insert(0, self._get_header_text(self.output))
         return lines, len(lines) - 1 + virtual_lines
