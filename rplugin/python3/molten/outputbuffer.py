@@ -327,6 +327,7 @@ class OutputBuffer:
         # assert self.display_window is None
         if win_row < win_height:
             border = self.options.output_win_border
+            zindex = self.options.output_win_zindex
             max_height = min(real_height + 1, self.options.output_win_max_height)
             height = min(win_height - win_row, max_height)
 
@@ -352,6 +353,7 @@ class OutputBuffer:
                 "height": height,
                 "border": border,
                 "focusable": False,
+                "zindex": zindex
             }
             if self.options.output_win_style:
                 win_opts["style"] = self.options.output_win_style
