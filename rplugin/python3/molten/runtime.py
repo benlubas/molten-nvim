@@ -121,8 +121,11 @@ class JupyterRuntime:
         if output.success:
             chunk = to_outputchunk(self.nvim, self._alloc_file, data, metadata, self.options)
             output.chunks.append(chunk)
-            if isinstance(chunk, TextOutputChunk) and chunk.text.startswith("\r"):
-                output.merge_text_chunks()
+            if isinstance(chunk, TextOutputChunk):
+                if chunk.text.startswith("\b"):
+                    output.handle_cross_chunk_backspace()
+                if chunk.text.startswith("\r"):
+                    output.merge_text_chunks()
 
     def _tick_one(self, output: Output, message_type: str, content: Dict[str, Any]) -> bool:
         def copy_on_demand(content_ctor):
