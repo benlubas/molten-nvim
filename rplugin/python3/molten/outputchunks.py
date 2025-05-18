@@ -222,6 +222,26 @@ class Output:
         elif len(self.chunks) > 0 and isinstance((c1 := self.chunks[0]), TextOutputChunk):
             c1.text = "\n".join([re.sub(r".*\r", "", x) for x in c1.text.split("\n")[:-1]])
 
+    def handle_cross_chunk_backspace(self):
+        """Remove leading \b from the current chunk and the corresponding number of
+        characters from the previous chunk"""
+        if (
+            len(self.chunks) > 0
+            and isinstance((cur := self.chunks[-1]), TextOutputChunk)
+        ):
+            cur_len = len(cur.text)
+            bs_len = 0
+
+            while bs_len < cur_len and cur.text[bs_len] == '\b':
+                bs_len += 1
+
+            cur.text = cur.text[bs_len:]
+
+            if (
+                len(self.chunks) > 1
+                and isinstance((prev := self.chunks[-2]), TextOutputChunk)
+            ):
+                prev.text = prev.text[:-bs_len]
 
 def to_outputchunk(
     nvim: Nvim,
