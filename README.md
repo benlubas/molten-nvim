@@ -97,6 +97,9 @@ Below the header, output is shown.
 Jupyter provides a rich set of outputs. To see what we can currently handle, see [Output
 Chunks](#output-chunks).
 
+> [!TIP]
+> For advanced output handling (e.g., capturing output and writing to a buffer), see the [MoltenEvaluateArgument callback example](#moltenevaluateargument-callback-example) in the Functions section below.
+
 ### Commands
 
 These user commands are the main interface to the plugin. It is recommended to map most of them to
@@ -354,6 +357,91 @@ vim.fn.MoltenEvaluateRange("ir", 1, 3, 4, 20)
 
 _When there are multiple kernels attached to the buffer, and this function is called without
 a `kernel_id`, the user will be prompted for a kernel with vim.ui.select_
+
+</details>
+
+<details>
+  <summary>MoltenEvaluateArgument</summary>
+
+### MoltenEvaluateArgument Callback Example
+
+Molten supports capturing output from code execution and handling it in Lua via a callback. You can use **any Lua expression** as your callback, including global functions, module functions, or table fields. The callback is called using `exec_lua`, so you have full flexibility.
+
+#### Example 1: Global Function
+
+```lua
+function _G.molten_write_to_buffer(result)
+  local buf = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, vim.split(result.output, "\n"))
+  vim.api.nvim_set_current_buf(buf)
+end
+
+vim.keymap.set('n', '<leader>ve', function()
+  local code = "print('hello world')"
+  vim.fn.MoltenEvaluateArgument(code, { on_done = "_G.molten_write_to_buffer" })
+end, { desc = 'Evaluate code and write output to buffer' })
+```
+
+#### Example 2: Module Function
+
+```lua
+-- lua/my_molten_config.lua
+local M = {}
+function M.write_to_buffer(result)
+  local buf = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, vim.split(result.output, "\n"))
+  vim.api.nvim_set_current_buf(buf)
+end
+return M
+
+-- In your config
+vim.keymap.set('n', '<leader>ve', function()
+  local code = "print('hello world')"
+  vim.fn.MoltenEvaluateArgument(code, { on_done = "require('my_molten_config').write_to_buffer" })
+end, { desc = 'Evaluate code and write output to buffer' })
+```
+
+#### Example 3: Table Field
+
+```lua
+_G.my_callbacks = {}
+function _G.my_callbacks.write_to_buffer(result)
+  local buf = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, vim.split(result.output, "\n"))
+  vim.api.nvim_set_current_buf(buf)
+end
+
+vim.keymap.set('n', '<leader>ve', function()
+  local code = "print('hello world')"
+  vim.fn.MoltenEvaluateArgument(code, { on_done = "_G.my_callbacks.write_to_buffer" })
+end, { desc = 'Evaluate code and write output to buffer' })
+```
+
+##### Notes:
+- The callback receives a table with keys:
+  - `output`: string, plain text output from the kernel
+  - `success`: boolean, whether execution succeeded
+  - `execution_count`: number, Jupyter execution count
+
+- You **must** pass the callback as a Lua expression string in the `on_done` field:
+  ```lua
+  { on_done = "require('my_molten_config').write_to_buffer" }
+  ```
+- Do **not** pass a Lua function directly; it will not work.
+
+#### Troubleshooting
+
+If you see an error like:
+```
+Error in standalone callback: Error executing Lua callback: ...
+```
+it means your callback expression was invalid or not in scope. Double-check your callback string and make sure the function is loaded and accessible.
+
+---
+
+**Summary:**
+- Pass any Lua expression as a string in the `on_done` field (global, module, or table function).
+- Molten will call your Lua function and you can handle output however you wish.
 
 </details>
 

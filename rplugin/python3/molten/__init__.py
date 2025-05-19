@@ -295,6 +295,23 @@ class Molten:
 
         kernel.run_code(expr, cell)
 
+    def _do_evaluate_standalone(self, kernel_name: str, expr: str, callback: Any) -> None:
+        """Execute code as a standalone evaluation with a callback (not tied to a cell)."""
+        self._initialize_if_necessary()
+
+        kernels = self._get_current_buf_kernels(True)
+        assert kernels is not None
+
+        kernel = None
+        for k in kernels:
+            if k.kernel_id == kernel_name:
+                kernel = k
+                break
+        if kernel is None:
+            raise MoltenException(f"Kernel {kernel_name} not found")
+
+        kernel.run_standalone_code(expr, callback)
+
     def _get_sorted_buf_cells(self, kernels: List[MoltenKernel], bufnr: int) -> List[CodeCell]:
         return sorted([x for x in chain(*[k.outputs.keys() for k in kernels]) if x.bufno == bufnr])
 
@@ -500,7 +517,7 @@ class Molten:
 
     @pynvim.command("MoltenEvaluateArgument", nargs="*", sync=True)  # type: ignore
     @nvimui
-    def commnand_molten_evaluate_argument(self, args: List[str]) -> None:
+    def command_molten_evaluate_argument(self, args: List[str]) -> None:
         if len(args) > 0 and args[0] in map(
             lambda x: x.kernel_id, self.buffers[self.nvim.current.buffer.number]
         ):
@@ -509,6 +526,95 @@ class Molten:
             self.kernel_check(
                 f"MoltenEvaluateArgument %k {' '.join(args)}", self.nvim.current.buffer
             )
+
+    @pynvim.function("MoltenEvaluateArgument", sync=False)  # type: ignore
+    @nvimui
+    def function_evaluate_argument(self, args: List[Any]) -> None:
+        """Function version of MoltenEvaluateArgument.
+        
+        Supports two forms:
+        1. Without callback (existing behavior, tied to cells):
+           vim.fn.MoltenEvaluateArgument("1 + 1")
+           vim.fn.MoltenEvaluateArgument("python3", "1 + 1")
+        
+        2. With callback (new standalone behavior, NOT tied to cells):
+           vim.fn.MoltenEvaluateArgument("print('hello')", {
+               on_done = function(result)
+                   -- result.output: string (plain text output)
+                   -- result.success: boolean
+                   -- result.execution_count: number
+                   print("Output: " .. result.output)
+               end
+           })
+           vim.fn.MoltenEvaluateArgument("python3", "print('hello')", {...})
+        """
+        if len(args) == 0:
+            return
+        
+        # Check if the last argument is a dict with on_done callback
+        callback_dict = None
+        if len(args) >= 1 and isinstance(args[-1], dict) and "on_done" in args[-1]:
+            callback_dict = args[-1]
+            args = args[:-1]
+        
+        # Parse arguments
+        kernel_name = None
+        code = None
+        
+        if len(args) == 1:
+            # Single argument: could be code or kernel name
+            # Try to determine if it's a kernel name by checking running kernels
+            current_buf_kernels = self.buffers.get(self.nvim.current.buffer.number, [])
+            kernel_ids = {k.kernel_id for k in current_buf_kernels}
+            if args[0] in kernel_ids:
+                kernel_name = args[0]
+                code = ""
+            else:
+                # It's code, need to determine kernel
+                code = args[0]
+        elif len(args) >= 2:
+            # First arg is kernel name, rest is code
+            kernel_name = args[0]
+            code = " ".join(args[1:])
+        else:
+            return
+        
+        # If kernel name not determined, use kernel_check to prompt
+        if kernel_name is None:
+            current_buf_kernels = self.buffers.get(self.nvim.current.buffer.number, [])
+            if callback_dict:
+                # If only one kernel, use it
+                if len(current_buf_kernels) == 1:
+                    kernel_name = current_buf_kernels[0].kernel_id
+                elif len(current_buf_kernels) > 1:
+                    # Prompt user to select kernel, then call again with selected kernel
+                    PROMPT = "Please select a kernel:"
+                    available_kernels = [kernel.kernel_id for kernel in current_buf_kernels]
+                    # Pass code and callback as arguments to the command
+                    self.nvim.lua._select_and_run(
+                        available_kernels,
+                        PROMPT,
+                        f"call MoltenEvaluateArgument('%k', '{code}', {callback_dict})"
+                    )
+                    return
+                else:
+                    notify_error(self.nvim, "No running kernel available for callback execution")
+                    return
+            else:
+                # No callback, use kernel_check to prompt/init
+                self.kernel_check(
+                    "call MoltenEvaluateArgument('%k')", self.nvim.current.buffer
+                )
+                return
+        
+        # Execute with or without callback
+        if callback_dict and "on_done" in callback_dict:
+            # Standalone execution with callback
+            callback = callback_dict["on_done"]
+            self._do_evaluate_standalone(kernel_name, code, callback)
+        else:
+            # Regular cell-based execution
+            self._do_evaluate_expr(kernel_name, code)
 
     @pynvim.command("MoltenEvaluateVisual", nargs="*", sync=True)  # type: ignore
     @nvimui  # type: ignore
@@ -1034,3 +1140,4 @@ class Molten:
                 outbuf = kern.outputs[cell]
                 outbuf.toggle_virtual_output(cell.end)
                 return
+

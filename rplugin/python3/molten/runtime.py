@@ -36,6 +36,9 @@ class JupyterRuntime:
     options: MoltenOptions
     nvim: Nvim
 
+    # Track standalone executions by message ID
+    standalone_outputs: Dict[str, Output]
+
     def __init__(self, nvim: Nvim, kernel_name: str, kernel_id: str, options: MoltenOptions):
         self.state = RuntimeState.STARTING
         self.kernel_name = kernel_name
@@ -82,6 +85,7 @@ class JupyterRuntime:
 
         self.allocated_files = []
         self.options = options
+        self.standalone_outputs = {}
 
     def is_ready(self) -> bool:
         return self.state.value > RuntimeState.STARTING.value
@@ -103,7 +107,16 @@ class JupyterRuntime:
         self.kernel_manager.restart_kernel()
 
     def run_code(self, code: str) -> None:
+        """Execute code (cell-based execution)."""
         self.kernel_client.execute(code)
+
+    def run_standalone_code(self, code: str) -> str:
+        """Execute code as a standalone execution (not tied to a cell) and return the message ID."""
+        msg_id = self.kernel_client.execute(code)
+        # Create an Output object to track this standalone execution
+        self.standalone_outputs[msg_id] = Output(None)
+        self.standalone_outputs[msg_id].status = OutputStatus.HOLD
+        return msg_id
 
     @contextmanager
     def _alloc_file(
@@ -220,9 +233,7 @@ class JupyterRuntime:
             except RuntimeError:
                 return False
 
-        if output is None:
-            return did_stuff
-
+        # Process all messages in the queue
         while True:
             try:
                 message = self.kernel_client.get_iopub_msg(timeout=0)
@@ -230,15 +241,41 @@ class JupyterRuntime:
                 if "content" not in message or "msg_type" not in message:
                     continue
 
-                did_stuff_now = self._tick_one(output, message["msg_type"], message["content"])
-                did_stuff = did_stuff or did_stuff_now
+                # Check if this message belongs to a standalone execution
+                parent_msg_id = message.get("parent_header", {}).get("msg_id")
+                if parent_msg_id and parent_msg_id in self.standalone_outputs:
+                    # Route to standalone output
+                    standalone_output = self.standalone_outputs[parent_msg_id]
+                    did_stuff_now = self._tick_one(standalone_output, message["msg_type"], message["content"])
+                    did_stuff = did_stuff or did_stuff_now
+                    # Ensure OutputStatus.DONE is set on idle for standalone
+                    if message["msg_type"] == "status" and message["content"].get("execution_state") == "idle":
+                        standalone_output.status = OutputStatus.DONE
+                elif output is not None:
+                    # Route to cell-based output (existing behavior)
+                    did_stuff_now = self._tick_one(output, message["msg_type"], message["content"])
+                    did_stuff = did_stuff or did_stuff_now
 
-                if output.status == OutputStatus.DONE:
-                    break
+                    if output.status == OutputStatus.DONE:
+                        break
             except EmptyQueueException:
                 break
 
         return did_stuff
+
+
+    def get_completed_standalone_outputs(self) -> List[Tuple[str, Output]]:
+        """Get all completed standalone outputs and their message IDs."""
+        completed = []
+        for msg_id, output in list(self.standalone_outputs.items()):
+            if output.status == OutputStatus.DONE:
+                completed.append((msg_id, output))
+        return completed
+
+    def remove_standalone_output(self, msg_id: str) -> None:
+        """Remove a standalone output after its callback has been fired."""
+        if msg_id in self.standalone_outputs:
+            del self.standalone_outputs[msg_id]
 
     def tick_input(self):
         """Tick to check input_requests"""
