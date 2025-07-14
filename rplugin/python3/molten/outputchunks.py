@@ -256,11 +256,11 @@ class Output:
             self.chunks.pop(prev_pos)
             chunk.text = prev_chunk.text + '\n'.join(lines)
             chunk.jupyter_data = {'text/plain': chunk.text}
-            if chunk.text == '':
-                self.chunks.pop()
         else:
             chunk.text = '\n'.join(lines)
             chunk.jupyter_data = {'text/plain': chunk.text}
+        if chunk.text == '':
+            self.chunks.pop()
 
 def to_outputchunk(
     nvim: Nvim,
