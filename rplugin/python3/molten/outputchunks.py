@@ -195,6 +195,9 @@ class Output:
 
     _should_clear: bool
 
+    cur_line: List[str]
+    cursor_col: int
+
     def __init__(self, execution_count: Optional[int]):
         self.execution_count = execution_count
         self.status = OutputStatus.HOLD
@@ -207,41 +210,57 @@ class Output:
 
         self._should_clear = False
 
-    def merge_text_chunks(self):
-        """Merge the last two chunks if they are text chunks, and text on a line before \r
-        character, this is b/c outputs before a \r aren't shown, and so, should be deleted"""
-        if (
-            len(self.chunks) >= 2
-            and isinstance((c1 := self.chunks[-2]), TextOutputChunk)
-            and isinstance((c2 := self.chunks[-1]), TextOutputChunk)
-        ):
-            c1.text += c2.text
-            c1.text = "\n".join([re.sub(r".*\r", "", x) for x in c1.text.split("\n")[:-1]])
-            c1.jupyter_data = {"text/plain": c1.text}
-            self.chunks.pop()
-        elif len(self.chunks) > 0 and isinstance((c1 := self.chunks[0]), TextOutputChunk):
-            c1.text = "\n".join([re.sub(r".*\r", "", x) for x in c1.text.split("\n")[:-1]])
+        self.cur_line = []
+        self.cursor_col = 0
 
-    def handle_cross_chunk_backspace(self):
-        """Remove leading \b from the current chunk and the corresponding number of
-        characters from the previous chunk"""
-        if (
-            len(self.chunks) > 0
-            and isinstance((cur := self.chunks[-1]), TextOutputChunk)
-        ):
-            cur_len = len(cur.text)
-            bs_len = 0
 
-            while bs_len < cur_len and cur.text[bs_len] == '\b':
-                bs_len += 1
+    def process_text_chunk(self, chunk: TextOutputChunk):
+        """Process new text chunk to properly handle control characters.
+        May modify already existing chunks if needed."""
+        prev_chunk = None
+        prev_pos = -1
+        if len(self.cur_line) > 0:
+            for i in range(len(self.chunks) - 2, -1, -1):
+                c = self.chunks[i]
+                if isinstance(c, TextOutputChunk):
+                    prev_chunk = c
+                    prev_pos = i
+                    break
+            if prev_chunk != None:
+                prev_lines = prev_chunk.text.split('\n')
+                if len(prev_lines) > 0:
+                    prev_chunk.text = '\n'.join(prev_lines[:-1]) + ('\n' if len(prev_lines[:-1]) > 0 else '')
+                    prev_chunk.jupyter_data = {'text/plain': prev_chunk.text}
 
-            cur.text = cur.text[bs_len:]
+        lines = []
+        for c in chunk.text:
+            match c:
+                case '\r':
+                    self.cursor_col = 0
+                case '\b':
+                    self.cur_line = self.cur_line[:-1]
+                    self.cursor_col = self.cursor_col - 1 + (self.cursor_col == 0)
+                case '\n':
+                    lines.append(''.join(self.cur_line))
+                    self.cur_line = []
+                    self.cursor_col = 0
+                case _:
+                    if self.cursor_col >= len(self.cur_line):
+                        self.cur_line += c
+                    else:
+                        self.cur_line[self.cursor_col] = c
+                    self.cursor_col += 1
+        lines.append(''.join(self.cur_line))
 
-            if (
-                len(self.chunks) > 1
-                and isinstance((prev := self.chunks[-2]), TextOutputChunk)
-            ):
-                prev.text = prev.text[:-bs_len]
+        if prev_chunk:
+            self.chunks.pop(prev_pos)
+            chunk.text = prev_chunk.text + '\n'.join(lines)
+            chunk.jupyter_data = {'text/plain': chunk.text}
+            if chunk.text == '':
+                self.chunks.pop()
+        else:
+            chunk.text = '\n'.join(lines)
+            chunk.jupyter_data = {'text/plain': chunk.text}
 
 def to_outputchunk(
     nvim: Nvim,
@@ -303,7 +322,7 @@ def to_outputchunk(
             return _from_plaintext(tex)
 
     def _from_plaintext(text: str) -> OutputChunk:
-        return TextLnOutputChunk(text)
+        return TextOutputChunk(text)
 
     chunk = None
     # if options.image_provider != "none":
