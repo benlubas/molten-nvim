@@ -104,7 +104,7 @@ class MoltenOptions:
             ("molten_virt_text_max_lines", 12),
             ("molten_virt_text_output", False),
             ("molten_wrap_output", False),
-            ("molten_output_win_zindex", 1),
+            ("molten_output_win_zindex", 50),
         ]
         # fmt: on
 
