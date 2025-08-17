@@ -135,6 +135,7 @@ An example set of configuration options for molten-nvim (but not necessarily lim
     vim.g.molten_use_border_highlights = true
     vim.g.molten_virt_lines_off_by_1 = true
     vim.g.molten_auto_image_popup = false
+    vim.g.molten_output_win_zindex = 50
   end,
 },
 ```

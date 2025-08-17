@@ -53,6 +53,7 @@ class MoltenOptions:
     output_win_max_height: int
     output_win_max_width: int
     output_win_style: Optional[str]
+    output_win_zindex: Optional[str]
     save_path: str
     split_direction: str | None
     split_size: int | None
@@ -103,6 +104,7 @@ class MoltenOptions:
             ("molten_virt_text_max_lines", 12),
             ("molten_virt_text_output", False),
             ("molten_wrap_output", False),
+            ("molten_output_win_zindex", 50),
         ]
         # fmt: on
 
