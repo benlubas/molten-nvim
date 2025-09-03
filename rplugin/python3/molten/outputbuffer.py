@@ -375,7 +375,7 @@ class OutputBuffer:
 
         cropped = False
         if height == win_height - win_row and max_height > height:  # It didn't fit on the screen
-            if self.options.output_crop_border and type(border) == list:
+            if self.options.output_crop_border and type(border) is list:
                 cropped = True
                 # Expand the border, so top and bottom can change independently
                 border = [border[i % len(border)] for i in range(8)]
