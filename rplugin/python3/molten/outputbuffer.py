@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, List, Optional, Tuple, Union, Callable
 
 from pynvim import Nvim
 from pynvim.api import Buffer, Window
@@ -9,6 +9,19 @@ from molten.outputchunks import ImageOutputChunk, Output, OutputStatus
 from molten.options import MoltenOptions
 from molten.position import DynamicPosition, Position
 from molten.utils import notify_error
+
+
+def truncate_bottom(lines: list[str], text_max_lines: int) -> list[str]:
+    truncated_lines = lines[: text_max_lines - 1]
+    truncated_lines.append(f"󰁅 {len(lines) - text_max_lines + 1} More lines ")
+    return truncated_lines
+
+
+def truncate_top(lines: list[str], text_max_lines: int):
+    truncated_lines = [lines[0]]
+    truncated_lines.append(f"↑ {len(lines) - text_max_lines} More lines")
+    truncated_lines.extend(lines[-text_max_lines + 2 :])
+    return truncated_lines
 
 
 class OutputBuffer:
@@ -44,6 +57,14 @@ class OutputBuffer:
         self.options = options
         self.nvim.exec_lua("_ow = require('output_window')")
         self.lua = self.nvim.lua._ow
+
+        self.truncate_lines: Callable[[list[str], int], list[str]]
+        if self.options.virt_text_truncate == "bottom":
+            self.truncate_lines = truncate_bottom
+        elif self.options.virt_text_truncate == "top":
+            self.truncate_lines = truncate_top
+        else:
+            raise ValueError("Wrong virtual text truncate option")
 
     def _buffer_to_window_lineno(self, lineno: int) -> int:
         return self.lua.calculate_window_position(lineno)
@@ -262,10 +283,9 @@ class OutputBuffer:
             win_height,
         )
         lines, _ = self.build_output_text(shape, anchor.bufno, True)
-        l = len(lines)
-        if l > self.options.virt_text_max_lines:
-            lines = lines[: self.options.virt_text_max_lines - 1]
-            lines.append(f"󰁅 {l - self.options.virt_text_max_lines + 1} More Lines ")
+
+        if len(lines) > self.options.virt_text_max_lines:
+            lines = self.truncate_lines(lines, self.options.virt_text_max_lines)
 
         self.virt_text_id = buf.api.set_extmark(
             self.extmark_namespace,

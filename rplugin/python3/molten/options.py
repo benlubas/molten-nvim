@@ -1,7 +1,7 @@
 import os
 
 from pynvim import Nvim
-from typing import Optional, Union, List
+from typing import Literal, Optional, Union, List
 from dataclasses import dataclass
 
 from molten.utils import notify_error
@@ -63,9 +63,11 @@ class MoltenOptions:
     virt_lines_off_by_1: bool
     virt_text_max_lines: int
     virt_text_output: bool
+    virt_text_truncate: Literal["top", "bottom"]
     wrap_output: bool
     nvim: Nvim
     hl: HL
+    floating_window_focus: Literal["top", "bottom"]
 
     def __init__(self, nvim: Nvim):
         self.nvim = nvim
@@ -105,6 +107,8 @@ class MoltenOptions:
             ("molten_virt_text_output", False),
             ("molten_wrap_output", False),
             ("molten_output_win_zindex", 50),
+            ("molten_virt_text_truncate", "bottom"),
+            ("molten_floating_window_focus", "top"),
         ]
         # fmt: on
 
