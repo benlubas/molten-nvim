@@ -47,7 +47,7 @@ class OutputBuffer:
         self.output = Output(None)
 
         self.display_buf = self.nvim.buffers[self.nvim.funcs.nvim_create_buf(False, True)]
-        self.display_win = None
+        self.display_win: Window | None = None
         self.display_virt_lines = None
         self.virt_hidden: bool = False
         self.extmark_namespace = extmark_namespace
@@ -415,11 +415,13 @@ class OutputBuffer:
             win_opts["footer_pos"] = "left"
 
         if self.display_win is None or not self.display_win.valid:  # open a new window
-            self.display_win = self.nvim.api.open_win(
+            window: Window = self.nvim.api.open_win(
                 self.display_buf.number,
                 False,
                 win_opts,
             )
+            self.display_win = window
+
             hl = self.options.hl
             self.set_win_option("winhighlight", f"Normal:{hl.win},NormalNC:{hl.win_nc}")
             # TODO: Refactor once MoltenOutputWindowOpen autocommand is a thing.
@@ -447,6 +449,12 @@ class OutputBuffer:
                 self.nvim, self.extmark_namespace, anchor.bufno, virt_lines_y, 0
             )
             self.display_virt_lines.set_height(virt_lines_height)
+
+        if self.options.floating_window_focus == "top":
+            self.display_win.api.set_cursor((1, 0))
+
+        elif self.options.floating_window_focus == "bottom":
+            self.display_win.api.set_cursor((len(self.display_buf), 0))
 
     def set_border_highlight(self, border):
         hl = self.options.hl.border_norm
