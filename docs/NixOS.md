@@ -63,7 +63,7 @@ so:
         # ... other packages
         imagemagick # for image rendering
       ];
-      extraLuaPackages = ps: [
+      extraLuaPackages = ps: with ps; [
         # ... other lua packages
         magick # for image rendering
       ];
