@@ -214,7 +214,9 @@ variable, their values, and a brief description.
 | `g:molten_virt_text_output`                   | `true` \| (`false`)                                         | When true, show output as virtual text below the cell, virtual text stays after leaving the cell. When true, output window doesn't open automatically on run. Effected by `virt_lines_off_by_1` |
 | `g:molten_virt_text_max_lines`                | (`12`) \| int                                               | Max height of the virtual text |
 | `g:molten_wrap_output`                        | `true` \| (`false`)                                         | Wrap output text |
-| `g:molten_output_win_zindex`                        | (`50`) \| int                                         | Output window zindex |
+| `g:molten_output_win_zindex`                  | (`50`) \| int                                               | Output window zindex |
+| `g:molten_virt_text_truncate`                 |  `top`, (`bottom`)                                          | What part of the output to truncate when text exceeds `molten_virt_text_max_lines` in the virtual text window |
+| `g:molten_floating_window_focus`              | (`top`), `bottom`                                           | What part of the output to focus on in the floating window  |
 | [DEBUG] `g:molten_show_mimetype_debug`        | `true` \| (`false`)                                         | Before any non-iostream output chunk, the mime-type for that output chunk is shown. Meant for debugging/plugin devlopment |
 
 ### Images

@@ -48,9 +48,12 @@ ANSI_CODE_REGEX = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
 
 def clean_up_text(text: str) -> str:
-    text = ANSI_CODE_REGEX.sub("", text)
-    text = text.replace("\r\n", "\n")
-    return text
+    return (
+        ANSI_CODE_REGEX
+        .sub("", text)
+        .replace("\r\n", "\n")
+        .replace("\n\n", "\n")
+    )
 
 
 class TextOutputChunk(OutputChunk):

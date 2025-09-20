@@ -135,13 +135,24 @@ class Molten:
                 molten_kernel.clear_interface()
                 molten_kernel.clear_open_output_windows()
 
-    def _clear_interface(self) -> None:
+    def _clear_interface(
+        self,
+        molten_kernels: list[MoltenKernel] | None = None
+    ) -> None:
         if not self.initialized:
             return
 
-        for molten_kernels in self.buffers.values():
+        if molten_kernels is not None:
             for molten_kernel in molten_kernels:
                 molten_kernel.clear_virt_outputs()
+
+        else:
+            # NOTE: I think this is wrong, because it disables all available kernels, instead of just shutting down the one, that is being called to close.
+
+            for molten_kernels in self.buffers.values():
+                for molten_kernel in molten_kernels:
+                    molten_kernel.clear_virt_outputs()
+
         self._clear_on_buf_leave()
 
     def _update_interface(self) -> None:
@@ -293,9 +304,13 @@ class Molten:
         self._initialize_if_necessary()
 
         kernels = self._get_current_buf_kernels(True)
-        assert kernels is not None
 
-        self._clear_interface()
+        # NOTE: Assert is generally a bad idea to use. Instead it is better to call custom error, or something like that.
+        # Also, assert can be disabled with `-O` or `-OO` flags.
+        # This is not a production solution
+        assert kernels is not None  
+
+        self._clear_interface(kernels)
 
         self._deinit_buffer(kernels)
 
