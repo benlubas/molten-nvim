@@ -35,6 +35,7 @@ class MoltenKernel:
     outputs: Dict[CodeCell, OutputBuffer]
     current_output: Optional[CodeCell]
     queued_outputs: "Queue[CodeCell]"
+    execution_msg_ids: Dict[CodeCell, str]  # cell -> msg_id mapping for concurrent execution
 
     selected_cell: Optional[CodeCell]
     should_show_floating_win: bool
@@ -68,6 +69,7 @@ class MoltenKernel:
         self.outputs = {}
         self.current_output = None
         self.queued_outputs = Queue()
+        self.execution_msg_ids = {}
 
         self.selected_cell = None
         self.output_statuses = {}
@@ -111,11 +113,18 @@ class MoltenKernel:
         if not self.try_delete_overlapping_cells(span):
             return
         self.output_statuses[span] = OutputStatus.RUNNING
-        self.runtime.run_code(code)
+
+        # Capture msg_id from execution for tracking
+        msg_id = self.runtime.run_code(code)
 
         self.outputs[span] = OutputBuffer(
             self.nvim, self.canvas, self.extmark_namespace, self.options
         )
+
+        # Register the msg_id with runtime for concurrent execution routing
+        self.runtime.register_execution(msg_id, self.outputs[span].output)
+        self.execution_msg_ids[span] = msg_id
+
         self.queued_outputs.put(span)
 
         self.selected_cell = span
@@ -222,27 +231,60 @@ class MoltenKernel:
         self._check_if_done_running()
 
         was_ready = self.runtime.is_ready()
-        if self.current_output is None or not self.current_output in self.outputs:
+
+        # Use concurrent execution mode if we have tracked msg_ids
+        if self.execution_msg_ids:
+            # Let runtime handle routing by msg_id
             did_stuff = self.runtime.tick(None)
+
+            # Check which cells completed and clean up
+            for span, msg_id in list(self.execution_msg_ids.items()):
+                if span not in self.outputs:
+                    # Cell was deleted, clean up msg_id tracking
+                    del self.execution_msg_ids[span]
+                    continue
+
+                output = self.outputs[span].output
+
+                if output.status == OutputStatus.DONE:
+                    # Clean up completed execution
+                    del self.execution_msg_ids[span]
+
+                    if self.options.auto_open_html_in_browser:
+                        self.open_in_browser(silent=True)
+                    if self.options.auto_image_popup:
+                        self.open_image_popup(silent=True)
+
+                    output.end_time = datetime.now()
+
+                    # Update the interface to show completion (same as legacy mode)
+                    self.update_interface()
+
+                    # Update the output status
+                    self.output_statuses[span] = output.status
         else:
-            output = self.outputs[self.current_output].output
-            starting_status = output.status
-            did_stuff = self.runtime.tick(output)
+            # Fall back to legacy single-output mode
+            if self.current_output is None or not self.current_output in self.outputs:
+                did_stuff = self.runtime.tick(None)
+            else:
+                output = self.outputs[self.current_output].output
+                starting_status = output.status
+                did_stuff = self.runtime.tick(output)
 
-            if starting_status != OutputStatus.DONE and output.status == OutputStatus.DONE:
-                if self.options.auto_open_html_in_browser:
-                    self.open_in_browser(silent=True)
-                if self.options.auto_image_popup:
-                    self.open_image_popup(silent=True)
+                if starting_status != OutputStatus.DONE and output.status == OutputStatus.DONE:
+                    if self.options.auto_open_html_in_browser:
+                        self.open_in_browser(silent=True)
+                    if self.options.auto_image_popup:
+                        self.open_image_popup(silent=True)
 
-                output.end_time = datetime.now()
+                    output.end_time = datetime.now()
 
-                # HACK: Update the interface here to avoid the incomplete
-                # update such as the status in output is still `Running`
-                # when it's already done.
-                self.update_interface()
-                # Update the output status
-                self.output_statuses[self.current_output] = output.status
+                    # HACK: Update the interface here to avoid the incomplete
+                    # update such as the status in output is still `Running`
+                    # when it's already done.
+                    self.update_interface()
+                    # Update the output status
+                    self.output_statuses[self.current_output] = output.status
 
         if self.options.output_show_exec_time or did_stuff:
             self.update_interface()
@@ -335,6 +377,11 @@ class MoltenKernel:
         self.outputs[cell].clear_virt_output(cell.bufno)
         cell.clear_interface(self.highlight_namespace)
         del self.outputs[cell]
+
+        # Clean up msg_id tracking if this cell was being tracked
+        if cell in self.execution_msg_ids:
+            del self.execution_msg_ids[cell]
+
         if self.current_output == cell:
             self.current_output = None
         if self.selected_cell == cell:
@@ -377,17 +424,22 @@ class MoltenKernel:
                 self.outputs[self.selected_cell].clear_float_win()
             self.selected_cell.clear_interface(self.highlight_namespace)
 
+        # In concurrent mode, clear floating windows for all non-selected cells
+        # to prevent multiple windows from stacking up
+        for span in self.outputs.keys():
+            if span != new_selected_cell:
+                self.outputs[span].clear_float_win()
+
         if new_selected_cell is None:
             self.should_show_floating_win = False
 
         self.selected_cell = new_selected_cell
 
-        if (
-            self.selected_cell is not None
-            # Prevent from rendering when it's done
-            and self.output_statuses.get(self.selected_cell, None) != OutputStatus.DONE
-        ):
-            self._show_selected(self.selected_cell)
+        if self.selected_cell is not None:
+            cell_status = self.output_statuses.get(self.selected_cell, None)
+            # Always show if not done, or if done but window should be open
+            if cell_status != OutputStatus.DONE or self.should_show_floating_win:
+                self._show_selected(self.selected_cell)
 
         if self.options.virt_text_output:
             for span, output in self.outputs.items():

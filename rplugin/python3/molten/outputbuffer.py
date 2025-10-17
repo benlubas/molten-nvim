@@ -227,7 +227,9 @@ class OutputBuffer:
     def show_virtual_output(self, anchor: Position) -> None:
         if self.virt_hidden:
             return
-        if self.displayed_status == OutputStatus.DONE and self.virt_text_id is not None:
+        # Only skip update if status hasn't changed and we're done
+        if (self.displayed_status == self.output.status == OutputStatus.DONE
+            and self.virt_text_id is not None):
             return
         offset = self.calculate_offset(anchor) if self.options.cover_empty_lines else 0
         self.displayed_status = self.output.status
