@@ -8,6 +8,10 @@ local M = {}
 M.remove_comments = function(str, lang)
   local parser = vim.treesitter.get_string_parser(str, lang)
   local tree = parser:parse()
+  if not tree then
+    -- Return the same string if the parse cannot be found
+    return str
+  end
   local root = tree[1]:root()
   -- create comment query
   local query = vim.treesitter.query.parse(lang, [[((comment) @c (#offset! @c 0 0 0 -1))]])
@@ -16,6 +20,9 @@ M.remove_comments = function(str, lang)
   -- iterate over query match metadata
   for _, _, metadata in query:iter_matches(root, str, root:start(), root:end_(), {}) do
     local region = metadata[1].range
+    if not region then
+      break
+    end
     local line = region[1] + 1
     local col_start = region[2]
     -- remove comment by extracting the text before
