@@ -20,13 +20,12 @@ M.remove_comments = function(str, lang)
   -- iterate over query match metadata
   for _, _, metadata in query:iter_matches(root, str, root:start(), root:end_(), {}) do
     local region = metadata[1].range
-    if not region then
-      break
+    if region then
+      local line = region[1] + 1
+      local col_start = region[2]
+      -- remove comment by extracting the text before
+      lines[line] = string.sub(lines[line], 1, col_start)
     end
-    local line = region[1] + 1
-    local col_start = region[2]
-    -- remove comment by extracting the text before
-    lines[line] = string.sub(lines[line], 1, col_start)
   end
   -- remove blank lines
   lines = vim.tbl_filter(function(line) return line ~= '' end, lines)
