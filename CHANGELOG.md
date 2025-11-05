@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.10.0](https://github.com/benlubas/molten-nvim/compare/v1.9.2...v1.10.0) (2025-11-05)
+
+
+### Features
+
+* add snacks for image provider ([#299](https://github.com/benlubas/molten-nvim/issues/299)) ([81aa71b](https://github.com/benlubas/molten-nvim/commit/81aa71b6468aeb93297c47d7bac6938a47b7cbd9))
+* Add support for deleting all cells with MoltenDelete! ([#286](https://github.com/benlubas/molten-nvim/issues/286)) ([e6847d0](https://github.com/benlubas/molten-nvim/commit/e6847d01b5540750f39543d30262da5454d373d1))
+* hide/show cell virt output using MoltenToggleVirtual. Add bang for all cells. ([#307](https://github.com/benlubas/molten-nvim/issues/307)) ([e18ac73](https://github.com/benlubas/molten-nvim/commit/e18ac7395d19a39a8180d7a383a07084940e9090))
+* molten_output_win_zindex option ([#309](https://github.com/benlubas/molten-nvim/issues/309)) ([2f8a97d](https://github.com/benlubas/molten-nvim/commit/2f8a97d347d9dae08dea0d674c0852b05141ee09))
+* virtual line truncation ([#328](https://github.com/benlubas/molten-nvim/issues/328)) ([4fd7be6](https://github.com/benlubas/molten-nvim/commit/4fd7be6a12b5efda5179db642f13bad60893acca))
+
+
+### Bug Fixes
+
+* handle missing parse and region cases ([#340](https://github.com/benlubas/molten-nvim/issues/340)) ([24f6e16](https://github.com/benlubas/molten-nvim/commit/24f6e1656264f46b69230bf95702b12f1402e223))
+* use default height/width if unset in snacks config ([#318](https://github.com/benlubas/molten-nvim/issues/318)) ([9af9526](https://github.com/benlubas/molten-nvim/commit/9af9526ee2e0436663d4e00c35eee3746c98d16e))
+
 ## [1.9.2](https://github.com/benlubas/molten-nvim/compare/v1.9.1...v1.9.2) (2025-01-28)
 
 
