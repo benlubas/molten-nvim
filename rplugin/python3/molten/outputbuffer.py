@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, List, Optional, Tuple, Union, Callable
 
 from pynvim import Nvim
 from pynvim.api import Buffer, Window
@@ -9,6 +9,19 @@ from molten.outputchunks import ImageOutputChunk, Output, OutputStatus
 from molten.options import MoltenOptions
 from molten.position import DynamicPosition, Position
 from molten.utils import notify_error
+
+
+def truncate_bottom(lines: list[str], text_max_lines: int) -> list[str]:
+    truncated_lines = lines[: text_max_lines - 1]
+    truncated_lines.append(f"󰁅 {len(lines) - text_max_lines + 1} More lines ")
+    return truncated_lines
+
+
+def truncate_top(lines: list[str], text_max_lines: int):
+    truncated_lines = [lines[0]]
+    truncated_lines.append(f"↑ {len(lines) - text_max_lines} More lines")
+    truncated_lines.extend(lines[-text_max_lines + 2 :])
+    return truncated_lines
 
 
 class OutputBuffer:
@@ -34,7 +47,7 @@ class OutputBuffer:
         self.output = Output(None)
 
         self.display_buf = self.nvim.buffers[self.nvim.funcs.nvim_create_buf(False, True)]
-        self.display_win = None
+        self.display_win: Window | None = None
         self.display_virt_lines = None
         self.virt_hidden: bool = False
         self.extmark_namespace = extmark_namespace
@@ -44,6 +57,14 @@ class OutputBuffer:
         self.options = options
         self.nvim.exec_lua("_ow = require('output_window')")
         self.lua = self.nvim.lua._ow
+
+        self.truncate_lines: Callable[[list[str], int], list[str]]
+        if self.options.virt_text_truncate == "bottom":
+            self.truncate_lines = truncate_bottom
+        elif self.options.virt_text_truncate == "top":
+            self.truncate_lines = truncate_top
+        else:
+            raise ValueError("Wrong virtual text truncate option")
 
     def _buffer_to_window_lineno(self, lineno: int) -> int:
         return self.lua.calculate_window_position(lineno)
@@ -262,10 +283,9 @@ class OutputBuffer:
             win_height,
         )
         lines, _ = self.build_output_text(shape, anchor.bufno, True)
-        l = len(lines)
-        if l > self.options.virt_text_max_lines:
-            lines = lines[: self.options.virt_text_max_lines - 1]
-            lines.append(f"󰁅 {l - self.options.virt_text_max_lines + 1} More Lines ")
+
+        if len(lines) > self.options.virt_text_max_lines:
+            lines = self.truncate_lines(lines, self.options.virt_text_max_lines)
 
         self.virt_text_id = buf.api.set_extmark(
             self.extmark_namespace,
@@ -345,88 +365,96 @@ class OutputBuffer:
 
         # Open output window
         # assert self.display_window is None
-        if win_row < win_height:
-            border = self.options.output_win_border
-            zindex = self.options.output_win_zindex
-            max_height = min(real_height + 1, self.options.output_win_max_height)
-            height = min(win_height - win_row, max_height)
+        if not win_row < win_height:
+            return
 
-            cropped = False
-            if (
-                height == win_height - win_row and max_height > height
-            ):  # It didn't fit on the screen
-                if self.options.output_crop_border and type(border) == list:
-                    cropped = True
-                    # Expand the border, so top and bottom can change independently
-                    border = [border[i % len(border)] for i in range(8)]
-                    border[5 % len(border)] = ""
-                    height += 1
+        border = self.options.output_win_border
+        zindex = self.options.output_win_zindex
+        max_height = min(real_height + 1, self.options.output_win_max_height)
+        height = min(win_height - win_row, max_height)
 
-            if self.options.use_border_highlights:
-                border = self.set_border_highlight(border)
+        cropped = False
+        if height == win_height - win_row and max_height > height:  # It didn't fit on the screen
+            if self.options.output_crop_border and type(border) is list:
+                cropped = True
+                # Expand the border, so top and bottom can change independently
+                border = [border[i % len(border)] for i in range(8)]
+                border[5 % len(border)] = ""
+                height += 1
 
-            win_opts = {
-                "relative": "win",
-                "row": shape[1],
-                "col": shape[0],
-                "width": min(shape[2], self.options.output_win_max_width),
-                "height": height,
-                "border": border,
-                "focusable": False,
-                "zindex": zindex
-            }
-            if self.options.output_win_style:
-                win_opts["style"] = self.options.output_win_style
-            if (
-                self.options.output_show_more
-                and not cropped
-                and height == self.options.output_win_max_height
-            ):
-                # the entire window size is shown, but the buffer still has more lines to render
-                hidden_lines = len(self.display_buf) - height
-                if self.options.output_win_cover_gutter and type(border) == list:
-                    border_pad = border[5 % len(border)][0] * text_off
-                    win_opts["footer"] = [
-                        (border_pad, border[5 % len(border)][1]),
-                        (f" 󰁅 {hidden_lines} More Lines ", self.options.hl.foot),
-                    ]
-                else:
-                    win_opts["footer"] = [(f" 󰁅 {hidden_lines} More Lines ", self.options.hl.foot)]
-                win_opts["footer_pos"] = "left"
+        if self.options.use_border_highlights:
+            border = self.set_border_highlight(border)
 
-            if self.display_win is None or not self.display_win.valid:  # open a new window
-                self.display_win = self.nvim.api.open_win(
-                    self.display_buf.number,
-                    False,
-                    win_opts,
-                )
-                hl = self.options.hl
-                self.set_win_option("winhighlight", f"Normal:{hl.win},NormalNC:{hl.win_nc}")
-                # TODO: Refactor once MoltenOutputWindowOpen autocommand is a thing.
-                # note, the above setting will probably stay there, just so users can set highlights
-                # with their other highlights
-                self.set_win_option("wrap", self.options.wrap_output)
-                self.set_win_option("cursorline", False)
-                self.canvas.present()
-            else:  # move the current window
-                self.display_win.api.set_config(win_opts)
+        win_opts = {
+            "relative": "win",
+            "row": shape[1],
+            "col": shape[0],
+            "width": min(shape[2], self.options.output_win_max_width),
+            "height": height,
+            "border": border,
+            "focusable": True,
+            "zindex": zindex,
+        }
+        if self.options.output_win_style:
+            win_opts["style"] = self.options.output_win_style
+        if (
+            self.options.output_show_more
+            and not cropped
+            and height == self.options.output_win_max_height
+        ):
+            # the entire window size is shown, but the buffer still has more lines to render
+            hidden_lines = len(self.display_buf) - height
+            if self.options.output_win_cover_gutter and type(border) == list:
+                border_pad = border[5 % len(border)][0] * text_off
+                win_opts["footer"] = [
+                    (border_pad, border[5 % len(border)][1]),
+                    (f" 󰁅 {hidden_lines} More Lines ", self.options.hl.foot),
+                ]
+            else:
+                win_opts["footer"] = [(f" 󰁅 {hidden_lines} More Lines ", self.options.hl.foot)]
+            win_opts["footer_pos"] = "left"
 
-            if self.display_virt_lines is not None:
-                del self.display_virt_lines
-                self.display_virt_lines = None
+        if self.display_win is None or not self.display_win.valid:  # open a new window
+            window: Window = self.nvim.api.open_win(
+                self.display_buf.number,
+                False,
+                win_opts,
+            )
+            self.display_win = window
 
-            if self.options.output_virt_lines or self.options.cover_empty_lines:
-                virt_lines_y = anchor.lineno
-                if self.options.cover_empty_lines:
-                    virt_lines_y += offset
-                virt_lines_height = max_height + border_h
-                if self.options.virt_lines_off_by_1:
-                    virt_lines_y += 1
-                    virt_lines_height -= 1
-                self.display_virt_lines = DynamicPosition(
-                    self.nvim, self.extmark_namespace, anchor.bufno, virt_lines_y, 0
-                )
-                self.display_virt_lines.set_height(virt_lines_height)
+            hl = self.options.hl
+            self.set_win_option("winhighlight", f"Normal:{hl.win},NormalNC:{hl.win_nc}")
+            # TODO: Refactor once MoltenOutputWindowOpen autocommand is a thing.
+            # note, the above setting will probably stay there, just so users can set highlights
+            # with their other highlights
+            self.set_win_option("wrap", self.options.wrap_output)
+            self.set_win_option("cursorline", False)
+            self.canvas.present()
+        else:  # move the current window
+            self.display_win.api.set_config(win_opts)
+
+        if self.display_virt_lines is not None:
+            del self.display_virt_lines
+            self.display_virt_lines = None
+
+        if self.options.output_virt_lines or self.options.cover_empty_lines:
+            virt_lines_y = anchor.lineno
+            if self.options.cover_empty_lines:
+                virt_lines_y += offset
+            virt_lines_height = max_height + border_h
+            if self.options.virt_lines_off_by_1:
+                virt_lines_y += 1
+                virt_lines_height -= 1
+            self.display_virt_lines = DynamicPosition(
+                self.nvim, self.extmark_namespace, anchor.bufno, virt_lines_y, 0
+            )
+            self.display_virt_lines.set_height(virt_lines_height)
+
+        if self.options.floating_window_focus == "top":
+            self.display_win.api.set_cursor((1, 0))
+
+        elif self.options.floating_window_focus == "bottom":
+            self.display_win.api.set_cursor((len(self.display_buf), 0))
 
     def set_border_highlight(self, border):
         hl = self.options.hl.border_norm
