@@ -1034,3 +1034,41 @@ class Molten:
                 outbuf = kern.outputs[cell]
                 outbuf.toggle_virtual_output(cell.end)
                 return
+
+    @pynvim.command("MoltenYankOutput", nargs="0", sync=True, bang=True)  # type: ignore
+    @nvimui  # type: ignore
+    def command_yank_output(self, _args: List[Any], bang: bool) -> None:
+        """
+        Yank the output of the cell under the cursor.
+        With a bang (`:MoltenYankOutput!`), yank to the system clipboard.
+        """
+        kernels = self._get_current_buf_kernels(True)
+        assert kernels is not None
+
+        for kern in kernels:
+            cell = kern._get_selected_span()
+            if cell is None or cell not in kern.outputs:
+                continue
+
+            outbuf: OutputBuffer = kern.outputs[cell]
+            # build the plain-text output (not virtual)
+            bufno = self.nvim.current.buffer.number
+            # Get window width for proper text wrapping
+            win_width = self.nvim.current.window.width
+            shape = (0, 0, win_width, 0)  # (win_col, win_row, win_width, win_height)
+            lines, _ = outbuf.build_output_text(shape, bufno, False)
+            lines = lines[1:]  # Remove header
+            if not lines:
+                notify_warn(
+                    self.nvim,
+                    "No output to yank.",
+                )
+                return
+
+            text = "\n".join(lines)
+            # choose register: system clipboard ("+) if bang, else default (")
+            reg = "+" if bang else '"'
+            # set the register
+            self.nvim.funcs.setreg(reg, text)
+            return
+
