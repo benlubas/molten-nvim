@@ -13,7 +13,7 @@ from molten.images import Canvas
 from molten.position import Position
 from molten.utils import notify_error, notify_info, notify_warn
 from molten.outputbuffer import OutputBuffer
-from molten.outputchunks import ImageOutputChunk, OutputChunk, OutputStatus
+from molten.outputchunks import ImageOutputChunk, OutputChunk, OutputStatus, ErrorOutputChunk, TextOutputChunk, clean_up_text
 from molten.runtime import JupyterRuntime
 
 
@@ -42,6 +42,9 @@ class MoltenKernel:
 
     options: MoltenOptions
     output_statuses: Dict[Optional[CodeCell], OutputStatus]
+    
+    # Track standalone execution callbacks
+    standalone_callbacks: Dict[str, Callable]
 
     def __init__(
         self,
@@ -75,6 +78,7 @@ class MoltenKernel:
         self.updating_interface = False
 
         self.options = options
+        self.standalone_callbacks = {}
 
     def _doautocmd(self, autocmd: str, opts: Dict = {}) -> None:
         assert " " not in autocmd
@@ -126,6 +130,19 @@ class MoltenKernel:
         self.update_interface()
 
         self._check_if_done_running()
+
+    def run_standalone_code(self, code: str, callback: Callable) -> None:
+        """Execute code as a standalone execution (not tied to a cell) with a callback.
+        
+        Args:
+            code: The code to execute
+            callback: A callback function that takes a dict with keys:
+                - output: str (plain text output)
+                - success: bool
+                - execution_count: Optional[int]
+        """
+        msg_id = self.runtime.run_standalone_code(code)
+        self.standalone_callbacks[msg_id] = callback
 
     def reevaluate_all(self) -> None:
         for span in sorted(self.outputs.keys(), key=lambda s: s.begin):
@@ -260,6 +277,55 @@ class MoltenKernel:
                 self.nvim,
                 f"Kernel '{self.runtime.kernel_name}' (id: {self.kernel_id}) is ready.",
             )
+
+        # Process completed standalone outputs and fire callbacks
+        completed_standalone = self.runtime.get_completed_standalone_outputs()
+        for msg_id, output in completed_standalone:
+            if msg_id in self.standalone_callbacks:
+                callback = self.standalone_callbacks[msg_id]
+
+                # Build the result dict
+                result = {
+                    "success": output.success,
+                    "execution_count": output.execution_count,
+                }
+
+                # Extract plain text output from chunks
+                output_text = []
+                for chunk in output.chunks:
+                    if isinstance(chunk, TextOutputChunk):
+                        output_text.append(clean_up_text(chunk.text))
+                    elif isinstance(chunk, ErrorOutputChunk):
+                        # ErrorOutputChunk has extras dict with error details
+                        if chunk.extras:
+                            ename = chunk.extras.get('ename', 'Error')
+                            evalue = chunk.extras.get('evalue', '')
+                            traceback = chunk.extras.get('traceback', [])
+                            output_text.append(f"{ename}: {evalue}")
+                            if traceback:
+                                output_text.extend([clean_up_text(line) for line in traceback])
+                        else:
+                            # Fall back to the formatted text
+                            output_text.append(clean_up_text(chunk.text))
+                # Fallback: if output_text is empty, try to stringify all chunks
+                if not output_text and output.chunks:
+                    output_text = [str(chunk) for chunk in output.chunks]
+                result["output"] = "\n".join(output_text)
+
+                # Fire the callback
+                try:
+                    # If callback is a Python callable, call it directly
+                    if callable(callback):
+                        callback(result)
+                    else:
+                        # Flexible: allow any Lua expression as callback
+                        self.nvim.exec_lua(f"return {callback}(...)", result)
+                except Exception as e:
+                    notify_error(self.nvim, f"Error in standalone callback: {e}")
+
+                # Clean up
+                del self.standalone_callbacks[msg_id]
+                self.runtime.remove_standalone_output(msg_id)
 
     def tick_input(self) -> None:
         self.runtime.tick_input()
