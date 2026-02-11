@@ -22,10 +22,8 @@ class MoltenIOError(Exception):
             raise cls(f"Missing key: {key}")
         value = data[key]
         if type_ is not None and not isinstance(value, type_):
-            raise cls(
-                f"Incorrect type for key '{key}': expected {type_.__name__}, \
-                got {type(value).__name__}"
-            )
+            raise cls(f"Incorrect type for key '{key}': expected {type_.__name__}, \
+                got {type(value).__name__}")
         return value
 
 
@@ -131,11 +129,12 @@ def save(molten_kernel: MoltenKernel, nvim_buffer: int) -> Dict[str, Any]:
                 "success": output.output.success,
                 "chunks": [
                     {
-                        "data": chunk.jupyter_data,
-                        "metadata": chunk.jupyter_metadata,
+                        "data": chunk.jupyter_data if chunk.jupyter_data is not None else {},
+                        "metadata": (
+                            chunk.jupyter_metadata if chunk.jupyter_metadata is not None else {}
+                        ),
                     }
                     for chunk in output.output.chunks
-                    if chunk.jupyter_data is not None and chunk.jupyter_metadata is not None
                 ],
             }
             for span, output in molten_kernel.outputs.items()

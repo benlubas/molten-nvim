@@ -121,7 +121,7 @@ class JupyterRuntime:
         if output.success:
             chunk = to_outputchunk(self.nvim, self._alloc_file, data, metadata, self.options)
             output.chunks.append(chunk)
-            if isinstance(chunk, TextOutputChunk) and chunk.text.startswith("\r"):
+            if isinstance(chunk, TextOutputChunk) and "\r" in chunk.text:
                 output.merge_text_chunks()
 
     def _tick_one(self, output: Output, message_type: str, content: Dict[str, Any]) -> bool:
@@ -181,7 +181,26 @@ class JupyterRuntime:
             return True
         elif message_type == "stream":
             copy_on_demand(content["text"])
-            self._append_chunk(output, {"text/plain": content["text"]}, {})
+            text = content["text"]
+
+            # Check for standalone \r (progress updates, not \r\n)
+            has_standalone_cr = "\r" in text.replace("\r\n", "")
+
+            if has_standalone_cr:
+                # For progress updates, use TextOutputChunk (no added newline)
+                # This allows in-place updates like VS Code's behavior
+                chunk = TextOutputChunk(text)
+                chunk.jupyter_data = {"text/plain": text}
+                chunk.jupyter_metadata = {}
+                output.chunks.append(chunk)
+                output.merge_text_chunks()
+            else:
+                # Normal output - strip trailing \n to avoid double newlines
+                # (TextLnOutputChunk will add one)
+                text = text.rstrip("\n")
+                # Only create chunk if there's actual text (avoid BadOutputChunk for empty strings)
+                if text:
+                    self._append_chunk(output, {"text/plain": text}, {})
             return True
         elif message_type == "display_data":
             # XXX: consider content['transient'], if we end up saving execution
@@ -247,8 +266,7 @@ class JupyterRuntime:
 
         assert isinstance(
             self.kernel_client,
-            (jupyter_client.blocking.client.BlockingKernelClient,
-             JupyterAPIClient),
+            (jupyter_client.blocking.client.BlockingKernelClient, JupyterAPIClient),
         )
 
         try:

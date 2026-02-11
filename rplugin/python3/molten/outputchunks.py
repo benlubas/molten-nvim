@@ -47,13 +47,34 @@ class OutputChunk(ABC):
 ANSI_CODE_REGEX = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
 
+def _resolve_cr(text: str) -> str:
+    """Resolve carriage returns within text: keep text after last \\r per line."""
+    lines = text.split("\n")
+    processed = []
+    for line in lines:
+        if "\r" in line:
+            # Split by \r and keep the last segment
+            parts = line.split("\r")
+            # If line ends with \r (empty last part), take second-to-last and preserve \r
+            if parts[-1] == "" and len(parts) > 1:
+                line = parts[-2] + "\r"
+            else:
+                # Otherwise take the last part (text after last \r)
+                line = parts[-1]
+        processed.append(line)
+    return "\n".join(processed)
+
+
 def clean_up_text(text: str) -> str:
-    return (
-        ANSI_CODE_REGEX
-        .sub("", text)
-        .replace("\r\n", "\n")
-        .replace("\n\n", "\n")
-    )
+    text = ANSI_CODE_REGEX.sub("", text)
+    text = text.replace("\r\n", "\n")
+    # Process standalone \r: simulate carriage return with proper overwrite
+    text = _resolve_cr(text)
+    # Remove any trailing \r from each line for final display
+    lines = text.split("\n")
+    lines = [line.rstrip("\r") for line in lines]
+    text = "\n".join(lines)
+    return text
 
 
 class TextOutputChunk(OutputChunk):
@@ -83,27 +104,31 @@ class TextOutputChunk(OutputChunk):
             win_width = shape[2]
             if hard_wrap:
                 lines = []
-                splits = []
-                # Assume this is a progress bar, or similar, we shouldn't try to wrap it
-                if text.find("\r") != -1:
-                    return text, 0
-                for line in text.split("\n"):
-                    index = 0
-                    if len(line) + col > win_width:
-                        splits.append(line[: win_width - col])
-                        line = line[win_width - col :]
+                for i, line in enumerate(text.split("\n")):
+                    effective_col = col if i == 0 else 0
+                    splits = []
+                    if len(line) + effective_col > win_width:
+                        splits.append(line[: win_width - effective_col])
+                        line = line[win_width - effective_col :]
+                    else:
+                        splits.append(line)
+                        lines.extend(splits)
+                        continue
 
+                    index = 0
                     for _ in range(len(line) // win_width):
                         splits.append(line[index * win_width : (index + 1) * win_width])
                         index += 1
-                    splits.append(line[index * win_width :])
+                    if line[index * win_width :]:
+                        splits.append(line[index * win_width :])
 
-                lines.extend(splits)
+                    lines.extend(splits)
                 text = "\n".join(lines)
             else:
-                for line in text.split("\n"):
-                    if len(line) > win_width:
-                        extra_lines += len(line) // win_width
+                for i, line in enumerate(text.split("\n")):
+                    effective_width = win_width - col if i == 0 else win_width
+                    if len(line) > effective_width:
+                        extra_lines += (len(line) - effective_width + win_width - 1) // win_width
 
         return text, extra_lines
 
@@ -135,6 +160,8 @@ class ErrorOutputChunk(TextLnOutputChunk):
             )
         )
         self.output_type = "error"
+        self.jupyter_data = {"text/plain": self.text}
+        self.jupyter_metadata = {}
 
 
 class AbortedOutputChunk(TextLnOutputChunk):
@@ -211,19 +238,19 @@ class Output:
         self._should_clear = False
 
     def merge_text_chunks(self):
-        """Merge the last two chunks if they are text chunks, and text on a line before \r
-        character, this is b/c outputs before a \r aren't shown, and so, should be deleted"""
+        """Merge the last two text chunks and resolve carriage returns."""
         if (
             len(self.chunks) >= 2
             and isinstance((c1 := self.chunks[-2]), TextOutputChunk)
             and isinstance((c2 := self.chunks[-1]), TextOutputChunk)
         ):
             c1.text += c2.text
-            c1.text = "\n".join([re.sub(r".*\r", "", x) for x in c1.text.split("\n")[:-1]])
+            c1.text = _resolve_cr(c1.text)
             c1.jupyter_data = {"text/plain": c1.text}
             self.chunks.pop()
-        elif len(self.chunks) > 0 and isinstance((c1 := self.chunks[0]), TextOutputChunk):
-            c1.text = "\n".join([re.sub(r".*\r", "", x) for x in c1.text.split("\n")[:-1]])
+        elif len(self.chunks) > 0 and isinstance((c1 := self.chunks[-1]), TextOutputChunk):
+            c1.text = _resolve_cr(c1.text)
+            c1.jupyter_data = {"text/plain": c1.text}
 
 
 def to_outputchunk(
@@ -321,7 +348,7 @@ def to_outputchunk(
         if data is not None and data.get("text/plain"):
             chunk = _from_plaintext(data["text/plain"])
         else:
-            if data == None:
+            if data is None:
                 data = {}
             chunk = BadOutputChunk(list(data.keys()))
 
