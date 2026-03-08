@@ -183,24 +183,14 @@ class JupyterRuntime:
             copy_on_demand(content["text"])
             text = content["text"]
 
-            # Check for standalone \r (progress updates, not \r\n)
-            has_standalone_cr = "\r" in text.replace("\r\n", "")
+            # Preserve exact stream semantics (including \n / \r) by using TextOutputChunk directly.
+            chunk = TextOutputChunk(text)
+            chunk.jupyter_data = {"text/plain": text}
+            chunk.jupyter_metadata = {}
+            output.chunks.append(chunk)
 
-            if has_standalone_cr:
-                # For progress updates, use TextOutputChunk (no added newline)
-                # This allows in-place updates like VS Code's behavior
-                chunk = TextOutputChunk(text)
-                chunk.jupyter_data = {"text/plain": text}
-                chunk.jupyter_metadata = {}
-                output.chunks.append(chunk)
-                output.merge_text_chunks()
-            else:
-                # Normal output - strip trailing \n to avoid double newlines
-                # (TextLnOutputChunk will add one)
-                text = text.rstrip("\n")
-                # Only create chunk if there's actual text (avoid BadOutputChunk for empty strings)
-                if text:
-                    self._append_chunk(output, {"text/plain": text}, {})
+            # Merge adjacent text chunks and resolve carriage returns once, centrally.
+            output.merge_text_chunks()
             return True
         elif message_type == "display_data":
             # XXX: consider content['transient'], if we end up saving execution
