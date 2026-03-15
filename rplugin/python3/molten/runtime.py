@@ -1,26 +1,26 @@
-from datetime import datetime
-from typing import Optional, Tuple, List, Dict, Generator, IO, Any
-from contextlib import contextmanager
-from queue import Empty as EmptyQueueException
+import json
 import os
 import tempfile
-import json
+from contextlib import contextmanager
+from datetime import datetime
+from queue import Empty as EmptyQueueException
+from typing import IO, Any, Dict, Generator, List, Optional, Tuple
 
 import jupyter_client
 from pynvim import Nvim
 
+from molten.jupyter_server_api import JupyterAPIClient, JupyterAPIManager
 from molten.options import MoltenOptions
 from molten.outputchunks import (
-    Output,
-    MimetypesOutputChunk,
     ErrorOutputChunk,
-    TextOutputChunk,
+    MimetypesOutputChunk,
+    Output,
     OutputStatus,
-    to_outputchunk,
+    TextOutputChunk,
     clean_up_text,
+    to_outputchunk,
 )
 from molten.runtime_state import RuntimeState
-from molten.jupyter_server_api import JupyterAPIClient, JupyterAPIManager
 
 
 class JupyterRuntime:

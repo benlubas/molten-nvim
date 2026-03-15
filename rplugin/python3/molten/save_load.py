@@ -1,16 +1,16 @@
-from typing import Type, Optional, Dict, Any
 import os
+from typing import Any, Dict, Optional, Type
+
 from pynvim import Nvim
-
 from pynvim.api import Buffer
-from molten.code_cell import CodeCell
-from molten.position import DynamicPosition
 
-from molten.utils import MoltenException
-from molten.options import MoltenOptions
-from molten.outputchunks import OutputStatus, Output, to_outputchunk
-from molten.outputbuffer import OutputBuffer
+from molten.code_cell import CodeCell
 from molten.moltenbuffer import MoltenKernel
+from molten.options import MoltenOptions
+from molten.outputbuffer import OutputBuffer
+from molten.outputchunks import Output, OutputStatus, to_outputchunk
+from molten.position import DynamicPosition
+from molten.utils import MoltenException
 
 
 class MoltenIOError(Exception):
@@ -22,8 +22,10 @@ class MoltenIOError(Exception):
             raise cls(f"Missing key: {key}")
         value = data[key]
         if type_ is not None and not isinstance(value, type_):
-            raise cls(f"Incorrect type for key '{key}': expected {type_.__name__}, \
-                got {type(value).__name__}")
+            raise cls(
+                f"Incorrect type for key '{key}': expected {type_.__name__}, \
+                got {type(value).__name__}"
+            )
         return value
 
 

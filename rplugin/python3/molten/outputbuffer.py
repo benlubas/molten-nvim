@@ -1,12 +1,12 @@
 from datetime import datetime
-from typing import Any, List, Optional, Tuple, Union, Callable
+from typing import Any, Callable, List, Optional, Tuple, Union
 
 from pynvim import Nvim
 from pynvim.api import Buffer, Window
 
 from molten.images import Canvas
-from molten.outputchunks import ImageOutputChunk, Output, OutputStatus, _resolve_cr
 from molten.options import MoltenOptions
+from molten.outputchunks import ImageOutputChunk, Output, OutputStatus, _resolve_cr
 from molten.position import DynamicPosition, Position
 from molten.utils import notify_error
 

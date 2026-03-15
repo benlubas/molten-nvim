@@ -1,20 +1,19 @@
+import re
+from abc import ABC, abstractmethod
+from contextlib import AbstractContextManager
+from datetime import datetime
+from enum import Enum
 from typing import (
-    Optional,
-    Tuple,
-    List,
-    Dict,
+    IO,
     Any,
     Callable,
-    IO,
+    Dict,
+    List,
+    Optional,
+    Tuple,
 )
-from contextlib import AbstractContextManager
-from enum import Enum
-from abc import ABC, abstractmethod
-import re
-from datetime import datetime
 
 from pynvim import Nvim
-
 
 from molten.images import Canvas
 from molten.options import MoltenOptions
@@ -287,12 +286,12 @@ def to_outputchunk(
             return _to_image_chunk(path)
 
     def _from_application_plotly(figure_json: Any) -> OutputChunk:
-        from plotly.io import from_json
+        import json
 
         # NOTE: import this to cause an import exception which we catch. instead of a different
         # error in `write_image`
         import kaleido  # type: ignore
-        import json
+        from plotly.io import from_json
 
         figure = from_json(json.dumps(figure_json))
 
