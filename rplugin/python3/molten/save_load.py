@@ -131,10 +131,8 @@ def save(molten_kernel: MoltenKernel, nvim_buffer: int) -> Dict[str, Any]:
                 "success": output.output.success,
                 "chunks": [
                     {
-                        "data": chunk.jupyter_data if chunk.jupyter_data is not None else {},
-                        "metadata": (
-                            chunk.jupyter_metadata if chunk.jupyter_metadata is not None else {}
-                        ),
+                        "data": chunk.jupyter_data or {},
+                        "metadata": (chunk.jupyter_metadata or {}),
                     }
                     for chunk in output.output.chunks
                 ],
