@@ -46,7 +46,7 @@ class OutputChunk(ABC):
 ANSI_CODE_REGEX = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
 
-def _resolve_cr(text: str) -> str:
+def resolve_cr(text: str) -> str:
     """Resolve carriage returns within text: keep text after last \\r per line."""
     lines = text.split("\n")
     processed = []
@@ -68,7 +68,7 @@ def clean_up_text(text: str) -> str:
     text = ANSI_CODE_REGEX.sub("", text)
     text = text.replace("\r\n", "\n")
     # Process standalone \r: simulate carriage return with proper overwrite
-    text = _resolve_cr(text)
+    text = resolve_cr(text)
     # Remove any trailing \r from each line for final display
     lines = text.split("\n")
     lines = [line.rstrip("\r") for line in lines]
@@ -244,11 +244,11 @@ class Output:
             and isinstance((c2 := self.chunks[-1]), TextOutputChunk)
         ):
             c1.text += c2.text
-            c1.text = _resolve_cr(c1.text)
+            c1.text = resolve_cr(c1.text)
             c1.jupyter_data = {"text/plain": c1.text}
             self.chunks.pop()
         elif len(self.chunks) > 0 and isinstance((c1 := self.chunks[-1]), TextOutputChunk):
-            c1.text = _resolve_cr(c1.text)
+            c1.text = resolve_cr(c1.text)
             c1.jupyter_data = {"text/plain": c1.text}
 
 
