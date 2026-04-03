@@ -52,6 +52,7 @@ class MoltenOptions:
     output_win_hide_on_leave: bool
     output_win_max_height: int
     output_win_max_width: int
+    output_win_q_close: bool
     output_win_style: Optional[str]
     output_win_zindex: Optional[str]
     save_path: str
@@ -95,6 +96,7 @@ class MoltenOptions:
             ("molten_output_win_hide_on_leave", True),
             ("molten_output_win_max_height", 999999),
             ("molten_output_win_max_width", 999999),
+            ("molten_output_win_q_close", False),
             ("molten_output_win_style", False),
             ("molten_save_path", os.path.join(nvim.funcs.stdpath("data"), "molten")),
             ("molten_split_direction", "right"),

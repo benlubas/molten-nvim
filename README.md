@@ -202,7 +202,8 @@ variable, their values, and a brief description.
 | `g:molten_output_win_cover_gutter`            | (`true`) \| `false`                                         | Should the output window cover the gutter (numbers and sign col), or not. If you change this, you probably also want to change `molten_output_win_style` |
 | `g:molten_output_win_hide_on_leave`           | (`true`) \| `false`                                         | After leaving the output window (via `:q` or switching windows), do not attempt to redraw the output window |
 | `g:molten_output_win_max_height`              | (`999999`) \| int                                           | Max height of the output window |
-| `g:molten_output_win_max_width`               | (`999999`) \| int                                           | Max width of the output window |
+| `g:molten_output_win_max_width`               | (`999999`) \| int                                          | Max width of the output window |
+| `g:molten_output_win_q_close`                 | `true` \| (`false`)                                        | When true, pressing `q` in the output window will close it |
 | `g:molten_output_win_style`                   | (`false`) \| `"minimal"`                                    | Value passed to the `style` option in `:h nvim_open_win()` |
 | `g:molten_save_path`                          | (`stdpath("data").."/molten"`) \| any path to a folder      | Where to save/load data with `:MoltenSave` and `:MoltenLoad` |
 | `g:molten_split_direction`                    | (`"right"`) \| `"left"` \| `"top"` \| `"bottom"` \|         | Direction of the terminal split created by wezterm. *Only applies if `g:molten_image_provider = "wezterm"`* |

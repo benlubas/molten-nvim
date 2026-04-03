@@ -362,6 +362,13 @@ class OutputBuffer:
         self.nvim.api.set_option_value(
             "filetype", "molten_output", {"buf": self.display_buf.handle}
         )
+        if self.options.output_win_q_close:
+            self.display_buf.api.set_keymap(
+                "n",
+                "q",
+                "<cmd>close<CR>",
+                {"noremap": True, "silent": True},
+            )
 
         # Open output window
         # assert self.display_window is None
