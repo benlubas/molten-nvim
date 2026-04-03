@@ -102,8 +102,8 @@ class OutputBuffer:
 
             days = diff.days
             hours = diff.seconds // 3600
-            minutes = diff.seconds // 60
-            seconds = diff.seconds - hours * 3600 - minutes * 60
+            minutes = (diff.seconds % 3600) // 60
+            seconds = diff.seconds % 60
             microseconds = diff.microseconds
 
             time = ""
