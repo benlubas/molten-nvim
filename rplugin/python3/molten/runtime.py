@@ -242,7 +242,7 @@ class JupyterRuntime:
 
     def tick_input(self):
         """Tick to check input_requests"""
-        if not self.is_ready:
+        if not self.is_ready():
             return
 
         assert isinstance(
