@@ -1,12 +1,12 @@
 from datetime import datetime
-from typing import Any, List, Optional, Tuple, Union, Callable
+from typing import Any, Callable, List, Optional, Tuple, Union
 
 from pynvim import Nvim
 from pynvim.api import Buffer, Window
 
 from molten.images import Canvas
-from molten.outputchunks import ImageOutputChunk, Output, OutputStatus
 from molten.options import MoltenOptions
+from molten.outputchunks import ImageOutputChunk, Output, OutputStatus, resolve_cr
 from molten.position import DynamicPosition, Position
 from molten.utils import notify_error
 
@@ -122,7 +122,7 @@ class OutputBuffer:
             time = ""
 
         if output.status == OutputStatus.NEW:
-            return f"Out[_]: Never Run"
+            return "Out[_]: Never Run"
         else:
             return f"{old}Out[{execution_count}]: {status} {time}".rstrip()
 
@@ -222,11 +222,24 @@ class OutputBuffer:
                 lines_str += chunktext
                 lineno += chunktext.count("\n")
                 virtual_lines += virt_lines
-                x = len(lines_str) - lines_str.rfind("\n")
+                # Update x to the column after the last newline, or to the length if no newline is present
+                last_newline = lines_str.rfind("\n")
+                if last_newline == -1:
+                    x = len(lines_str)
+                else:
+                    x = len(lines_str) - last_newline - 1
+
+            # Ensure any remaining carriage returns are resolved
+            lines_str = resolve_cr(lines_str)
 
             limit = self.options.limit_output_chars
             if limit and len(lines_str) > limit:
-                lines_str = lines_str[:limit]
+                # Truncate at the last newline before the limit to avoid cutting a line in half
+                last_newline = lines_str.rfind("\n", 0, limit)
+                if last_newline > 0:
+                    lines_str = lines_str[:last_newline]
+                else:
+                    lines_str = lines_str[:limit]
                 lines_str += f"\n...truncated to {limit} chars\n"
 
             lines = lines_str.split("\n")

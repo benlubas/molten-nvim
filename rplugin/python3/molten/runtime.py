@@ -1,26 +1,26 @@
-from datetime import datetime
-from typing import Optional, Tuple, List, Dict, Generator, IO, Any
-from contextlib import contextmanager
-from queue import Empty as EmptyQueueException
+import json
 import os
 import tempfile
-import json
+from contextlib import contextmanager
+from datetime import datetime
+from queue import Empty as EmptyQueueException
+from typing import IO, Any, Dict, Generator, List, Optional, Tuple
 
 import jupyter_client
 from pynvim import Nvim
 
+from molten.jupyter_server_api import JupyterAPIClient, JupyterAPIManager
 from molten.options import MoltenOptions
 from molten.outputchunks import (
-    Output,
-    MimetypesOutputChunk,
     ErrorOutputChunk,
-    TextOutputChunk,
+    MimetypesOutputChunk,
+    Output,
     OutputStatus,
-    to_outputchunk,
+    TextOutputChunk,
     clean_up_text,
+    to_outputchunk,
 )
 from molten.runtime_state import RuntimeState
-from molten.jupyter_server_api import JupyterAPIClient, JupyterAPIManager
 
 
 class JupyterRuntime:
@@ -121,7 +121,7 @@ class JupyterRuntime:
         if output.success:
             chunk = to_outputchunk(self.nvim, self._alloc_file, data, metadata, self.options)
             output.chunks.append(chunk)
-            if isinstance(chunk, TextOutputChunk) and chunk.text.startswith("\r"):
+            if isinstance(chunk, TextOutputChunk) and "\r" in chunk.text:
                 output.merge_text_chunks()
 
     def _tick_one(self, output: Output, message_type: str, content: Dict[str, Any]) -> bool:
@@ -181,7 +181,16 @@ class JupyterRuntime:
             return True
         elif message_type == "stream":
             copy_on_demand(content["text"])
-            self._append_chunk(output, {"text/plain": content["text"]}, {})
+            text = content["text"]
+
+            # Preserve exact stream semantics (including \n / \r) by using TextOutputChunk directly.
+            chunk = TextOutputChunk(text)
+            chunk.jupyter_data = {"text/plain": text}
+            chunk.jupyter_metadata = {}
+            output.chunks.append(chunk)
+
+            # Merge adjacent text chunks and resolve carriage returns once, centrally.
+            output.merge_text_chunks()
             return True
         elif message_type == "display_data":
             # XXX: consider content['transient'], if we end up saving execution
@@ -247,8 +256,7 @@ class JupyterRuntime:
 
         assert isinstance(
             self.kernel_client,
-            (jupyter_client.blocking.client.BlockingKernelClient,
-             JupyterAPIClient),
+            (jupyter_client.blocking.client.BlockingKernelClient, JupyterAPIClient),
         )
 
         try:

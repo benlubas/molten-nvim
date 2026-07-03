@@ -1,16 +1,16 @@
-from typing import Type, Optional, Dict, Any
 import os
+from typing import Any, Dict, Optional, Type
+
 from pynvim import Nvim
-
 from pynvim.api import Buffer
-from molten.code_cell import CodeCell
-from molten.position import DynamicPosition
 
-from molten.utils import MoltenException
-from molten.options import MoltenOptions
-from molten.outputchunks import OutputStatus, Output, to_outputchunk
-from molten.outputbuffer import OutputBuffer
+from molten.code_cell import CodeCell
 from molten.moltenbuffer import MoltenKernel
+from molten.options import MoltenOptions
+from molten.outputbuffer import OutputBuffer
+from molten.outputchunks import Output, OutputStatus, to_outputchunk
+from molten.position import DynamicPosition
+from molten.utils import MoltenException
 
 
 class MoltenIOError(Exception):
@@ -131,11 +131,10 @@ def save(molten_kernel: MoltenKernel, nvim_buffer: int) -> Dict[str, Any]:
                 "success": output.output.success,
                 "chunks": [
                     {
-                        "data": chunk.jupyter_data,
-                        "metadata": chunk.jupyter_metadata,
+                        "data": chunk.jupyter_data or {},
+                        "metadata": (chunk.jupyter_metadata or {}),
                     }
                     for chunk in output.output.chunks
-                    if chunk.jupyter_data is not None and chunk.jupyter_metadata is not None
                 ],
             }
             for span, output in molten_kernel.outputs.items()
