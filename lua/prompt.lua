@@ -12,7 +12,7 @@ end
 ---started as shared kernels.
 ---@param kernels table<table> list of tuples of (str, bool)
 ---@param prompt string
-M.prompt_init = function(kernels, prompt)
+M.prompt_init = function(cmd, kernels, prompt)
   vim.schedule_wrap(function()
     vim.ui.select(kernels, {
       prompt = prompt,
@@ -23,9 +23,9 @@ M.prompt_init = function(kernels, prompt)
       end
       vim.schedule_wrap(function()
         if choice[2] then
-          vim.cmd("MoltenInit shared " .. choice[1])
+          vim.cmd(cmd .. " shared " .. choice[1])
         else
-          vim.cmd("MoltenInit " .. choice[1])
+          vim.cmd(cmd .. " " .. choice[1])
         end
       end)()
     end)

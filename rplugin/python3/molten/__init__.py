@@ -1,7 +1,10 @@
-import json
 import os
 from typing import Any, Dict, List, Optional, Tuple
+
 from itertools import chain
+import json
+from pathlib import Path
+import re
 
 import pynvim
 from pynvim.api import Buffer
@@ -14,7 +17,7 @@ from molten.moltenbuffer import MoltenKernel
 from molten.options import MoltenOptions
 from molten.outputbuffer import OutputBuffer
 from molten.position import DynamicPosition, Position
-from molten.runtime import get_available_kernels
+from molten.runtime import KernelLocation, get_available_kernels
 from molten.utils import MoltenException, notify_error, notify_info, notify_warn, nvimui
 from pynvim import Nvim
 
@@ -178,7 +181,12 @@ class Molten:
         for m in molten_kernels:
             m.on_cursor_moved(scrolled)
 
-    def _initialize_buffer(self, kernel_name: str, shared=False) -> MoltenKernel | None:
+    def _initialize_buffer(
+        self,
+        kernel_name: str,
+        kernel_loc: Optional[KernelLocation]=None,
+        shared=False,
+    ) -> MoltenKernel | None:
         assert self.canvas is not None
         if shared:  # use an existing molten kernel, for a new neovim buffer
             molten = self.molten_kernels.get(kernel_name)
@@ -205,6 +213,7 @@ class Molten:
                 self.nvim.current.buffer,
                 self.options,
                 kernel_name,
+                kernel_loc,
                 kernel_id,
             )
 
@@ -260,7 +269,69 @@ class Molten:
                 )
                 return
 
-            self.nvim.lua._prompt_init(kernels, PROMPT)
+            self.nvim.lua._prompt_init("MoltenInit", kernels, PROMPT)
+
+    @pynvim.command("MoltenInitSysPrefix", nargs="*", sync=True)  # type: ignore
+    @nvimui  # type: ignore
+    def command_init_sys_prefix(self, args: List[str]) -> None:
+        self._initialize_if_necessary()
+
+        TOP_DIR = Path(Path.home().anchor)
+        VENV_NAMES = (".venv", "venv", ".env")
+        KERNELS_SUBPATH = Path("share") / "jupyter" / "kernels"
+
+        def kernelspecs(kernels_dir: Path) -> List[str]:
+            """Every `name` for which kernels_dir/{name}/kernel.json exists."""
+            try:
+                return [
+                    child.name for child in kernels_dir.iterdir()
+                    if child.is_dir() and (child / "kernel.json").is_file()
+                ]
+            except OSError:
+                return False
+
+        def candidate_kernelspec_subdirs(dirname: Path) -> Iterator[Path]:
+            for venv in VENV_NAMES:
+                yield dirname / venv / KERNELS_SUBPATH
+            yield dirname / KERNELS_SUBPATH
+
+        def nearest_kernel_loc(start: Path) -> Optional[KernelLocation]:
+            """Walk up from `start` looking for a kernelspec-shaped subpath."""
+            start = start if start.is_dir() else start.parent
+
+            for ancestor in (start, *start.parents):
+                for candidate in candidate_kernelspec_subdirs(ancestor):
+                    if candidate.is_dir():
+                        names = kernelspecs(candidate)
+                        if names:
+                            return KernelLocation(candidate, ancestor, names)
+                if ancestor == STOP_AT:
+                    break
+            return None
+
+        name = self.nvim.current.buffer.name
+
+        kernel_loc: Optional[KernelLocation] = None
+        if name and os.path.isabs(name) and "://" not in name:
+            kernel_loc = nearest_kernel_loc(Path(name).resolve())
+
+        kernel_name = "python3"
+        if len(args) > 0:
+            kernel_name = args[0]
+        elif kernel_loc is not None:
+            if len(kernel_loc.kernel_names) == 1:
+                kernel_name = kernel_loc.kernel_names[0]
+            else:
+                PROMPT = f"Select the kernel to launch from sys-prefix {kernel_loc.project_root}:"
+
+                self.nvim.lua._prompt_init(
+                    "MoltenInitSysPrefix",
+                    [(x, False) for x in kernel_loc.kernel_names],
+                    PROMPT
+                )
+                return
+
+        self._initialize_buffer(kernel_name, kernel_loc)
 
     def _deinit_buffer(self, molten_kernels: List[MoltenKernel]) -> None:
         # Have to copy this to get around reference issues
@@ -308,7 +379,7 @@ class Molten:
         # NOTE: Assert is generally a bad idea to use. Instead it is better to call custom error, or something like that.
         # Also, assert can be disabled with `-O` or `-OO` flags.
         # This is not a production solution
-        assert kernels is not None  
+        assert kernels is not None
 
         self._clear_interface(kernels)
 
