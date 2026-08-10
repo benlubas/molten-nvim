@@ -119,6 +119,7 @@ kernel is attached to the buffer. This is configurable with the `molten_auto_ini
 |-----------------------    |----------------       |------------------------------------|
 | `MoltenInfo`              | none                  | Show information about the state of the plugin, initialization status, available kernels, and running kernels |
 | `MoltenInit`              | `["shared"] [kernel]` | Initialize a kernel for the current buffer. If `shared` is passed as the first value, this buffer will use an already running kernel. If no kernel is given, prompts the user. |
+| `MoltenInitSysPrefix`     | `[kernel]`            | Initialize a kernel for the current buffer, searching up the directory tree of the buffer's open file looking for an ancestor containing something venv-like containing jupyter kernelspecs. |
 | `MoltenDeinit`            | none                  | De-initialize the current buffer's runtime and molten instance. (called automatically on vim close/buffer unload) |
 | `MoltenGoto`              | `[n]`                 | Go to the `n`th code cell `n` defaults to 1 (1 indexed) |
 | `MoltenNext`              | `[n]`                 | Go to the next code cell, or jump `n` code cells `n` defaults to 1. Values wrap. Negative values move backwards |

@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional, Tuple, List, Dict, Generator, IO, Any
 from contextlib import contextmanager
@@ -23,6 +24,13 @@ from molten.runtime_state import RuntimeState
 from molten.jupyter_server_api import JupyterAPIClient, JupyterAPIManager
 
 
+@dataclass(frozen=True)
+class KernelLocation:
+    kernel_dir: Path    # path ending in share/jupyter/kernels/" which contains */kernel.json
+    project_root: Path  # logical root of the project, skipping any venv directories
+    kernel_names: List[str] # all the subdirectories found containing kernel.json
+
+
 class JupyterRuntime:
     state: RuntimeState
     kernel_name: str
@@ -36,7 +44,14 @@ class JupyterRuntime:
     options: MoltenOptions
     nvim: Nvim
 
-    def __init__(self, nvim: Nvim, kernel_name: str, kernel_id: str, options: MoltenOptions):
+    def __init__(
+        self,
+        nvim: Nvim,
+        kernel_name: str,
+        kernel_loc: Optional[KernelLocation],
+        kernel_id: str,
+        options: MoltenOptions,
+    ):
         self.state = RuntimeState.STARTING
         self.kernel_name = kernel_name
         self.kernel_id = kernel_id
@@ -50,21 +65,7 @@ class JupyterRuntime:
             self.kernel_client = self.kernel_manager.client()
             self.kernel_client.start_channels()
             self.options = options
-        elif ".json" not in self.kernel_name:
-            self.external_kernel = False
-            self.kernel_manager = jupyter_client.manager.KernelManager(kernel_name=kernel_name)
-            self.kernel_manager.start_kernel()
-            self.kernel_client = self.kernel_manager.client()
-            assert isinstance(
-                self.kernel_client,
-                jupyter_client.blocking.client.BlockingKernelClient,
-            )
-            self.kernel_client.start_channels()
-            self.kernel_client.connection_file = (
-                f"{self.kernel_client.data_dir}/runtime/kernel-{self.kernel_manager.kernel_id}.json"
-            )
-            self.kernel_client.write_connection_file()
-        else:
+        elif self.kernel_name.endswith(".json"):
             kernel_file = kernel_name
             self.external_kernel = True
             # Opening JSON file
@@ -79,6 +80,36 @@ class JupyterRuntime:
             )
             self.kernel_client = self.kernel_manager.client()
             self.kernel_client.load_connection_file(connection_file=kernel_file)
+        else:
+            self.external_kernel = False
+
+            if kernel_loc is not None:
+                # we have a --sys-prefix kernel inside a venv
+                ksm = jupyter_client.kernelspec.KernelSpecManager(
+                    kernel_dirs=[str(kernel_loc.kernel_dir)],
+                    #ensure_native_kernel=True,
+                )
+                self.kernel_manager = jupyter_client.manager.KernelManager(
+                    kernel_name=kernel_name,
+                    kernel_spec_manager=ksm,
+                )
+                names = list(ksm.find_kernel_specs())
+
+                self.kernel_manager.start_kernel(cwd=str(kernel_loc.project_root))
+            else:
+                self.kernel_manager = jupyter_client.manager.KernelManager(kernel_name=kernel_name)
+                self.kernel_manager.start_kernel()
+
+            self.kernel_client = self.kernel_manager.client()
+            assert isinstance(
+                self.kernel_client,
+                jupyter_client.blocking.client.BlockingKernelClient,
+            )
+            self.kernel_client.start_channels()
+            self.kernel_client.connection_file = (
+                f"{self.kernel_client.data_dir}/runtime/kernel-{self.kernel_manager.kernel_id}.json"
+            )
+            self.kernel_client.write_connection_file()
 
         self.allocated_files = []
         self.options = options

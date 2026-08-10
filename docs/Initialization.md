@@ -17,6 +17,13 @@ that _are_ running in other buffers. The latter are prefixed with the text `(sha
 a kernel that looks like `(shared) python3` is the same as running the command `:MoltenInit shared
 python3`.
 
+## :MoltenInitSysPrefix
+
+`:MoltenInitSysPrefix [kernel]` is analogous to `:MoltenInit`, except it searches up the directory
+tree from the current buffer's filepath looking for an ancestor shaped like a sys-prefix containing
+stuff shaped like jupyter kernelspecs with proper subdirectory structure. If it finds one, this
+command behaves like `:MoltenInit`; otherwise, it fails like `:MoltenInit my-nonexistent-kernel`.
+
 ## Auto Initialization
 
 Some commands require a kernel attached to the buffer to work. Of these commands, some will auto

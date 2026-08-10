@@ -14,7 +14,7 @@ from molten.position import Position
 from molten.utils import notify_error, notify_info, notify_warn
 from molten.outputbuffer import OutputBuffer
 from molten.outputchunks import ImageOutputChunk, OutputChunk, OutputStatus
-from molten.runtime import JupyterRuntime
+from molten.runtime import JupyterRuntime, KernelLocation
 
 
 class MoltenKernel:
@@ -52,6 +52,7 @@ class MoltenKernel:
         main_buffer: Buffer,
         options: MoltenOptions,
         kernel_name: str,
+        kernel_loc: Optional[KernelLocation],
         kernel_id: str,
     ):
         self.nvim = nvim
@@ -62,7 +63,7 @@ class MoltenKernel:
 
         self._doautocmd("MoltenInitPre")
 
-        self.runtime = JupyterRuntime(nvim, kernel_name, kernel_id, options)
+        self.runtime = JupyterRuntime(nvim, kernel_name, kernel_loc, kernel_id, options)
         self.kernel_id = kernel_id
 
         self.outputs = {}
