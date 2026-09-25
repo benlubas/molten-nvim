@@ -34,6 +34,7 @@ https://github.com/benlubas/molten-nvim/assets/56943754/17ae81c0-306f-4496-bce8-
   provider
 - Required Python packages (can be installed in a venv. [read more](./docs/Virtual-Environments.md)):
   - [`pynvim`](https://github.com/neovim/pynvim) (for the Remote Plugin API)
+  - [`ipykernel`](https://github.com/ipython/ipykernel) (for creating Jupyter kernel)
   - [`jupyter_client`](https://github.com/jupyter/jupyter_client) (for interacting with Jupyter)
 - Optional Python packages:
   - [`cairosvg`](https://cairosvg.org/) (for displaying SVG images with transparency)
