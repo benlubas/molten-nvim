@@ -384,8 +384,13 @@ class MoltenKernel:
 
         if (
             self.selected_cell is not None
-            # Prevent from rendering when it's done
-            and self.output_statuses.get(self.selected_cell, None) != OutputStatus.DONE
+            # Prevent from rendering when it's done, unless the floating window is (or
+            # has to be) shown or closed: _show_selected is what opens and closes it
+            and (
+                self.output_statuses.get(self.selected_cell, None) != OutputStatus.DONE
+                or self.should_show_floating_win
+                or self.outputs[self.selected_cell].display_win is not None
+            )
         ):
             self._show_selected(self.selected_cell)
 
