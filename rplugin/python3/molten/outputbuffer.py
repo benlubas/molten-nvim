@@ -218,6 +218,7 @@ class OutputBuffer:
                     self.canvas,
                     virtual,
                     winnr=self.nvim.current.window.handle if virtual else None,
+                    lines_above=lineno + virtual_lines,
                 )
                 lines_str += chunktext
                 lineno += chunktext.count("\n")
@@ -283,8 +284,17 @@ class OutputBuffer:
             win_height,
         )
         lines, _ = self.build_output_text(shape, anchor.bufno, True)
+        # truncating would cut the rows reserved for an inline image
+        has_inline_image = (
+            self.canvas.reserve_inline_rows
+            and self.options.image_location != "float"
+            and any(
+                isinstance(chunk, ImageOutputChunk) and chunk.img_identifier is not None
+                for chunk in self.output.chunks
+            )
+        )
 
-        if len(lines) > self.options.virt_text_max_lines:
+        if len(lines) > self.options.virt_text_max_lines and not has_inline_image:
             lines = self.truncate_lines(lines, self.options.virt_text_max_lines)
 
         self.virt_text_id = buf.api.set_extmark(

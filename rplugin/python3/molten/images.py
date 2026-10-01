@@ -8,6 +8,9 @@ from molten.utils import notify_warn, MoltenException
 
 
 class Canvas(ABC):
+    # True if the caller reserves an inline image's rows and the canvas just draws it
+    reserve_inline_rows: bool = False
+
     @abstractmethod
     def init(self) -> None:
         """
@@ -115,6 +118,7 @@ class NoCanvas(Canvas):
 
 
 class ImageNvimCanvas(Canvas):
+    reserve_inline_rows = True
     nvim: Nvim
     to_make_visible: Set[str]
     to_make_invisible: Set[str]
@@ -164,13 +168,17 @@ class ImageNvimCanvas(Canvas):
         y: int,
         bufnr: int,
         winnr: int | None = None,
+        render_offset_top: int = 0,
+        with_virtual_padding: bool = True,
     ) -> str:
         img = self.image_api.from_file(
             path,
             {
                 "id": identifier,
                 "buffer": bufnr,
-                "with_virtual_padding": True,
+                "with_virtual_padding": with_virtual_padding,
+                "inline": True,
+                "render_offset_top": render_offset_top,
                 "x": x,
                 "y": y,
                 "window": winnr,

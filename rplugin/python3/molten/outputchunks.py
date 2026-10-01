@@ -39,6 +39,7 @@ class OutputChunk(ABC):
         canvas: Canvas,
         hard_wrap: bool,
         winnr: int | None = None,
+        lines_above: int = 0,
     ) -> Tuple[str, int]:
         pass
 
@@ -76,6 +77,7 @@ class TextOutputChunk(OutputChunk):
         _canvas: Canvas,
         hard_wrap: bool,
         winnr: int | None = None,
+        lines_above: int = 0,
     ) -> Tuple[str, int]:
         text = clean_up_text(self.text)
         extra_lines = 0
@@ -158,11 +160,15 @@ class ImageOutputChunk(OutputChunk):
         canvas: Canvas,
         virtual: bool,
         winnr: int | None = None,
+        lines_above: int = 0,
     ) -> Tuple[str, int]:
         loc = options.image_location
         if not (loc == "both" or (loc == "virt" and virtual) or (loc == "float" and not virtual)):
             return "", 0
 
+        # image.nvim's own padding extmark gets dropped on redraw, so reserve the
+        # inline image's rows in the output and draw it `lines_above` rows down
+        reserve_rows = virtual and canvas.reserve_inline_rows
         self.img_identifier = canvas.add_image(
             self.img_path,
             f"{'virt-' if virtual else ''}{self.img_path}",
@@ -170,7 +176,10 @@ class ImageOutputChunk(OutputChunk):
             lineno,
             bufnr,
             winnr,
+            **({"render_offset_top": lines_above, "with_virtual_padding": False} if reserve_rows else {}),
         )
+        if reserve_rows:
+            return " \n" * max(canvas.img_size(self.img_identifier)["height"], 1), 0
         # images are rendered into virtual lines following the current line,
         # which also needs to exist as the extmark is placed there
         return " \n", canvas.img_size(self.img_identifier)["height"]
