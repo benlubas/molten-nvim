@@ -872,6 +872,10 @@ class Molten:
         if not abuf_str:
             return
 
+        # Unloading cleared the buffer's extmarks and a reload reuses their
+        # ids; cells freed later must not delete the new ones.
+        DynamicPosition.forget_buffer(int(abuf_str))
+
         molten = self.buffers.get(int(abuf_str))
         if molten is None:
             return

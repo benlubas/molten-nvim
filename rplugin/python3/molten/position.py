@@ -1,4 +1,6 @@
-from typing import List
+from typing import List, Optional
+from weakref import WeakSet
+
 from pynvim import Nvim
 
 
@@ -24,7 +26,10 @@ class DynamicPosition(Position):
     extmark_namespace: int
     bufno: int
 
-    extmark_id: int
+    extmark_id: Optional[int]
+
+    # Every live position, so that the ones of an unloaded buffer can be found.
+    _live: "WeakSet[DynamicPosition]" = WeakSet()
 
     def __init__(
         self,
@@ -46,6 +51,7 @@ class DynamicPosition(Position):
             colno,
             {"right_gravity": right_gravity, "strict": False},
         )
+        DynamicPosition._live.add(self)
 
     def set_height(self, height: int) -> None:
         self.nvim.funcs.nvim_buf_set_extmark(
@@ -56,7 +62,17 @@ class DynamicPosition(Position):
             {"id": self.extmark_id, "virt_lines": [[("", "Normal")] for _ in range(height)]},
         )
 
+    @classmethod
+    def forget_buffer(cls, bufno: int) -> None:
+        """The buffer was unloaded: its extmarks are gone and their ids will be
+        reused when it is reloaded, so never delete by these ids again."""
+        for position in list(cls._live):
+            if position.bufno == bufno:
+                position.extmark_id = None
+
     def __del__(self) -> None:
+        if self.extmark_id is None:
+            return
         # Note, this will not fail if the extmark doesn't exist
         self.nvim.funcs.nvim_buf_del_extmark(self.bufno, self.extmark_namespace, self.extmark_id)
 
