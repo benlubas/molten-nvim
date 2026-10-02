@@ -200,6 +200,9 @@ class Output:
 
     def __init__(self, execution_count: Optional[int]):
         self.execution_count = execution_count
+        # msg_id of the execute_request this output belongs to; IOPub messages
+        # whose parent is another request (e.g. another client) are ignored.
+        self.parent_msg_id: Optional[str] = None
         self.status = OutputStatus.HOLD
         self.chunks = []
         self.success = True

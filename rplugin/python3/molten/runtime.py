@@ -102,8 +102,9 @@ class JupyterRuntime:
         self.state = RuntimeState.STARTING
         self.kernel_manager.restart_kernel()
 
-    def run_code(self, code: str) -> None:
-        self.kernel_client.execute(code)
+    def run_code(self, code: str) -> Optional[str]:
+        """Send code to the kernel; returns the request's msg_id when the client provides one."""
+        return self.kernel_client.execute(code)
 
     @contextmanager
     def _alloc_file(
@@ -228,6 +229,16 @@ class JupyterRuntime:
                 message = self.kernel_client.get_iopub_msg(timeout=0)
 
                 if "content" not in message or "msg_type" not in message:
+                    continue
+
+                # The kernel broadcasts IOPub messages for every client's
+                # requests; only this output's own request may update it.
+                parent = (message.get("parent_header") or {}).get("msg_id")
+                if (
+                    output.parent_msg_id is not None
+                    and parent is not None
+                    and parent != output.parent_msg_id
+                ):
                     continue
 
                 did_stuff_now = self._tick_one(output, message["msg_type"], message["content"])

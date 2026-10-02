@@ -111,11 +111,12 @@ class MoltenKernel:
         if not self.try_delete_overlapping_cells(span):
             return
         self.output_statuses[span] = OutputStatus.RUNNING
-        self.runtime.run_code(code)
+        msg_id = self.runtime.run_code(code)
 
         self.outputs[span] = OutputBuffer(
             self.nvim, self.canvas, self.extmark_namespace, self.options
         )
+        self.outputs[span].output.parent_msg_id = msg_id
         self.queued_outputs.put(span)
 
         self.selected_cell = span
