@@ -71,6 +71,8 @@ class MoltenKernel:
 
         self.selected_cell = None
         self.output_statuses = {}
+        # (cell, should_show_floating_win) last rendered by update_interface
+        self.last_render_state = None
         self.should_show_floating_win = False
         self.updating_interface = False
 
@@ -382,8 +384,16 @@ class MoltenKernel:
 
         self.selected_cell = new_selected_cell
 
-        if self.selected_cell is not None:
+        # Re-render the selected cell only when something changed: another cell was
+        # selected, the output was shown/hidden, or the output is still running.
+        # Re-rendering a finished output on every update makes images flicker.
+        render_state = (self.selected_cell, self.should_show_floating_win)
+        if self.selected_cell is not None and (
+            render_state != self.last_render_state
+            or self.output_statuses.get(self.selected_cell, None) != OutputStatus.DONE
+        ):
             self._show_selected(self.selected_cell)
+        self.last_render_state = render_state if self.selected_cell is not None else None
 
         if self.options.virt_text_output:
             for span, output in self.outputs.items():
